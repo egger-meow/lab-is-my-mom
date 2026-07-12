@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A local, source-backed research corpus dashboard.">
+    <title>Research OS · Corpus dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="hero">
+      <p class="eyebrow">Research OS / local corpus</p>
+      <div class="hero__heading">
+        <div><h1 id="professor-name">Research corpus</h1><p id="affiliation"></p></div>
+        <a id="lab-link" class="text-link" target="_blank" rel="noreferrer">Source lab ↗</a>
+      </div>
+      <p class="lede">A read-only map of source-backed papers, full-text status, and the study notes committed beside each paper.</p>
+      <div class="metrics" aria-label="Corpus summary">
+        <div><strong id="total-count">0</strong><span>indexed works</span></div>
+        <div><strong id="fetched-count">0</strong><span>full texts</span></div>
+        <div><strong id="unresolved-count">0</strong><span>visible gaps</span></div>
+      </div>
+    </header>
+    <main>
+      <section class="controls" aria-label="Paper filters">
+        <label class="search"><span class="sr-only">Search papers</span><input id="search" type="search" placeholder="Search title, author, venue, identifier…" autocomplete="off"></label>
+        <div class="filters" role="group" aria-label="Full text status"><button class="filter active" data-status="all">All</button><button class="filter" data-status="fetched">Full text</button><button class="filter" data-status="unresolved">Unresolved</button></div>
+        <span id="results-count" class="results-count"></span>
+      </section>
+      <section id="paper-list" class="paper-list" aria-live="polite"></section>
+    </main>
+    <template id="paper-template">
+      <article class="paper-card">
+        <div class="paper-card__top"><span class="year"></span><span class="status"></span></div>
+        <h2></h2><p class="authors"></p><p class="venue"></p>
+        <div class="identifiers"></div>
+        <details><summary>Evidence &amp; reading material</summary><div class="resources"></div></details>
+      </article>
+    </template>
+    <script src="data.js"></script><script src="app.js"></script>
+  </body>
+</html>

@@ -33,3 +33,13 @@ uv run research-os translate <paper-id> --config path/to/local-babeldoc.toml
 The TOML controls BabelDOC's output directory and language pair. Research OS leaves `source.pdf` untouched and writes only a credential-free `translation.json` command/provenance record beside it.
 
 For records still unresolved after Crossref and OpenAlex, Semantic Scholar can be enabled explicitly with `uv run research-os resolve <professor-id> --semantic-scholar`. The public API can rate-limit unauthenticated requests; such failures remain recorded in SQLite instead of being treated as missing metadata.
+
+## Corpus dashboard
+
+The framework-free local dashboard lives in `web/` and deliberately has no runtime server or external analytics. Regenerate its data after a crawl or processing pass, then open `web/index.html` in a browser:
+
+```bash
+uv run research-os dashboard an-zi-yen
+```
+
+It keeps unresolved works visible, links full texts only when they are in the corpus, and exposes the committed study notes for each fetched paper.

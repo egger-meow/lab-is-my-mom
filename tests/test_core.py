@@ -4,7 +4,7 @@ import subprocess
 import pytest
 
 from research_os import cli
-from research_os.cli import crawl_same_site, process_pdf
+from research_os.cli import crawl_same_site, dashboard_payload, process_pdf
 from research_os.core import Store, classify_link, normalize_title, parse_publications, relevant_same_site_links
 from research_os.providers import AclAnthologyProvider
 from research_os.providers import SemanticScholarProvider
@@ -207,3 +207,14 @@ def test_document_processing_records_page_level_text_and_provenance(tmp_path: Pa
     assert extracted["figures"][0]["caption"] == "Figure 1. Evidence pipeline."
     assert extracted["references"][0]["text"] == "[1] Provenance source."
     assert len(extracted["sha256"]) == 64
+
+
+def test_dashboard_payload_exposes_status_and_only_existing_study_notes(tmp_path: Path, monkeypatch):
+    config = {"id": "test-prof", "name": "Test Professor", "affiliation": "Test University", "professor_url": "https://example.test/"}
+    monkeypatch.setattr(cli, "load_config", lambda root, professor_id=None: config)
+    paper = parse_publications('<ol class="publications"><h4>Conference Papers:</h4><li>An-Zi Yen (2024). "Dashboard Paper." In ACL.</li></ol>', "https://example.test/", ["An-Zi Yen"])[0]
+    store = Store(tmp_path); store.upsert_papers([paper]); store.close()
+    note = tmp_path / "research" / "papers" / paper.id / "README.md"; note.parent.mkdir(parents=True); note.write_text("# note", encoding="utf-8")
+    payload = dashboard_payload(tmp_path, "test-prof")
+    assert payload["summary"] == {"total": 1, "fetched": 0, "unresolved": 1}
+    assert payload["papers"][0]["notes"] == [str(Path("research") / "papers" / paper.id / "README.md")]

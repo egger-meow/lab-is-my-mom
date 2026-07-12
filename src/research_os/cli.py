@@ -390,6 +390,45 @@ def report(args: argparse.Namespace) -> int:
     return 0
 
 
+def dashboard_payload(root: Path, professor_id: str) -> dict:
+    """Produce a portable, read-only view model for the static research dashboard."""
+    store = Store(root)
+    try:
+        config = load_config(root, professor_id)
+        papers = []
+        for row in store.papers():
+            paper_dir = Path("research") / "papers" / row["id"]
+            links = [{"url": link["url"], "label": link["label"], "kind": link["kind"]}
+                     for link in store.db.execute("SELECT url,label,kind FROM paper_links WHERE paper_id=? ORDER BY kind,url", (row["id"],))]
+            papers.append({
+                "id": row["id"], "title": row["title"], "authors": row["authors"],
+                "year": row["year"], "venue": row["venue"], "status": row["fulltext_status"],
+                "doi": row["doi"], "arxiv_id": row["arxiv_id"], "source_url": row["source_url"],
+                "pdf_path": row["pdf_path"], "links": links,
+                "notes": [str(paper_dir / name) for name in ("README.md", "method.md", "experiments-and-results.md", "limitations-and-critique.md", "seminar-questions.md") if (root / paper_dir / name).exists()],
+            })
+        return {
+            "generated_at": __import__("datetime").datetime.now(__import__("datetime").UTC).isoformat(),
+            "professor": {"id": config["id"], "name": config["name"], "affiliation": config["affiliation"], "url": config["professor_url"]},
+            "summary": {"total": len(papers), "fetched": sum(p["status"] == "fetched" for p in papers), "unresolved": sum(p["status"] != "fetched" for p in papers)},
+            "papers": papers,
+        }
+    finally:
+        store.close()
+
+
+def export_dashboard(args: argparse.Namespace) -> int:
+    root = Path(args.root).resolve()
+    output = Path(args.output)
+    if not output.is_absolute():
+        output = root / output
+    output.parent.mkdir(parents=True, exist_ok=True)
+    payload = dashboard_payload(root, args.professor_id)
+    output.write_text("window.RESEARCH_OS_DATA = " + json.dumps(payload, ensure_ascii=False, indent=2) + ";\n", encoding="utf-8")
+    print(output)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="research-os")
     parser.add_argument("--root", default=".")
@@ -403,6 +442,10 @@ def main() -> int:
     translate = commands.add_parser("translate"); translate.add_argument("paper_id"); translate.add_argument("--config", required=True, help="local BabelDOC TOML; not copied into the corpus"); translate.add_argument("--executable", default="babeldoc"); translate.add_argument("--timeout", type=int, default=3600); translate.set_defaults(func=translate_paper)
     query = commands.add_parser("search"); query.add_argument("query"); query.set_defaults(func=search)
     report_parser = commands.add_parser("report"); report_parser.add_argument("professor_id"); report_parser.set_defaults(func=report)
+    dashboard = commands.add_parser("dashboard", help="export the corpus data consumed by web/index.html")
+    dashboard.add_argument("professor_id", nargs="?", default="an-zi-yen")
+    dashboard.add_argument("--output", default="web/data.js")
+    dashboard.set_defaults(func=export_dashboard)
     return args.func(args) if (args := parser.parse_args()).func else 1
 
 
