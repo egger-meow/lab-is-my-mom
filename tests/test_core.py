@@ -6,6 +6,7 @@ import pytest
 from research_os import cli
 from research_os.cli import crawl_same_site, process_pdf
 from research_os.core import Store, classify_link, normalize_title, parse_publications, relevant_same_site_links
+from research_os.providers import AclAnthologyProvider
 from research_os.translation import BabelDocTranslator, TranslationUnavailable
 
 
@@ -40,6 +41,16 @@ def test_direct_source_pdf_links_are_classified_as_fetch_candidates(tmp_path: Pa
     assert link["kind"] == "pdf"
     assert classify_link("https://lab.example/paper", "Download PDF") == "pdf"
     store.close()
+
+
+def test_acl_provider_canonicalizes_only_source_backed_acl_paper_routes():
+    provider = AclAnthologyProvider()
+    result = provider.resolve_link("ACL paper", "https://aclanthology.org/2023.findings-emnlp.698.pdf")
+    assert result is not None
+    assert result.evidence_url == "https://aclanthology.org/2023.findings-emnlp.698/"
+    assert result.pdf_url == "https://aclanthology.org/2023.findings-emnlp.698.pdf"
+    assert provider.resolve_link("Not a paper", "https://aclanthology.org/anthology-files/attachments/acl/file.pdf") is None
+    assert provider.resolve_link("Outside", "https://example.test/P17-4007.pdf") is None
 
 
 def test_store_deduplicates_and_searches_by_provenance(tmp_path: Path):

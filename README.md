@@ -24,7 +24,7 @@ uv run research-os bootstrap --professor-url https://azyen0522.github.io/ --sour
 
 The SQLite database lives at `.research-os/research.db`. HTML snapshots, PDFs, and the supplied seed are SHA-256 hashed and retained with source URLs. PyMuPDF extracts page-level text, image counts, detected tables, and section anchors to `extraction.json`. Papers with no verified full text remain `unresolved` rather than being presented as fetched.
 
-The current resolver handles direct arXiv routes and project-page identifier hints. Optional layout-preserving translation is isolated behind the BabelDOC CLI because BabelDOC is AGPL-3.0; no translation service or credentials are bundled or required for the core pipeline. Create a local BabelDOC TOML from its documented configuration, keep its credentials outside this repository, then opt in for a fetched paper:
+The current resolver handles direct arXiv routes, source-backed ACL Anthology canonical PDF routes, and project-page identifier hints. Optional layout-preserving translation is isolated behind the BabelDOC CLI because BabelDOC is AGPL-3.0; no translation service or credentials are bundled or required for the core pipeline. Create a local BabelDOC TOML from its documented configuration, keep its credentials outside this repository, then opt in for a fetched paper:
 
 ```bash
 uv run research-os translate <paper-id> --config path/to/local-babeldoc.toml

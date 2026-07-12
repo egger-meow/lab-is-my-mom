@@ -10,7 +10,7 @@ import tomllib
 from pathlib import Path
 
 from .core import Publication, Store, fetch_url, parse_publications, relevant_same_site_links, sha256_bytes
-from .providers import ArxivProvider, CrossrefProvider, OpenAlexProvider
+from .providers import AclAnthologyProvider, ArxivProvider, CrossrefProvider, OpenAlexProvider
 from .translation import BabelDocTranslator, TranslationUnavailable
 
 
@@ -338,6 +338,7 @@ def refresh(args: argparse.Namespace) -> int:
 def resolve(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve(); store = Store(root)
     providers = (OpenAlexProvider(),) if args.fulltext else (CrossrefProvider(), OpenAlexProvider())
+    acl = AclAnthologyProvider()
     resolved = 0
     if args.fulltext:
         candidates = [row for row in store.papers() if row["fulltext_status"] == "unresolved" and not store.db.execute("SELECT 1 FROM resolutions WHERE paper_id=? AND provider='openalex'", (row["id"],)).fetchone() and not store.db.execute("SELECT 1 FROM failures WHERE subject=? AND stage='resolve'", (row["id"],)).fetchone()]
@@ -347,7 +348,17 @@ def resolve(args: argparse.Namespace) -> int:
         candidates = candidates[:args.limit]
     for row in candidates:
         matched = False
+        if not store.db.execute("SELECT 1 FROM resolutions WHERE paper_id=? AND provider=?", (row["id"], acl.name)).fetchone():
+            for (url,) in store.db.execute("SELECT url FROM paper_links WHERE paper_id=?", (row["id"],)).fetchall():
+                candidate = acl.resolve_link(row["title"], url)
+                if candidate:
+                    store.record_resolution(row["id"], candidate)
+                    resolved += 1
+                    matched = True
+                    break
         for provider in providers:
+            if matched:
+                break
             try:
                 matches = provider.resolve(row["title"])
                 for candidate in matches:

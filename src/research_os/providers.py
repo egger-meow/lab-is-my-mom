@@ -7,10 +7,11 @@ and hashed by the fetch stage.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from typing import Protocol
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 from .core import fetch_url, normalize_title
 
@@ -80,3 +81,23 @@ class ArxivProvider:
             return []
         return [Resolution(self.name, f"https://arxiv.org/abs/{arxiv_id}", title, 1.0,
                            arxiv_id=arxiv_id, pdf_url=f"https://arxiv.org/pdf/{arxiv_id}")]
+
+
+class AclAnthologyProvider:
+    """Canonicalize source-backed ACL Anthology routes without web scraping."""
+
+    name = "acl-anthology"
+
+    def resolve_link(self, title: str, url: str) -> Resolution | None:
+        parsed = urlsplit(url)
+        if parsed.netloc.lower() not in {"aclanthology.org", "www.aclanthology.org"}:
+            return None
+        identifier = parsed.path.strip("/")
+        if identifier.endswith(".pdf"):
+            identifier = identifier[:-4]
+        # ACL IDs are one segment. Excluding internal file paths prevents a
+        # generic attachment from being promoted to a canonical publication.
+        if "/" in identifier or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.-]*", identifier):
+            return None
+        canonical = f"https://aclanthology.org/{identifier}"
+        return Resolution(self.name, canonical + "/", title, 1.0, pdf_url=canonical + ".pdf")
