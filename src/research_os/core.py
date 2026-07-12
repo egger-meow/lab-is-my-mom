@@ -277,7 +277,7 @@ def parse_publications(source: str, source_url: str, aliases: Iterable[str]) -> 
 
 class Store:
     def __init__(self, root: Path) -> None:
-        self.root = root
+        self.root = root.resolve()
         self.db_path = root / ".research-os" / "research.db"
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(self.db_path)
@@ -331,16 +331,39 @@ class Store:
         # they were downloaded.
         self.db.execute("""UPDATE paper_links SET kind='pdf' WHERE kind='external'
         AND (lower(url) LIKE '%.pdf%' OR lower(COALESCE(label,'')) LIKE '%pdf%')""")
+        self._migrate_local_paths()
         self.db.commit()
 
     def close(self) -> None:
         self.db.close()
 
+    def relative_path(self, path: Path) -> str:
+        """Persist workspace-owned artifact paths independently of checkout location."""
+        try:
+            return str(path.resolve().relative_to(self.root))
+        except ValueError:
+            return str(path)
+
+    def resolve_path(self, path: str | Path) -> Path:
+        candidate = Path(path)
+        return candidate if candidate.is_absolute() else self.root / candidate
+
+    def _migrate_local_paths(self) -> None:
+        for table, column in (("sources", "local_path"), ("papers", "pdf_path"),
+                              ("documents", "source_path"), ("documents", "extracted_path")):
+            rows = self.db.execute(f"SELECT rowid AS _rowid,{column} FROM {table} WHERE {column} IS NOT NULL").fetchall()
+            for row in rows:
+                path = Path(row[column])
+                if path.is_absolute():
+                    relative = self.relative_path(path)
+                    if relative != str(path):
+                        self.db.execute(f"UPDATE {table} SET {column}=? WHERE rowid=?", (relative, row["_rowid"]))
+
     def record_source(self, url: str, data: bytes, *, content_type: str, local_path: Path | None, status: str = "ok", error: str | None = None) -> None:
         self.db.execute("""INSERT INTO sources(url,fetched_at,sha256,content_type,local_path,status,error)
         VALUES(?,?,?,?,?,?,?) ON CONFLICT(url) DO UPDATE SET fetched_at=excluded.fetched_at,sha256=excluded.sha256,
         content_type=excluded.content_type,local_path=excluded.local_path,status=excluded.status,error=excluded.error""",
-                        (url, utc_now(), sha256_bytes(data), content_type, str(local_path) if local_path else None, status, error))
+                        (url, utc_now(), sha256_bytes(data), content_type, self.relative_path(local_path) if local_path else None, status, error))
         self.db.commit()
 
     def record_failure(self, stage: str, subject: str, message: str) -> None:
@@ -406,7 +429,7 @@ class Store:
 
     def update_pdf(self, paper_id_value: str, path: Path, data: bytes, status: str = "fetched") -> None:
         self.db.execute("UPDATE papers SET fulltext_status=?,pdf_path=?,pdf_sha256=?,updated_at=? WHERE id=?",
-                        (status, str(path), sha256_bytes(data), utc_now(), paper_id_value))
+                        (status, self.relative_path(path), sha256_bytes(data), utc_now(), paper_id_value))
         self.db.commit()
 
     def record_resolution(self, paper_id_value: str, resolution) -> None:
@@ -448,6 +471,6 @@ class Store:
         self.db.execute("""INSERT INTO documents VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(paper_id) DO UPDATE SET
         source_path=excluded.source_path,sha256=excluded.sha256,pages=excluded.pages,extracted_path=excluded.extracted_path,
         parser_name=excluded.parser_name,parser_version=excluded.parser_version,config_json=excluded.config_json,processed_at=excluded.processed_at""",
-                        (paper_id_value, str(source_path), payload["sha256"], payload["page_count"], str(extracted_path),
+                        (paper_id_value, self.relative_path(source_path), payload["sha256"], payload["page_count"], self.relative_path(extracted_path),
                          "PyMuPDF", payload["parser_version"], json.dumps(payload["config"]), utc_now()))
         self.db.commit()

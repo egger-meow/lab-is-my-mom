@@ -64,9 +64,26 @@ def test_source_provenance_retains_hash_timestamp_and_local_path(tmp_path: Path)
     assert row["url"] == "https://example.test/"
     assert len(row["sha256"]) == 64
     assert row["fetched_at"]
-    assert Path(row["local_path"]) == snapshot
+    assert row["local_path"] == "page.html"
+    assert store.resolve_path(row["local_path"]) == snapshot
     assert row["status"] == "ok"
     store.close()
+
+
+def test_store_migrates_absolute_artifact_paths_to_workspace_relative(tmp_path: Path):
+    store = Store(tmp_path)
+    artifact = tmp_path / "research" / "paper.pdf"
+    artifact.parent.mkdir()
+    artifact.write_bytes(b"%PDF-1.7")
+    store.db.execute("INSERT INTO sources(url,fetched_at,sha256,content_type,local_path,status) VALUES(?,?,?,?,?,?)",
+                     ("file:legacy.pdf", "now", "0" * 64, "application/pdf", str(artifact), "ok"))
+    store.db.commit()
+    store.close()
+    migrated = Store(tmp_path)
+    row = migrated.db.execute("select local_path from sources where url='file:legacy.pdf'").fetchone()
+    assert row["local_path"] == "research\\paper.pdf"
+    assert migrated.resolve_path(row["local_path"]) == artifact
+    migrated.close()
 
 
 def test_same_site_crawl_targets_are_relevance_filtered_and_recordable(tmp_path: Path):

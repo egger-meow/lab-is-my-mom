@@ -208,11 +208,13 @@ def process_paper(args: argparse.Namespace) -> int:
     if not row or not row["pdf_path"]:
         raise SystemExit("paper has no fetched PDF; run fetch first")
     try:
-        payload = process_pdf(Path(row["pdf_path"]))
+        source_path = store.resolve_path(row["pdf_path"])
+        payload = process_pdf(source_path)
+        payload["source"] = store.relative_path(source_path)
         payload["sections"] = infer_sections(payload["pages"])
-        output = Path(row["pdf_path"]).parent / "extraction.json"
+        output = source_path.parent / "extraction.json"
         output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        store.record_document(row["id"], Path(row["pdf_path"]), payload, output)
+        store.record_document(row["id"], source_path, payload, output)
         write_paper_scaffold(root, row, payload)
         config = load_config(root)
         write_research_map(root, store, config, root / "research" / "seeds" / Path(config["seed_file"]).name)
@@ -237,7 +239,8 @@ def translate_paper(args: argparse.Namespace) -> int:
         config_path = root / config_path
     translator = BabelDocTranslator(args.executable)
     try:
-        result = translator.translate(Path(row["pdf_path"]), config_path, timeout=args.timeout)
+        source_path = store.resolve_path(row["pdf_path"])
+        result = translator.translate(source_path, config_path, timeout=args.timeout)
     except (TranslationUnavailable, ValueError) as error:
         store.record_failure("translate", row["id"], str(error))
         store.close()
@@ -252,7 +255,7 @@ def translate_paper(args: argparse.Namespace) -> int:
         "return_code": result.return_code,
         "output_note": "BabelDOC output is controlled by the caller-provided TOML config; config contents are intentionally not stored.",
     }
-    output = Path(row["pdf_path"]).parent / "translation.json"
+    output = store.resolve_path(row["pdf_path"]).parent / "translation.json"
     output.write_text(json.dumps(provenance, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     if result.return_code:
         store.record_failure("translate", row["id"], result.stderr[-1000:] or "BabelDOC returned a non-zero status")

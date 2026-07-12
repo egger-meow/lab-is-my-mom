@@ -42,3 +42,5 @@ uv run research-os resolve an-zi-yen --fulltext
 uv run research-os fetch <paper-id>
 uv run research-os process <paper-id>
 ```
+
+SQLite artifact paths and checked-in extraction payloads are repository-relative, so a fresh clone does not inherit this machine's filesystem locations.
