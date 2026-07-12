@@ -10,7 +10,7 @@ import tomllib
 from pathlib import Path
 
 from .core import Publication, Store, fetch_url, parse_publications, relevant_same_site_links, sha256_bytes
-from .providers import AclAnthologyProvider, ArxivProvider, CrossrefProvider, OpenAlexProvider
+from .providers import AclAnthologyProvider, ArxivProvider, CrossrefProvider, OpenAlexProvider, SemanticScholarProvider
 from .translation import BabelDocTranslator, TranslationUnavailable
 
 
@@ -338,6 +338,8 @@ def refresh(args: argparse.Namespace) -> int:
 def resolve(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve(); store = Store(root)
     providers = (OpenAlexProvider(),) if args.fulltext else (CrossrefProvider(), OpenAlexProvider())
+    if args.semantic_scholar:
+        providers = (*providers, SemanticScholarProvider())
     acl = AclAnthologyProvider()
     resolved = 0
     if args.fulltext:
@@ -390,7 +392,7 @@ def main() -> int:
     refresh_parser = commands.add_parser("refresh"); refresh_parser.add_argument("professor_id"); refresh_parser.set_defaults(func=refresh)
     papers = commands.add_parser("papers"); papers.add_argument("professor_id", nargs="?"); papers.set_defaults(func=list_papers)
     fetch = commands.add_parser("fetch"); fetch.add_argument("paper_id"); fetch.set_defaults(func=fetch_paper)
-    resolver = commands.add_parser("resolve"); resolver.add_argument("professor_id"); resolver.add_argument("--limit", type=int); resolver.add_argument("--fulltext", action="store_true", help="query OpenAlex for lawful open-access PDF locations"); resolver.set_defaults(func=resolve)
+    resolver = commands.add_parser("resolve"); resolver.add_argument("professor_id"); resolver.add_argument("--limit", type=int); resolver.add_argument("--fulltext", action="store_true", help="query OpenAlex for lawful open-access PDF locations"); resolver.add_argument("--semantic-scholar", action="store_true", help="opt in to Semantic Scholar title-match fallback; API may rate limit unauthenticated requests"); resolver.set_defaults(func=resolve)
     process = commands.add_parser("process"); process.add_argument("paper_id"); process.set_defaults(func=process_paper)
     translate = commands.add_parser("translate"); translate.add_argument("paper_id"); translate.add_argument("--config", required=True, help="local BabelDOC TOML; not copied into the corpus"); translate.add_argument("--executable", default="babeldoc"); translate.add_argument("--timeout", type=int, default=3600); translate.set_defaults(func=translate_paper)
     query = commands.add_parser("search"); query.add_argument("query"); query.set_defaults(func=search)

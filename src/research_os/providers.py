@@ -101,3 +101,24 @@ class AclAnthologyProvider:
             return None
         canonical = f"https://aclanthology.org/{identifier}"
         return Resolution(self.name, canonical + "/", title, 1.0, pdf_url=canonical + ".pdf")
+
+
+class SemanticScholarProvider:
+    """Opt-in resolver for Semantic Scholar's public title-match endpoint."""
+
+    name = "semantic-scholar"
+
+    def resolve(self, title: str) -> list[Resolution]:
+        fields = "title,url,externalIds,openAccessPdf"
+        url = "https://api.semanticscholar.org/graph/v1/paper/search/match?query=" + quote(title) + "&fields=" + quote(fields)
+        data, final_url, _ = fetch_url(url, timeout=10)
+        item = json.loads(data)
+        candidate = item.get("title", "")
+        score = title_similarity(title, candidate)
+        if score < 0.84:
+            return []
+        identifiers = item.get("externalIds") or {}
+        pdf_url = (item.get("openAccessPdf") or {}).get("url")
+        return [Resolution(self.name, item.get("url") or final_url, candidate, score,
+                           doi=identifiers.get("DOI"), arxiv_id=identifiers.get("ArXiv") or identifiers.get("ARXIV"),
+                           pdf_url=pdf_url)]

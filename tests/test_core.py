@@ -7,6 +7,7 @@ from research_os import cli
 from research_os.cli import crawl_same_site, process_pdf
 from research_os.core import Store, classify_link, normalize_title, parse_publications, relevant_same_site_links
 from research_os.providers import AclAnthologyProvider
+from research_os.providers import SemanticScholarProvider
 from research_os.translation import BabelDocTranslator, TranslationUnavailable
 
 
@@ -51,6 +52,18 @@ def test_acl_provider_canonicalizes_only_source_backed_acl_paper_routes():
     assert result.pdf_url == "https://aclanthology.org/2023.findings-emnlp.698.pdf"
     assert provider.resolve_link("Not a paper", "https://aclanthology.org/anthology-files/attachments/acl/file.pdf") is None
     assert provider.resolve_link("Outside", "https://example.test/P17-4007.pdf") is None
+
+
+def test_semantic_scholar_provider_keeps_only_high_similarity_open_access_matches(monkeypatch):
+    def fake_fetch(url, timeout):
+        assert "paper/search/match" in url
+        return (b'{"title":"Exact Research Paper","url":"https://www.semanticscholar.org/paper/id","externalIds":{"DOI":"10.1/example","ArXiv":"2401.00001"},"openAccessPdf":{"url":"https://example.test/paper.pdf"}}', url, "application/json")
+    monkeypatch.setattr("research_os.providers.fetch_url", fake_fetch)
+    results = SemanticScholarProvider().resolve("Exact Research Paper")
+    assert len(results) == 1
+    assert results[0].doi == "10.1/example"
+    assert results[0].arxiv_id == "2401.00001"
+    assert results[0].pdf_url == "https://example.test/paper.pdf"
 
 
 def test_store_deduplicates_and_searches_by_provenance(tmp_path: Path):
