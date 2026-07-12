@@ -24,7 +24,7 @@ The July 13, 2026 crawl found 39 authored publication-list entries. Identifier-b
 12. Ten Questions in Lifelog Mining and Information Recall - arXiv:2005.01535; 7 pages.
 13. Unanswerable Question Correction in Question Answering over Personal Knowledge Base - AAAI 2021; 10 pages.
 
-Each fetched paper has its PDF, extraction JSON, study notes, and Mermaid diagrams under `research/papers/<paper-id>/`. Reported results are explicitly marked as reported, not reproduced.
+Each fetched paper has its PDF, extraction JSON, study notes, and Mermaid diagrams under `research/papers/<paper-id>/`. Every extraction records sorted text blocks with page-coordinate anchors plus detected figures, table data/captions, and reference text; reported results are explicitly marked as reported, not reproduced.
 
 ## Visible unresolved and unavailable records
 

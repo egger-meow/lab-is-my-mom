@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import sys
 import tomllib
@@ -154,18 +155,42 @@ def process_pdf(path: Path) -> dict:
 
     document = pymupdf.open(path)
     pages = []
+    figures = []
+    extracted_tables = []
+    references = []
+    in_references = False
     for index, page in enumerate(document):
         blocks = page.get_text("blocks", sort=True)
-        text = "\n".join(block[4].strip() for block in blocks if block[6] == 0 and block[4].strip())
+        text_blocks = [block for block in blocks if block[6] == 0 and block[4].strip()]
+        text = "\n".join(block[4].strip() for block in text_blocks)
+        anchored_blocks = [{"bbox": [round(value, 2) for value in block[:4]], "text": block[4].strip(), "number": block[5]}
+                           for block in text_blocks]
+        figure_captions = [line.strip() for line in text.splitlines() if re.match(r"^(?:figure|fig\.)\s*\d+\b", line.strip(), re.I)]
+        table_captions = [line.strip() for line in text.splitlines() if re.match(r"^table\s*\d+\b", line.strip(), re.I)]
+        figures.extend({"page": index + 1, "caption": caption} for caption in figure_captions)
         tables = []
         try:
             tables = [table.extract() for table in page.find_tables().tables]
         except Exception:
             pass
+        extracted_tables.extend({"page": index + 1, "index": number + 1,
+                                 "caption": table_captions[number] if number < len(table_captions) else None,
+                                 "rows": table}
+                                for number, table in enumerate(tables))
+        for block in anchored_blocks:
+            for line in (line.strip() for line in block["text"].splitlines() if line.strip()):
+                if re.match(r"^references\b", line, re.I):
+                    in_references = True
+                    continue
+                if in_references:
+                    references.append({"page": index + 1, "bbox": block["bbox"], "text": line})
         image_count = sum(1 for block in page.get_text("dict")["blocks"] if block["type"] == 1)
-        pages.append({"page": index + 1, "text": text, "images": image_count, "tables": tables})
+        pages.append({"page": index + 1, "text": text, "blocks": anchored_blocks, "images": image_count,
+                      "figure_captions": figure_captions, "table_captions": table_captions, "tables": tables})
     return {"source": str(path), "sha256": sha256_bytes(path.read_bytes()), "page_count": len(document),
-            "parser_version": getattr(pymupdf, "VersionBind", "unknown"), "config": {"text": "blocks-sort", "tables": "find_tables"}, "pages": pages}
+            "parser_version": getattr(pymupdf, "VersionBind", "unknown"),
+            "config": {"text": "blocks-sort-with-bbox", "tables": "find_tables", "captions": "regex-v1"},
+            "pages": pages, "figures": figures, "tables": extracted_tables, "references": references}
 
 
 def infer_sections(pages: list[dict]) -> list[dict]:
@@ -250,7 +275,7 @@ def write_paper_scaffold(root: Path, row, payload: dict) -> None:
     paper_dir = root / "research" / "papers" / row["id"]; diagrams = paper_dir / "diagrams"; diagrams.mkdir(parents=True, exist_ok=True)
     metadata = {key: row[key] for key in ("id", "title", "authors", "year", "venue", "arxiv_id", "doi", "source_url", "pdf_sha256")}
     (paper_dir / "metadata.yaml").write_text("\n".join(f"{key}: {json.dumps(value, ensure_ascii=False)}" for key, value in metadata.items()) + "\n", encoding="utf-8")
-    (paper_dir / "README.md").write_text(f"# {row['title']}\n\n- **Status:** full text fetched and extracted ({payload['page_count']} pages).\n- **Metadata source:** {row['source_url']}\n- **Full text:** arXiv {row['arxiv_id'] or 'not applicable'}; SHA-256 `{row['pdf_sha256']}`.\n- **Evidence anchors:** Abstract {page_anchor(payload, 'abstract')}; method {page_anchor(payload, 'method')}; results {page_anchor(payload, 'result')}.\n\nThe companion notes distinguish paper claims from builder interpretation and unresolved questions.\n", encoding="utf-8")
+    write_if_absent(paper_dir / "README.md", f"# {row['title']}\n\n- **Status:** full text fetched and extracted ({payload['page_count']} pages).\n- **Metadata source:** {row['source_url']}\n- **Full text:** arXiv {row['arxiv_id'] or 'not applicable'}; SHA-256 `{row['pdf_sha256']}`.\n- **Evidence anchors:** Abstract {page_anchor(payload, 'abstract')}; method {page_anchor(payload, 'method')}; results {page_anchor(payload, 'result')}.\n\nThe companion notes distinguish paper claims from builder interpretation and unresolved questions.\n")
     placeholders = {
         "method.md": "# Method\n\nPopulate from the extracted full text. Cite page anchors for every paper claim.\n",
         "experiments-and-results.md": "# Experiments and results\n\nPopulate reported setup, metrics, and results from the full text; do not label them reproduced.\n",
@@ -261,8 +286,8 @@ def write_paper_scaffold(root: Path, row, payload: dict) -> None:
     for name, text in placeholders.items():
         target = paper_dir / name
         if not target.exists(): target.write_text(text, encoding="utf-8")
-    (diagrams / "method.mmd").write_text("flowchart LR\n  Input[Input] --> Method[Method from full text]\n  Method --> Output[Output]\n", encoding="utf-8")
-    (diagrams / "research-context.mmd").write_text("flowchart LR\n  Lab[NYCU NLP Lab] --> Paper[This paper]\n  Paper --> Theme[Research direction]\n", encoding="utf-8")
+    write_if_absent(diagrams / "method.mmd", "flowchart LR\n  Input[Input] --> Method[Method from full text]\n  Method --> Output[Output]\n")
+    write_if_absent(diagrams / "research-context.mmd", "flowchart LR\n  Lab[NYCU NLP Lab] --> Paper[This paper]\n  Paper --> Theme[Research direction]\n")
 
 
 def write_if_absent(path: Path, text: str) -> None:

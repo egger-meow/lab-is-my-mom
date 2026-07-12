@@ -150,11 +150,14 @@ def test_document_processing_records_page_level_text_and_provenance(tmp_path: Pa
     pdf = tmp_path / "paper.pdf"
     document = pymupdf.open()
     page = document.new_page()
-    page.insert_text((72, 72), "Abstract\nA provenance test paper.")
+    page.insert_text((72, 72), "Abstract\nA provenance test paper.\nFigure 1. Evidence pipeline.\nTable 1 Results.\nReferences\n[1] Provenance source.")
     document.save(pdf)
     document.close()
     extracted = process_pdf(pdf)
     assert extracted["page_count"] == 1
     assert extracted["pages"][0]["page"] == 1
     assert "provenance test" in extracted["pages"][0]["text"].lower()
+    assert extracted["pages"][0]["blocks"][0]["bbox"]
+    assert extracted["figures"][0]["caption"] == "Figure 1. Evidence pipeline."
+    assert extracted["references"][0]["text"] == "[1] Provenance source."
     assert len(extracted["sha256"]) == 64

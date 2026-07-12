@@ -4,32 +4,1213 @@
   "page_count": 4,
   "parser_version": "1.28.0",
   "config": {
-    "text": "blocks-sort",
-    "tables": "find_tables"
+    "text": "blocks-sort-with-bbox",
+    "tables": "find_tables",
+    "captions": "regex-v1"
   },
   "pages": [
     {
       "page": 1,
       "text": "How We Refute Claims: Automatic Fact-Checking through Flaw\nIdentification and Explanation\nWei-Yu Kao\nNational Yang Ming Chiao Tung University\nAn-Zi Yen\nNational Yang Ming Chiao Tung University\nHsinchu, Taiwan\nwayner.cs09@nycu.edu.tw\nHsinchu, Taiwan\nazyen@nycu.edu.tw\nABSTRACT\na claim false. For instance, in the question answering approach, the\ngenerated questions predominantly focus on straightforward facts\nsuch as who, when, where, and how. In real-world scenarios, decep-\ntive claims are often intricately crafted to mislead without falling\ninto obvious pitfalls, strategically distorting a minor segment of the\nclaim. This is precisely why professional fact-checkers thoughtfully\nanalyze claims from diverse perspectives, assessing not only the\nliteral accuracy of the statement but also considering elements such\nas tone, context, and its consistency with established facts. Thus, it\nbecomes imperative to identify the specific flaws within a claim to\ncomprehensively confirm and elucidate its veracity in an automatic\nfact-checking process.\nAutomated fact-checking is a crucial task in the governance of in-\nternet content. Although various studies utilize advanced models\nto tackle this issue, a significant gap persists in addressing complex\nreal-world rumors and deceptive claims. To address this challenge,\nthis paper explores the novel task of flaw-oriented fact-checking, in-\ncluding aspect generation and flaw identification. We also introduce\nRefuteClaim, a new framework designed specifically for this task.\nGiven the absence of an existing dataset, we present FlawCheck, a\ndataset created by extracting and transforming insights from expert\nreviews into relevant aspects and identified flaws. The experimen-\ntal results underscore the efficacy of RefuteClaim, particularly in\nclassifying and elucidating false claims.\nCCS CONCEPTS\n• Computing methodologies →Natural language processing;\n• Information systems →Web applications.\nKEYWORDS\nClaim Refutation, Flaw Identification, Explainable Fact-Checking\n1\nINTRODUCTION\nAs the World Wide Web continues to expand, an overwhelming\namount of information is flooding the internet. With limited time\navailable, individuals often struggle to comprehensively grasp con-\ntent and may be adversely influenced by problematic claims. Ac-\ncurately assessing the veracity of a claim demands considerable\ntime and effort from fact-checking organizations and experts, who\nmeticulously gather relevant evidence and scrutinize the facts and\nassumptions. Hence, in the quest to efficiently identify a plethora\nof false statements on the internet, numerous studies have investi-\ngated automatic fact-checking.\narXiv:2401.15312v1  [cs.CL]  27 Jan 2024\nTo address the challenge at hand, we first employ aspect genera-\ntion to determine the most crucial aspects associated with the claim,\naround which evaluation should be focused. Based on evidence, our\nmodel synthesizes explanations for these distinct aspects. Then, we\ncarefully select seven critical flaws from an initial set of twenty-two\nfalse labels used by various fact-checking organizations to debunk\nclaims. These flaws are grouped into three distinct categories, each\ninfluencing the outcome of the fact-checking process in unique\nways. The first category includes three explicit flaws that can be\nidentified by evaluating the claim’s compatibility with the evidence:\ncontradicting facts, exaggeration, and understatement. In the\nsecond category, we introduce two more nuanced flaws: occasional\nfaltering and insufficient support. Fact-checkers working within\nthis realm must employ critical reasoning to envisage potential\nscenarios where the claim may not hold true. A claim may seem\nconvincing initially but fail to maintain its validity or soundness\nover time and across different scenarios. The final category encapsu-\nlates the two most complex flaws: problematic assumptions and\nexistence of alternative explanations. Identifying these particu-\nlar flaws is a more intricate process, as it requires fact-checkers to\nconsider a wider context and often demands extensive background\nknowledge that may not be demonstrated in the evidence at hand.\nDetails will be elaborated in the following section.\nIn the absence of an existing dataset, we extend WatClaim-\nCheck [7], utilizing a large language model (LLM) to infer the\naspects and flaws of claims based on review articles, thereby con-\nstructing the FlawCheck dataset.1 Subsequently, we present Refute-\nClaim, a novel framework designed to guide the review process\nin creating comprehensive fact-checking articles to emulate the\nquality and depth of articles generated by human experts.\nIn summary, our contributions are summarized as follows:\nResearch on automatic fact-checking can be broadly categorized\ninto veracity classification and justification generation, with a pre-\ndominant focus on the former. Although veracity classification is\nessential for prompt assessment of claims, justification generation\nplays a more pivotal role in producing explainable results and fa-\ncilitating comprehensive fact-checking. To generate justifications\nin natural language, early studies [1, 10] proposed directly extract-\ning sentences from reliable sources such as news content. More\nrecent work [2, 8, 9] explores the approach of question answering,\nwhich involves generating questions related to specific facts within\nthe claims. By answering these generated questions using support-\ning evidence, models predict and articulate the authenticity of the\nclaims, fostering more robust fact-checking.\n• We introduce a novel flaw-checking task that entails the\nexamination of the seven flaws, reflecting the complexities\nof real-world automatic fact-checking scenarios.\n1https://github.com/NYCU-NLP-Lab/FlawCheck.git\nDespite substantial advancements in the field, scant attention has\nbeen directed toward discerning the underlying causes that render",
+      "blocks": [
+        {
+          "bbox": [
+            56.88,
+            82.77,
+            555.83,
+            99.98
+          ],
+          "text": "How We Refute Claims: Automatic Fact-Checking through Flaw",
+          "number": 0
+        },
+        {
+          "bbox": [
+            186.52,
+            102.69,
+            425.48,
+            119.91
+          ],
+          "text": "Identification and Explanation",
+          "number": 1
+        },
+        {
+          "bbox": [
+            95.11,
+            129.96,
+            271.92,
+            153.38
+          ],
+          "text": "Wei-Yu Kao\nNational Yang Ming Chiao Tung University",
+          "number": 2
+        },
+        {
+          "bbox": [
+            341.34,
+            129.96,
+            518.14,
+            153.38
+          ],
+          "text": "An-Zi Yen\nNational Yang Ming Chiao Tung University",
+          "number": 4
+        },
+        {
+          "bbox": [
+            129.16,
+            155.37,
+            237.61,
+            177.29
+          ],
+          "text": "Hsinchu, Taiwan\nwayner.cs09@nycu.edu.tw",
+          "number": 3
+        },
+        {
+          "bbox": [
+            388.58,
+            155.37,
+            471.01,
+            177.29
+          ],
+          "text": "Hsinchu, Taiwan\nazyen@nycu.edu.tw",
+          "number": 5
+        },
+        {
+          "bbox": [
+            53.8,
+            186.49,
+            111.94,
+            197.4
+          ],
+          "text": "ABSTRACT",
+          "number": 6
+        },
+        {
+          "bbox": [
+            317.95,
+            188.07,
+            559.71,
+            317.52
+          ],
+          "text": "a claim false. For instance, in the question answering approach, the\ngenerated questions predominantly focus on straightforward facts\nsuch as who, when, where, and how. In real-world scenarios, decep-\ntive claims are often intricately crafted to mislead without falling\ninto obvious pitfalls, strategically distorting a minor segment of the\nclaim. This is precisely why professional fact-checkers thoughtfully\nanalyze claims from diverse perspectives, assessing not only the\nliteral accuracy of the statement but also considering elements such\nas tone, context, and its consistency with established facts. Thus, it\nbecomes imperative to identify the specific flaws within a claim to\ncomprehensively confirm and elucidate its veracity in an automatic\nfact-checking process.",
+          "number": 16
+        },
+        {
+          "bbox": [
+            53.48,
+            201.69,
+            295.56,
+            331.22
+          ],
+          "text": "Automated fact-checking is a crucial task in the governance of in-\nternet content. Although various studies utilize advanced models\nto tackle this issue, a significant gap persists in addressing complex\nreal-world rumors and deceptive claims. To address this challenge,\nthis paper explores the novel task of flaw-oriented fact-checking, in-\ncluding aspect generation and flaw identification. We also introduce\nRefuteClaim, a new framework designed specifically for this task.\nGiven the absence of an existing dataset, we present FlawCheck, a\ndataset created by extracting and transforming insights from expert\nreviews into relevant aspects and identified flaws. The experimen-\ntal results underscore the efficacy of RefuteClaim, particularly in\nclassifying and elucidating false claims.",
+          "number": 7
+        },
+        {
+          "bbox": [
+            53.8,
+            341.96,
+            134.82,
+            352.87
+          ],
+          "text": "CCS CONCEPTS",
+          "number": 8
+        },
+        {
+          "bbox": [
+            53.8,
+            356.53,
+            294.68,
+            377.1
+          ],
+          "text": "• Computing methodologies →Natural language processing;\n• Information systems →Web applications.",
+          "number": 9
+        },
+        {
+          "bbox": [
+            53.8,
+            387.85,
+            115.66,
+            398.76
+          ],
+          "text": "KEYWORDS",
+          "number": 10
+        },
+        {
+          "bbox": [
+            53.8,
+            403.06,
+            291.38,
+            412.03
+          ],
+          "text": "Claim Refutation, Flaw Identification, Explainable Fact-Checking",
+          "number": 11
+        },
+        {
+          "bbox": [
+            53.8,
+            422.39,
+            156.53,
+            433.3
+          ],
+          "text": "1\nINTRODUCTION",
+          "number": 12
+        },
+        {
+          "bbox": [
+            53.48,
+            437.54,
+            295.56,
+            545.2
+          ],
+          "text": "As the World Wide Web continues to expand, an overwhelming\namount of information is flooding the internet. With limited time\navailable, individuals often struggle to comprehensively grasp con-\ntent and may be adversely influenced by problematic claims. Ac-\ncurately assessing the veracity of a claim demands considerable\ntime and effort from fact-checking organizations and experts, who\nmeticulously gather relevant evidence and scrutinize the facts and\nassumptions. Hence, in the quest to efficiently identify a plethora\nof false statements on the internet, numerous studies have investi-\ngated automatic fact-checking.",
+          "number": 13
+        },
+        {
+          "bbox": [
+            10.94,
+            216.7,
+            37.62,
+            560.0
+          ],
+          "text": "arXiv:2401.15312v1  [cs.CL]  27 Jan 2024",
+          "number": 22
+        },
+        {
+          "bbox": [
+            317.62,
+            319.58,
+            559.72,
+            569.57
+          ],
+          "text": "To address the challenge at hand, we first employ aspect genera-\ntion to determine the most crucial aspects associated with the claim,\naround which evaluation should be focused. Based on evidence, our\nmodel synthesizes explanations for these distinct aspects. Then, we\ncarefully select seven critical flaws from an initial set of twenty-two\nfalse labels used by various fact-checking organizations to debunk\nclaims. These flaws are grouped into three distinct categories, each\ninfluencing the outcome of the fact-checking process in unique\nways. The first category includes three explicit flaws that can be\nidentified by evaluating the claim’s compatibility with the evidence:\ncontradicting facts, exaggeration, and understatement. In the\nsecond category, we introduce two more nuanced flaws: occasional\nfaltering and insufficient support. Fact-checkers working within\nthis realm must employ critical reasoning to envisage potential\nscenarios where the claim may not hold true. A claim may seem\nconvincing initially but fail to maintain its validity or soundness\nover time and across different scenarios. The final category encapsu-\nlates the two most complex flaws: problematic assumptions and\nexistence of alternative explanations. Identifying these particu-\nlar flaws is a more intricate process, as it requires fact-checkers to\nconsider a wider context and often demands extensive background\nknowledge that may not be demonstrated in the evidence at hand.\nDetails will be elaborated in the following section.",
+          "number": 17
+        },
+        {
+          "bbox": [
+            317.95,
+            571.5,
+            559.72,
+            646.28
+          ],
+          "text": "In the absence of an existing dataset, we extend WatClaim-\nCheck [7], utilizing a large language model (LLM) to infer the\naspects and flaws of claims based on review articles, thereby con-\nstructing the FlawCheck dataset.1 Subsequently, we present Refute-\nClaim, a novel framework designed to guide the review process\nin creating comprehensive fact-checking articles to emulate the\nquality and depth of articles generated by human experts.",
+          "number": 18
+        },
+        {
+          "bbox": [
+            327.92,
+            648.28,
+            541.4,
+            657.24
+          ],
+          "text": "In summary, our contributions are summarized as follows:",
+          "number": 19
+        },
+        {
+          "bbox": [
+            53.47,
+            547.26,
+            295.56,
+            687.67
+          ],
+          "text": "Research on automatic fact-checking can be broadly categorized\ninto veracity classification and justification generation, with a pre-\ndominant focus on the former. Although veracity classification is\nessential for prompt assessment of claims, justification generation\nplays a more pivotal role in producing explainable results and fa-\ncilitating comprehensive fact-checking. To generate justifications\nin natural language, early studies [1, 10] proposed directly extract-\ning sentences from reliable sources such as news content. More\nrecent work [2, 8, 9] explores the approach of question answering,\nwhich involves generating questions related to specific facts within\nthe claims. By answering these generated questions using support-\ning evidence, models predict and articulate the authenticity of the\nclaims, fostering more robust fact-checking.",
+          "number": 14
+        },
+        {
+          "bbox": [
+            333.92,
+            660.87,
+            558.2,
+            692.4
+          ],
+          "text": "• We introduce a novel flaw-checking task that entails the\nexamination of the seven flaws, reflecting the complexities\nof real-world automatic fact-checking scenarios.",
+          "number": 20
+        },
+        {
+          "bbox": [
+            317.83,
+            700.59,
+            465.03,
+            709.09
+          ],
+          "text": "1https://github.com/NYCU-NLP-Lab/FlawCheck.git",
+          "number": 21
+        },
+        {
+          "bbox": [
+            53.8,
+            689.73,
+            294.21,
+            709.57
+          ],
+          "text": "Despite substantial advancements in the field, scant attention has\nbeen directed toward discerning the underlying causes that render",
+          "number": 15
+        }
+      ],
       "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
       "tables": []
     },
     {
       "page": 2,
       "text": "Conference acronym ’XX, June 03–05, 2018, Woodstock, NY\nWei-Yu Kao and An-Zi Yen\n• We present the FlawCheck dataset, which encompasses dis-\ntinct aspects and explanations for the seven flaws associated\nwith each claim. This dataset encapsulates the expertise of\nhuman fact-checking professionals.\n• We propose RefuteClaim, a framework that integrates as-\npect generation and flaw identification into an automatic\nfact-checking pipeline. Experimental results show promising\nperformance, both in classifying and elucidating false claims.\n2\nFLAW-ORIENTED FACT-CHECKING\nIn this study, we develop RefuteClaim, which incorporates aspect\ngeneration along with flaw identification and explanation for fact-\nchecking. The definitions are provided as follows.\n2.1\nAspect Generation\nOccasional faltering: A claim falters at times when it is presented\nas universally true, but cannot be consistently sustained. For exam-\nple, the claim that “electric cars are always better for the environ-\nment” may falter in regions where electricity is primarily generated\nfrom coal, potentially making the environmental benefits less clear-\ncut. This inconsistency reveals that the claim does not account for\nspecific conditions where it may not hold true.\nInsufficient support: Claims should be backed up by evidence.\nSupport is insufficient when assertions are made without the nec-\nessary substantiation. For instance, claiming that “a particular diet\ncauses weight loss in all individuals” without citing scientific studies\nor statistical data is an unsupported statement.\nProblematic assumptions: This type of flaw arises when a claim\nis based on assumptions that are not validated or are questionable.\nProblematic assumptions can lead to incorrect conclusions. An\nexample would be assuming that “increased internet usage directly\ncauses poor social skills,” which ignores potential factors like the\ntype of internet usage or individual differences.\nExistence of alternative explanations: Even if a claim seems\nplausible, other explanations may account for the observed facts.\nA flaw exists when a claim does not consider or rule out such\nalternative explanations. For example, the conclusion that “rising\nsmartphone sales are due solely to improved technology” ignores\nother possible factors such as marketing strategies or changes in\nconsumer behavior.\nNote that a single claim may incorporate several distinct flaws,\nand the composition of aspects is indeed diverse.\n3\nDATASET CONSTRUCTION\nAspect generation aids in identifying and focusing on the key ele-\nments around which the evaluation of a claim revolves. The goal\nis to determine the most crucial aspects associated with a claim\nto guide subsequent flaw identification and explanation. Aspects\nrepresent the specific dimensions or attributes that are integral to\nevaluating the validity of a claim, for example, a statement asserting\nthat a particular politician engaged in corrupt practices during an\nelection campaign. In this context, aspects could include:\nLegal investigations: Evaluating whether there are ongoing or\nconcluded legal investigations into the alleged corrupt practices.\nFinancial transactions: Scrutinizing financial transactions related\nto the campaign to identify any irregular activities.\nPolitical motivations: Investigating if there are political motiva-\ntions behind the accusations, such as rivalry strategies.\nLegal precedents: Examining similar cases in the past to under-\nstand how they were adjudicated.\nThe relevant evidence associated with a claim may lead to various\naspects. In this work, our model explains up to four distinct aspects.\nDue to the demand for premise articles and complete review articles\nwritten by human experts, we selected WatClaimCheck [7] as our\ndata source, given its ample and varied collection from eight fact-\nchecking websites. In this study, we extend 33,721 claims and their\nmetadata in WatClaimCheck to facilitate the proposed flaw-oriented\nfact-checking task, leading to the creation of FlawCheck.\n2.2\nFlaw Identification and Explanation\nSince the original content in WatClaimCheck includes a signifi-\ncant amount of irrelevant web crawl data, we collected the web data\nagain and cleaned it to ensure relatively clean review articles for the\nevaluation of justification generation. Then, we harness the capabil-\nities of GPT-3.5-turbo to distill expert opinions from review arti-\ncles and transform them into the various aspects and identify flaws.\nGiven an input claim𝐶𝑖and a review article 𝑅𝑖, we initially generate\nfour silver ground-truth aspects A𝑖= {𝐴𝑖,1,𝐴𝑖,2, . . . ,𝐴𝑖,𝑛}, where\n1 ≤𝑛≤4. The aspects may represent coarse-grained facts refer-\nenced by the claim. Following the same process, taking 𝐶𝑖and 𝑅𝑖,\nwe utilize GPT-3.5-turbo to transform the human expert argumen-\ntation to elaborate the presence of flaws F𝑖= {𝐹𝑖,1, 𝐹𝑖,2, . . . , 𝐹𝑖,7}.\nFurthermore, to facilitate the evaluation of veracity classification,\nwe reassigned the labels in WatClaimCheck due to inaccuracies in\ntheir arrangement, for instance, classifying the label “Pants on Fire”\nto “Partially True/False.” We define four labels—Incorrect, Partly\nfalse, Unproven, and Correct—based on the original ratings obtained\nfrom each fact-checking website. FlawCheck’s label distribution in\nthe training and testing sets is as follows: “True” with 5,272 and\n657, “Unproven” with 805 and 112, “Partly false” with 3,429 and\n451, and “False” with 17,470 and 2,153 instances, respectively. This\nThe process of flaw identification and explanation involves examin-\ning statements or claims critically to identify inaccuracies or logical\ninconsistencies. Here we define and detail seven types of flaws that\nmay be present in a claim:\nContradicting facts: When a claim is presented, it must align\nwith established facts. A contradicting fact occurs when the claim\ndirectly opposes known and verified information. For instance, the\nclaim that “the Earth is flat” contradicts the overwhelming scientific\nevidence that the Earth is an oblate spheroid. It is crucial to cross-\nreference claims with reliable data sources to detect such flaws.\nExaggeration: Exaggeration is a flaw where the truth is stretched\nbeyond its actual proportions. This can be done to make something\nappear more significant or severe than it really is. For example, stat-\ning that “everyone hates the new policy” is likely an exaggeration,\nas it is improbable that every single person has a negative view.\nUnderstatement: An understatement minimizes the significance\nof something in a way that misrepresents the truth and downplays\nimportant facts. Saying “climate change is a minor issue” is an\nunderstatement because it fails to convey the widespread consensus\non the seriousness of climate change impacts.",
+      "blocks": [
+        {
+          "bbox": [
+            53.8,
+            62.16,
+            558.2,
+            69.14
+          ],
+          "text": "Conference acronym ’XX, June 03–05, 2018, Woodstock, NY\nWei-Yu Kao and An-Zi Yen",
+          "number": 0
+        },
+        {
+          "bbox": [
+            69.76,
+            86.27,
+            295.56,
+            172.58
+          ],
+          "text": "• We present the FlawCheck dataset, which encompasses dis-\ntinct aspects and explanations for the seven flaws associated\nwith each claim. This dataset encapsulates the expertise of\nhuman fact-checking professionals.\n• We propose RefuteClaim, a framework that integrates as-\npect generation and flaw identification into an automatic\nfact-checking pipeline. Experimental results show promising\nperformance, both in classifying and elucidating false claims.",
+          "number": 1
+        },
+        {
+          "bbox": [
+            53.8,
+            188.6,
+            253.51,
+            199.51
+          ],
+          "text": "2\nFLAW-ORIENTED FACT-CHECKING",
+          "number": 2
+        },
+        {
+          "bbox": [
+            53.8,
+            203.79,
+            295.56,
+            234.7
+          ],
+          "text": "In this study, we develop RefuteClaim, which incorporates aspect\ngeneration along with flaw identification and explanation for fact-\nchecking. The definitions are provided as follows.",
+          "number": 3
+        },
+        {
+          "bbox": [
+            53.8,
+            250.7,
+            170.33,
+            261.61
+          ],
+          "text": "2.1\nAspect Generation",
+          "number": 4
+        },
+        {
+          "bbox": [
+            317.64,
+            86.94,
+            559.72,
+            358.9
+          ],
+          "text": "Occasional faltering: A claim falters at times when it is presented\nas universally true, but cannot be consistently sustained. For exam-\nple, the claim that “electric cars are always better for the environ-\nment” may falter in regions where electricity is primarily generated\nfrom coal, potentially making the environmental benefits less clear-\ncut. This inconsistency reveals that the claim does not account for\nspecific conditions where it may not hold true.\nInsufficient support: Claims should be backed up by evidence.\nSupport is insufficient when assertions are made without the nec-\nessary substantiation. For instance, claiming that “a particular diet\ncauses weight loss in all individuals” without citing scientific studies\nor statistical data is an unsupported statement.\nProblematic assumptions: This type of flaw arises when a claim\nis based on assumptions that are not validated or are questionable.\nProblematic assumptions can lead to incorrect conclusions. An\nexample would be assuming that “increased internet usage directly\ncauses poor social skills,” which ignores potential factors like the\ntype of internet usage or individual differences.\nExistence of alternative explanations: Even if a claim seems\nplausible, other explanations may account for the observed facts.\nA flaw exists when a claim does not consider or rule out such\nalternative explanations. For example, the conclusion that “rising\nsmartphone sales are due solely to improved technology” ignores\nother possible factors such as marketing strategies or changes in\nconsumer behavior.",
+          "number": 9
+        },
+        {
+          "bbox": [
+            317.95,
+            360.87,
+            559.19,
+            380.82
+          ],
+          "text": "Note that a single claim may incorporate several distinct flaws,\nand the composition of aspects is indeed diverse.",
+          "number": 10
+        },
+        {
+          "bbox": [
+            317.95,
+            400.47,
+            473.18,
+            411.38
+          ],
+          "text": "3\nDATASET CONSTRUCTION",
+          "number": 11
+        },
+        {
+          "bbox": [
+            53.48,
+            265.9,
+            295.56,
+            439.26
+          ],
+          "text": "Aspect generation aids in identifying and focusing on the key ele-\nments around which the evaluation of a claim revolves. The goal\nis to determine the most crucial aspects associated with a claim\nto guide subsequent flaw identification and explanation. Aspects\nrepresent the specific dimensions or attributes that are integral to\nevaluating the validity of a claim, for example, a statement asserting\nthat a particular politician engaged in corrupt practices during an\nelection campaign. In this context, aspects could include:\nLegal investigations: Evaluating whether there are ongoing or\nconcluded legal investigations into the alleged corrupt practices.\nFinancial transactions: Scrutinizing financial transactions related\nto the campaign to identify any irregular activities.\nPolitical motivations: Investigating if there are political motiva-\ntions behind the accusations, such as rivalry strategies.\nLegal precedents: Examining similar cases in the past to under-\nstand how they were adjudicated.",
+          "number": 5
+        },
+        {
+          "bbox": [
+            53.8,
+            441.33,
+            295.42,
+            461.16
+          ],
+          "text": "The relevant evidence associated with a claim may lead to various\naspects. In this work, our model explains up to four distinct aspects.",
+          "number": 6
+        },
+        {
+          "bbox": [
+            317.62,
+            415.75,
+            559.72,
+            479.45
+          ],
+          "text": "Due to the demand for premise articles and complete review articles\nwritten by human experts, we selected WatClaimCheck [7] as our\ndata source, given its ample and varied collection from eight fact-\nchecking websites. In this study, we extend 33,721 claims and their\nmetadata in WatClaimCheck to facilitate the proposed flaw-oriented\nfact-checking task, leading to the creation of FlawCheck.",
+          "number": 12
+        },
+        {
+          "bbox": [
+            53.8,
+            477.19,
+            256.53,
+            488.1
+          ],
+          "text": "2.2\nFlaw Identification and Explanation",
+          "number": 7
+        },
+        {
+          "bbox": [
+            317.62,
+            481.45,
+            559.72,
+            611.88
+          ],
+          "text": "Since the original content in WatClaimCheck includes a signifi-\ncant amount of irrelevant web crawl data, we collected the web data\nagain and cleaned it to ensure relatively clean review articles for the\nevaluation of justification generation. Then, we harness the capabil-\nities of GPT-3.5-turbo to distill expert opinions from review arti-\ncles and transform them into the various aspects and identify flaws.\nGiven an input claim𝐶𝑖and a review article 𝑅𝑖, we initially generate\nfour silver ground-truth aspects A𝑖= {𝐴𝑖,1,𝐴𝑖,2, . . . ,𝐴𝑖,𝑛}, where\n1 ≤𝑛≤4. The aspects may represent coarse-grained facts refer-\nenced by the claim. Following the same process, taking 𝐶𝑖and 𝑅𝑖,\nwe utilize GPT-3.5-turbo to transform the human expert argumen-\ntation to elaborate the presence of flaws F𝑖= {𝐹𝑖,1, 𝐹𝑖,2, . . . , 𝐹𝑖,7}.",
+          "number": 13
+        },
+        {
+          "bbox": [
+            317.62,
+            613.01,
+            559.21,
+            709.57
+          ],
+          "text": "Furthermore, to facilitate the evaluation of veracity classification,\nwe reassigned the labels in WatClaimCheck due to inaccuracies in\ntheir arrangement, for instance, classifying the label “Pants on Fire”\nto “Partially True/False.” We define four labels—Incorrect, Partly\nfalse, Unproven, and Correct—based on the original ratings obtained\nfrom each fact-checking website. FlawCheck’s label distribution in\nthe training and testing sets is as follows: “True” with 5,272 and\n657, “Unproven” with 805 and 112, “Partly false” with 3,429 and\n451, and “False” with 17,470 and 2,153 instances, respectively. This",
+          "number": 14
+        },
+        {
+          "bbox": [
+            53.47,
+            492.47,
+            295.56,
+            709.58
+          ],
+          "text": "The process of flaw identification and explanation involves examin-\ning statements or claims critically to identify inaccuracies or logical\ninconsistencies. Here we define and detail seven types of flaws that\nmay be present in a claim:\nContradicting facts: When a claim is presented, it must align\nwith established facts. A contradicting fact occurs when the claim\ndirectly opposes known and verified information. For instance, the\nclaim that “the Earth is flat” contradicts the overwhelming scientific\nevidence that the Earth is an oblate spheroid. It is crucial to cross-\nreference claims with reliable data sources to detect such flaws.\nExaggeration: Exaggeration is a flaw where the truth is stretched\nbeyond its actual proportions. This can be done to make something\nappear more significant or severe than it really is. For example, stat-\ning that “everyone hates the new policy” is likely an exaggeration,\nas it is improbable that every single person has a negative view.\nUnderstatement: An understatement minimizes the significance\nof something in a way that misrepresents the truth and downplays\nimportant facts. Saying “climate change is a minor issue” is an\nunderstatement because it fails to convey the widespread consensus\non the seriousness of climate change impacts.",
+          "number": 8
+        }
+      ],
       "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
       "tables": []
     },
     {
       "page": 3,
       "text": "How We Refute Claims: Automatic Fact-Checking through Flaw Identification and Explanation\nConference acronym ’XX, June 03–05, 2018, Woodstock, NY\nimbalanced distribution of labels is due primarily to the nature of\nfact-checking websites.\n4\nMETHODOLOGY\nrelated work, which solely considers 𝐶𝑖and 𝐸𝑖. The model does not\nconsider aspects or flaw explanations.\nWith Aspects: Another baseline model takes into account A𝑖to\nfollow specified directions during justification generation. In the\nabsence of flaw explanations, we evaluate the efficacy of aspect\ngeneration. This baseline model utilizes 𝐶𝑖, A𝑖, and 𝐸𝑖to directly\ngenerate justifications.\nIn this section, we present the four integral components of the pro-\nposed RefuteClaim framework: evidence retriever, aspect generator,\nflaw checker, and justification generator.\n5.2\nExperimental Setup\nEvidence retriever. We utilize the widely-adopted dense passage\nretriever (DPR) [6]. Additionally, per Khan et al. [7], we employ\nreview articles as the source of truth when training the DPR model.\nWe segment the review articles into sentences, represented as\n𝑅𝑖= {𝑟𝑖,1,𝑟𝑖,2, . . . ,𝑟𝑖,𝑛}, where 𝑛is the number of sentences in the\n𝑖-th review article. Let 𝑅+\n𝑖= {rs+\n𝑖,𝛼}, 𝑅−\n𝑖= {rs−\n𝑖,1, . . . , rs+\n𝑗,1, . . . , rs−\n𝑗,𝛽}\ndenote the set of positive and negative examples of the 𝑖-th claim\n𝐶𝑖, respectively. The training data is {⟨𝐶𝑖, 𝑅+\n𝑖, 𝑅−\n𝑖⟩}𝑑\n𝑖=1, which con-\ntains 𝑑instances. Each instance consists of one claim 𝐶𝑖, 𝛼positive\nexamples rs+\n𝑖,𝑞, and 𝛽negative examples rs−\n𝑗,𝑟. During the training\nphase, we minimize the negative log likelihood loss function as\nIn our experiments we utilized Vicuna-7b-v1.5 [11] as the LLM.\nDuring LoRA fine-tuning, we set the rank to 8. To evaluate the jus-\ntification results, we adopted ROUGE-1, ROUGE-2, ROUGE-L, and\nBERTScore as evaluation metrics. Given the absence of an existing\nmetric to assess critical qualities such as correctness and complete-\nness in fact-checking, we leveraged Google Gemini Pro2 to score\nthe generated justifications against the ground truth. Gemini Pro\nassigns scores on a scale of 0 to 1, where a score of 0 indicates a\nlack of quality (e.g., correctness), and a score of 1 denotes its full\nembodiment.\n𝑖,𝑞)\n𝐿= −log\n𝑒sim(𝐶𝑖,rs+\n𝑗,𝑟) ,\n(1)\nÍ𝛼\n𝑞=1 𝑒sim(𝐶𝑖,rs+\n𝑟=1 𝑒sim(𝐶𝑖,rs−\n𝑖,𝑞) + Í𝛽\nwhere sim(𝑣,𝑢) is the dot product between claim vector 𝑣and\nsentence vector 𝑢. Using the evidence retriever, we extract 50\nsentences from the claim’s premise articles to serve as evidence\n𝐸𝑖= {𝑒𝑖,1,𝑒𝑖,2, . . . ,𝑒𝑖,50}.\nTo assess whether the generated justifications contribute to fact-\nchecking, we also evaluated the results of veracity classification.\nHu et al. [4] demonstrate the potential in utilizing LLMs to gener-\nate fact-checking descriptions. Nevertheless, such autoregressive\nmodels may demonstrate sub-optimal performance in veracity clas-\nsification. In addition, to produce strictly deterministic output, we\ntrained a RoBERTa-large model [3] M𝑉as our veracity classifier.\nWe utilized the review articles to train M𝑉and employed input jus-\ntifications generated by different models for veracity classification.\nDeveloping a proper classifier to connect with different justification\ngenerators is left as future work.\n5.3\nExperimental Results\nAspect generator. We employ the aspect generator to generate\nup to four key aspects, encapsulating the most critical and diverse\ndirections to fact-check the claim. For each sequence-to-sequence\nmodel, we employ LoRA fine-tuning [5] to train an LLM M, pa-\nrameterized by Φ. The training data used in LoRA fine-tuning can\nbe denoted as Z = {(𝑥𝑖,𝑦𝑖)}𝑖=1,...,𝑁. Given task-specific parameter\nincrement ΔΦ = ΔΦ(Θ), we optimize over Θ:\n∑︁\n|𝑦|\n∑︁\nmax\n(log𝑝Φ0+ΔΦ(Θ) (𝑦𝑡|𝑥,𝑦<𝑡)).\n(2)\nΘ\n𝑡=1\n(𝑥,𝑦)∈Z\nWhere P𝐴is the prompt that takes 𝐶𝑖and 𝐸𝑖to generate aspects,\nwe have 𝑥𝑖= P𝐴(𝐶𝑖, 𝐸𝑖) and 𝑦𝑖= A𝑖.\n5.3.1\nJustification Generation. Table 1 presents the results using\nROUGE scores and BERTScore as metrics. As mentioned in Sec-\ntion 1, the seven flaws are grouped into three categories. The Re-\nfuteClaim variants 3F, 5F, and 7F denote the first category (three\nflaws), the first two categories (five flaws), and all three categories\n(seven flaws), respectively. The results show that the RefuteClaim\nmodels achieve promising performance in ROUGE-1 and ROUGE-L\nfor the “False”, “Partly false”, and “True” claims, indicating its effec-\ntiveness in generating justifications across different veracity levels.\nHowever, our models struggle with generating justifications for\n“Unproven” claims. Meanwhile, RefuteClaim models under different\nFlaw checker. The flaw checker identifies and explains the pres-\nence or absence of the flaws from Section 2.2. The optimization\nand utilization of the model adhere to Equation 2, where P𝐹is\nthe prompt that takes 𝐶𝑖, A𝑖, and 𝐸𝑖to flaw-check. Finally, 𝑥𝑖=\nP𝐹(𝐶𝑖, A𝑖, 𝐸𝑖) and 𝑦𝑖= F𝑖.\nJustification generator. The justification generator assembles 𝐶𝑖,\nF𝑖, and 𝐸𝑖to generate the final review for the claims. As the flaw\nchecker already incorporates aspects in generating its output, to\noptimize model input space, we here omit the aspect as an additional\ninput.\nsettings exhibit weaker BERTScore performance, perhaps because\nwe defined seven flaw types, and some flaw elucidations generated\nby GPT-3.5-turbo require inference. Consequently, justifications\ngenerated based on the output from the flaw checker trained by\nsilver labels could significantly diverge from the ground truth, i.e.,\nreview articles. Nevertheless, comparison of the baseline models\nshows that integrating the aspect improves justification results in\nmost cases due to the model’s increased focus on several crucial\npoints.\n5\nEXPERIMENTS\n5.1\nBaseline Models\nWe evaluate the generated justification quality in Table 2. Re-\nfuteClaim with seven flaws (RefuteClaim-7F) outperforms other\nmethods, except for unproven claims. The RefuteClaim results with\n2We chose Gemini Pro for its free access, enabling thorough result evaluation.\nSimple Baseline: The simple baseline represents the basic uti-\nlization of LLMs, a setting commonly adopted by the majority of",
+      "blocks": [
+        {
+          "bbox": [
+            53.8,
+            62.16,
+            558.2,
+            69.14
+          ],
+          "text": "How We Refute Claims: Automatic Fact-Checking through Flaw Identification and Explanation\nConference acronym ’XX, June 03–05, 2018, Woodstock, NY",
+          "number": 0
+        },
+        {
+          "bbox": [
+            53.8,
+            86.9,
+            294.04,
+            106.84
+          ],
+          "text": "imbalanced distribution of labels is due primarily to the nature of\nfact-checking websites.",
+          "number": 1
+        },
+        {
+          "bbox": [
+            53.8,
+            118.29,
+            155.78,
+            129.2
+          ],
+          "text": "4\nMETHODOLOGY",
+          "number": 2
+        },
+        {
+          "bbox": [
+            317.5,
+            84.9,
+            558.43,
+            161.64
+          ],
+          "text": "related work, which solely considers 𝐶𝑖and 𝐸𝑖. The model does not\nconsider aspects or flaw explanations.\nWith Aspects: Another baseline model takes into account A𝑖to\nfollow specified directions during justification generation. In the\nabsence of flaw explanations, we evaluate the efficacy of aspect\ngeneration. This baseline model utilizes 𝐶𝑖, A𝑖, and 𝐸𝑖to directly\ngenerate justifications.",
+          "number": 37
+        },
+        {
+          "bbox": [
+            53.8,
+            133.57,
+            295.56,
+            164.38
+          ],
+          "text": "In this section, we present the four integral components of the pro-\nposed RefuteClaim framework: evidence retriever, aspect generator,\nflaw checker, and justification generator.",
+          "number": 3
+        },
+        {
+          "bbox": [
+            317.95,
+            172.71,
+            440.66,
+            183.62
+          ],
+          "text": "5.2\nExperimental Setup",
+          "number": 38
+        },
+        {
+          "bbox": [
+            53.37,
+            172.63,
+            295.42,
+            236.39
+          ],
+          "text": "Evidence retriever. We utilize the widely-adopted dense passage\nretriever (DPR) [6]. Additionally, per Khan et al. [7], we employ\nreview articles as the source of truth when training the DPR model.\nWe segment the review articles into sentences, represented as\n𝑅𝑖= {𝑟𝑖,1,𝑟𝑖,2, . . . ,𝑟𝑖,𝑛}, where 𝑛is the number of sentences in the\n𝑖-th review article. Let 𝑅+",
+          "number": 4
+        },
+        {
+          "bbox": [
+            145.33,
+            224.89,
+            174.13,
+            237.52
+          ],
+          "text": "𝑖= {rs+",
+          "number": 5
+        },
+        {
+          "bbox": [
+            202.11,
+            224.89,
+            228.95,
+            237.52
+          ],
+          "text": "𝑖,𝛼}, 𝑅−",
+          "number": 7
+        },
+        {
+          "bbox": [
+            223.52,
+            224.89,
+            254.24,
+            237.52
+          ],
+          "text": "𝑖= {rs−",
+          "number": 8
+        },
+        {
+          "bbox": [
+            169.74,
+            224.89,
+            206.5,
+            239.18
+          ],
+          "text": "𝑖,1, . . . , rs+",
+          "number": 6
+        },
+        {
+          "bbox": [
+            249.91,
+            224.89,
+            287.55,
+            239.18
+          ],
+          "text": "𝑗,1, . . . , rs−",
+          "number": 9
+        },
+        {
+          "bbox": [
+            53.26,
+            227.34,
+            295.04,
+            260.6
+          ],
+          "text": "𝑗,𝛽}\ndenote the set of positive and negative examples of the 𝑖-th claim\n𝐶𝑖, respectively. The training data is {⟨𝐶𝑖, 𝑅+",
+          "number": 10
+        },
+        {
+          "bbox": [
+            212.38,
+            249.12,
+            230.91,
+            261.75
+          ],
+          "text": "𝑖, 𝑅−",
+          "number": 11
+        },
+        {
+          "bbox": [
+            225.47,
+            248.01,
+            242.99,
+            261.75
+          ],
+          "text": "𝑖⟩}𝑑",
+          "number": 12
+        },
+        {
+          "bbox": [
+            53.8,
+            251.62,
+            295.56,
+            282.52
+          ],
+          "text": "𝑖=1, which con-\ntains 𝑑instances. Each instance consists of one claim 𝐶𝑖, 𝛼positive\nexamples rs+",
+          "number": 13
+        },
+        {
+          "bbox": [
+            96.53,
+            271.04,
+            213.96,
+            283.67
+          ],
+          "text": "𝑖,𝑞, and 𝛽negative examples rs−",
+          "number": 14
+        },
+        {
+          "bbox": [
+            53.8,
+            273.54,
+            294.05,
+            294.58
+          ],
+          "text": "𝑗,𝑟. During the training\nphase, we minimize the negative log likelihood loss function as",
+          "number": 15
+        },
+        {
+          "bbox": [
+            317.95,
+            187.56,
+            559.72,
+            295.51
+          ],
+          "text": "In our experiments we utilized Vicuna-7b-v1.5 [11] as the LLM.\nDuring LoRA fine-tuning, we set the rank to 8. To evaluate the jus-\ntification results, we adopted ROUGE-1, ROUGE-2, ROUGE-L, and\nBERTScore as evaluation metrics. Given the absence of an existing\nmetric to assess critical qualities such as correctness and complete-\nness in fact-checking, we leveraged Google Gemini Pro2 to score\nthe generated justifications against the ground truth. Gemini Pro\nassigns scores on a scale of 0 to 1, where a score of 0 indicates a\nlack of quality (e.g., correctness), and a score of 1 denotes its full\nembodiment.",
+          "number": 39
+        },
+        {
+          "bbox": [
+            200.88,
+            300.12,
+            211.15,
+            308.6
+          ],
+          "text": "𝑖,𝑞)",
+          "number": 17
+        },
+        {
+          "bbox": [
+            85.68,
+            298.96,
+            204.19,
+            319.04
+          ],
+          "text": "𝐿= −log\n𝑒sim(𝐶𝑖,rs+",
+          "number": 16
+        },
+        {
+          "bbox": [
+            248.13,
+            308.06,
+            294.58,
+            324.32
+          ],
+          "text": "𝑗,𝑟) ,\n(1)",
+          "number": 22
+        },
+        {
+          "bbox": [
+            122.2,
+            315.69,
+            133.41,
+            328.19
+          ],
+          "text": "Í𝛼",
+          "number": 18
+        },
+        {
+          "bbox": [
+            129.12,
+            314.45,
+            178.23,
+            331.18
+          ],
+          "text": "𝑞=1 𝑒sim(𝐶𝑖,rs+",
+          "number": 19
+        },
+        {
+          "bbox": [
+            202.26,
+            314.66,
+            251.4,
+            331.38
+          ],
+          "text": "𝑟=1 𝑒sim(𝐶𝑖,rs−",
+          "number": 21
+        },
+        {
+          "bbox": [
+            174.92,
+            314.17,
+            206.37,
+            334.46
+          ],
+          "text": "𝑖,𝑞) + Í𝛽",
+          "number": 20
+        },
+        {
+          "bbox": [
+            53.47,
+            334.94,
+            294.05,
+            379.72
+          ],
+          "text": "where sim(𝑣,𝑢) is the dot product between claim vector 𝑣and\nsentence vector 𝑢. Using the evidence retriever, we extract 50\nsentences from the claim’s premise articles to serve as evidence\n𝐸𝑖= {𝑒𝑖,1,𝑒𝑖,2, . . . ,𝑒𝑖,50}.",
+          "number": 23
+        },
+        {
+          "bbox": [
+            317.52,
+            297.58,
+            559.72,
+            416.06
+          ],
+          "text": "To assess whether the generated justifications contribute to fact-\nchecking, we also evaluated the results of veracity classification.\nHu et al. [4] demonstrate the potential in utilizing LLMs to gener-\nate fact-checking descriptions. Nevertheless, such autoregressive\nmodels may demonstrate sub-optimal performance in veracity clas-\nsification. In addition, to produce strictly deterministic output, we\ntrained a RoBERTa-large model [3] M𝑉as our veracity classifier.\nWe utilized the review articles to train M𝑉and employed input jus-\ntifications generated by different models for veracity classification.\nDeveloping a proper classifier to connect with different justification\ngenerators is left as future work.",
+          "number": 40
+        },
+        {
+          "bbox": [
+            317.95,
+            427.13,
+            449.5,
+            438.04
+          ],
+          "text": "5.3\nExperimental Results",
+          "number": 41
+        },
+        {
+          "bbox": [
+            53.8,
+            386.96,
+            295.56,
+            461.75
+          ],
+          "text": "Aspect generator. We employ the aspect generator to generate\nup to four key aspects, encapsulating the most critical and diverse\ndirections to fact-check the claim. For each sequence-to-sequence\nmodel, we employ LoRA fine-tuning [5] to train an LLM M, pa-\nrameterized by Φ. The training data used in LoRA fine-tuning can\nbe denoted as Z = {(𝑥𝑖,𝑦𝑖)}𝑖=1,...,𝑁. Given task-specific parameter\nincrement ΔΦ = ΔΦ(Θ), we optimize over Θ:",
+          "number": 24
+        },
+        {
+          "bbox": [
+            120.22,
+            475.89,
+            132.08,
+            484.86
+          ],
+          "text": "∑︁",
+          "number": 27
+        },
+        {
+          "bbox": [
+            142.07,
+            466.86,
+            153.93,
+            484.86
+          ],
+          "text": "|𝑦|\n∑︁",
+          "number": 29
+        },
+        {
+          "bbox": [
+            94.65,
+            479.09,
+            110.23,
+            488.05
+          ],
+          "text": "max",
+          "number": 25
+        },
+        {
+          "bbox": [
+            154.38,
+            477.07,
+            294.58,
+            490.26
+          ],
+          "text": "(log𝑝Φ0+ΔΦ(Θ) (𝑦𝑡|𝑥,𝑦<𝑡)).\n(2)",
+          "number": 31
+        },
+        {
+          "bbox": [
+            99.89,
+            486.35,
+            104.99,
+            493.62
+          ],
+          "text": "Θ",
+          "number": 26
+        },
+        {
+          "bbox": [
+            142.38,
+            489.26,
+            153.36,
+            498.17
+          ],
+          "text": "𝑡=1",
+          "number": 30
+        },
+        {
+          "bbox": [
+            112.3,
+            489.93,
+            140.25,
+            498.31
+          ],
+          "text": "(𝑥,𝑦)∈Z",
+          "number": 28
+        },
+        {
+          "bbox": [
+            53.37,
+            503.32,
+            295.03,
+            525.26
+          ],
+          "text": "Where P𝐴is the prompt that takes 𝐶𝑖and 𝐸𝑖to generate aspects,\nwe have 𝑥𝑖= P𝐴(𝐶𝑖, 𝐸𝑖) and 𝑦𝑖= A𝑖.",
+          "number": 32
+        },
+        {
+          "bbox": [
+            316.94,
+            442.29,
+            559.71,
+            560.87
+          ],
+          "text": "5.3.1\nJustification Generation. Table 1 presents the results using\nROUGE scores and BERTScore as metrics. As mentioned in Sec-\ntion 1, the seven flaws are grouped into three categories. The Re-\nfuteClaim variants 3F, 5F, and 7F denote the first category (three\nflaws), the first two categories (five flaws), and all three categories\n(seven flaws), respectively. The results show that the RefuteClaim\nmodels achieve promising performance in ROUGE-1 and ROUGE-L\nfor the “False”, “Partly false”, and “True” claims, indicating its effec-\ntiveness in generating justifications across different veracity levels.\nHowever, our models struggle with generating justifications for\n“Unproven” claims. Meanwhile, RefuteClaim models under different",
+          "number": 42
+        },
+        {
+          "bbox": [
+            53.8,
+            533.49,
+            295.56,
+            586.28
+          ],
+          "text": "Flaw checker. The flaw checker identifies and explains the pres-\nence or absence of the flaws from Section 2.2. The optimization\nand utilization of the model adhere to Equation 2, where P𝐹is\nthe prompt that takes 𝐶𝑖, A𝑖, and 𝐸𝑖to flaw-check. Finally, 𝑥𝑖=\nP𝐹(𝐶𝑖, A𝑖, 𝐸𝑖) and 𝑦𝑖= F𝑖.",
+          "number": 33
+        },
+        {
+          "bbox": [
+            53.8,
+            592.49,
+            295.03,
+            647.31
+          ],
+          "text": "Justification generator. The justification generator assembles 𝐶𝑖,\nF𝑖, and 𝐸𝑖to generate the final review for the claims. As the flaw\nchecker already incorporates aspects in generating its output, to\noptimize model input space, we here omit the aspect as an additional\ninput.",
+          "number": 34
+        },
+        {
+          "bbox": [
+            317.62,
+            562.9,
+            559.19,
+            659.53
+          ],
+          "text": "settings exhibit weaker BERTScore performance, perhaps because\nwe defined seven flaw types, and some flaw elucidations generated\nby GPT-3.5-turbo require inference. Consequently, justifications\ngenerated based on the output from the flaw checker trained by\nsilver labels could significantly diverge from the ground truth, i.e.,\nreview articles. Nevertheless, comparison of the baseline models\nshows that integrating the aspect improves justification results in\nmost cases due to the model’s increased focus on several crucial\npoints.",
+          "number": 43
+        },
+        {
+          "bbox": [
+            53.8,
+            658.76,
+            158.62,
+            685.36
+          ],
+          "text": "5\nEXPERIMENTS\n5.1\nBaseline Models",
+          "number": 35
+        },
+        {
+          "bbox": [
+            317.95,
+            661.45,
+            559.72,
+            692.38
+          ],
+          "text": "We evaluate the generated justification quality in Table 2. Re-\nfuteClaim with seven flaws (RefuteClaim-7F) outperforms other\nmethods, except for unproven claims. The RefuteClaim results with",
+          "number": 44
+        },
+        {
+          "bbox": [
+            317.95,
+            700.59,
+            542.05,
+            709.09
+          ],
+          "text": "2We chose Gemini Pro for its free access, enabling thorough result evaluation.",
+          "number": 45
+        },
+        {
+          "bbox": [
+            53.8,
+            689.55,
+            295.56,
+            709.61
+          ],
+          "text": "Simple Baseline: The simple baseline represents the basic uti-\nlization of LLMs, a setting commonly adopted by the majority of",
+          "number": 36
+        }
+      ],
       "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
       "tables": []
     },
     {
       "page": 4,
       "text": "Conference acronym ’XX, June 03–05, 2018, Woodstock, NY\nWei-Yu Kao and An-Zi Yen\nROUGE-1\nROUGE-2\nROUGE-L\nBERTScore\nModels\nFalse\nPartly false\nUnproven\nTrue\nFalse\nPartly false\nUnproven\nTrue\nFalse\nPartly false\nUnproven\nTrue\nFalse\nPartly false\nUnproven\nTrue\nBaseline\n0.3151\n0.2709\n0.3107\n0.3091\n0.1087\n0.0887\n0.1089\n0.1117\n0.1644\n0.1355\n0.1697\n0.1629\n0.8236\n0.8212\n0.8266\n0.8269\nw/ aspects\n0.3176\n0.2721\n0.2935\n0.3020\n0.1128\n0.0932\n0.0993\n0.1116\n0.1711\n0.1392\n0.1608\n0.1623\n0.8268\n0.8246\n0.8264\n0.8274\nRefuteClaim-3F\n0.3119\n0.2713\n0.2836\n0.3010\n0.1033\n0.0828\n0.0873\n0.1060\n0.1683\n0.1397\n0.1577\n0.1643\n0.8215\n0.8175\n0.8167\n0.8217\nRefuteClaim-5F\n0.3235\n0.2828\n0.2994\n0.3055\n0.1122\n0.0948\n0.1004\n0.1046\n0.1726\n0.1432\n0.1641\n0.1605\n0.8261\n0.8214\n0.8224\n0.8243\nRefuteClaim-7F\n0.3266\n0.2788\n0.2838\n0.3106\n0.1109\n0.0868\n0.0832\n0.1091\n0.1739\n0.1433\n0.1493\n0.1682\n0.8245\n0.8183\n0.8179\n0.8243\nTable 1: Justification generation\nCorrectness\nCompleteness\nModels\nFalse\nPartly false Unproven\nTrue\nFalse\nPartly false Unproven\nTrue\nBaseline\n0.4770\n0.4700\n0.4311\n0.4675 0.5165\n0.4790\n0.4644\n0.5031\nw/ aspects\n0.4400\n0.4780\n0.4580\n0.5069 0.4825\n0.4827\n0.4750\n0.5394\nRefuteClaim-3F 0.4540\n0.4288\n0.3778\n0.4825 0.4870\n0.4475\n0.3889\n0.5300\nRefuteClaim-5F 0.4970\n0.4970\n0.4000\n0.5075 0.5170\n0.5140\n0.4000\n0.5275\nRefuteClaim-7F 0.5088\n0.5140\n0.4356\n0.5280 0.5381\n0.5186\n0.4611\n0.5450\nTable 2: Justification evaluation using Gemini Pro\npoor performance in rating claims as “Partly false” and “Unproven”.\nEven when utilizing the golden review, accuracy does not improve.\nUpon closer examination of misclassified samples, we find that the\nclassifier struggles to discern between “Partly false” and “False”,\nas well as between “Unproven” and “Partly false”. Mere incorpora-\ntion of the aspect or three-flaw modules is not enough to address\nthis challenge. However, we believe the flaw identification and\ngeneration findings are valuable for the community.\n6\nCONCLUSION AND FUTURE WORK\nAccuracy\nData source\nFalse\nPartly false\nUnproven\nTrue\nMacro F1\nGolden review\n0.7902\n0.2111\n0.3182\n0.7431\n0.4993\nBaseline\n0.7439\n0.0889\n0.0682\n0.6166\n0.3621\nw/ aspects\n0.6780\n0.0722\n0.0682\n0.6957\n0.3492\nRefuteClaim-3F\n0.7122\n0.0778\n0.0227\n0.5771\n0.3255\nRefuteClaim-5F\n0.7183\n0.1278\n0.1136\n0.6087\n0.3763\nRefuteClaim-7F\n0.7439\n0.1611\n0.0455\n0.5850\n0.3733\nTable 3: Veracity classification\nThis paper explores the process of forming a flaw-checking perspec-\ntive to generate justifications in an effort to emulate the quality of\nfact-checking conducted by human professionals. We introduce the\nnovel task of flaw-oriented fact-checking and present FlawCheck, a\ndataset encompassing the critical aspects identified by experts and\nseven pivotal flaws that demand evaluation. A pilot framework, Re-\nfuteClaim, is proposed. The experimental results highlight the effec-\ntiveness of RefuteClaim in elucidating and classifying false claims.\nAs a pioneering work in studying flaw-oriented fact-checking, fur-\nther investigation is required to explore the optimal utilization of\naspects and flaws.\nREFERENCES\n[1] Pepa Atanasova, Jakob Grue Simonsen, Christina Lioma, and Isabelle Augenstein.\n2020. Generating Fact Checking Explanations. In ACL 2020.\n[2] Jifan Chen, Aniruddh Sriram, Eunsol Choi, and Greg Durrett. 2022. Generating\nLiteral and Implied Subquestions to Fact-check Complex Claims. In EMNLP 2022.\n[3] Alexis Conneau, Kartikay Khandelwal, Naman Goyal, Vishrav Chaudhary, Guil-\nlaume Wenzek, Francisco Guzmán, Édouard Grave, Myle Ott, Luke Zettlemoyer,\nand Veselin Stoyanov. 2020. Unsupervised Cross-lingual Representation Learning\nat Scale. In ACL 2020.\n[4] Beizhe Hu, Qiang Sheng, Juan Cao, Yuhui Shi, Yang Li, Danding Wang, and Peng\nthree, five, and seven flaws suggest that a holistic consideration of\nall flaws, particularly the inclusion of “problematic assumptions”\nand “existence of alternative explanations”, benefits justification\ngeneration. For unproven claims, the model must focus on more\ntrivial details or find insufficiency in current evidence, whereas our\ndefined flaws focus more on detecting significant errors in claims\nand introducing more inferences made by GPT-3.5-turbo based\non reviews. Incorporating only aspects is a more fitting approach\nfor unproven claims, as it faithfully represents most content written\nby experts.\nQi. 2023. Bad actor, good advisor: Exploring the role of large language models in\nfake news detection. arXiv preprint arXiv:2309.12247 (2023).\n[5] Edward J Hu, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu\nWang, Weizhu Chen, et al. 2021. LoRA: Low-Rank Adaptation of Large Language\nModels. In ICLR.\n[6] Vladimir Karpukhin, Barlas Oguz, Sewon Min, Patrick Lewis, Ledell Wu, Sergey\nEdunov, Danqi Chen, and Wen-tau Yih. 2020. Dense Passage Retrieval for Open-\nDomain Question Answering. In EMNLP 2020.\n[7] Kashif Khan, Ruizhe Wang, and Pascal Poupart. 2022. WatClaimCheck: A new\ndataset for claim entailment and inference. In ACL 2022.\n[8] Liangming Pan, Xiaobao Wu, Xinyuan Lu, Anh Tuan Luu, William Yang Wang,\nMin-Yen Kan, and Preslav Nakov. 2023. Fact-Checking Complex Claims with\nProgram-Guided Reasoning. arXiv preprint arXiv:2305.12744 (2023).\n[9] Anku Rani, SM Tonmoy, Dwip Dalal, Shreya Gautam, Megha Chakraborty, Aman\nChadha, Amit Sheth, and Amitava Das. 2023. FACTIFY-5WQA: 5W Aspect-based\nFact Verification through Question Answering. arXiv preprint arXiv:2305.04329\n(2023).\n[10] Kai Shu, Limeng Cui, Suhang Wang, Dongwon Lee, and Huan Liu. 2019. dEFEND:\nExplainable fake news detection. In SIGKDD 2019.\n[11] Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu,\nYonghao Zhuang, Zi Lin, Zhuohan Li, Dacheng Li, Eric. P Xing, Hao Zhang,\nJoseph E. Gonzalez, and Ion Stoica. 2023. Judging LLM-as-a-judge with MT-\nBench and Chatbot Arena. arXiv:2306.05685\n5.3.2\nVeracity Classification. Table 3 presents the results of ve-\nracity classification. “Golden review” denotes direct utilization\nof expert-written review articles to train the veracity classifier:\nthis is challenging. As shown in Table 3, RefuteClaim-7F exhibits\nthe highest macro F1 score, particularly excelling in rating “False”\nand “Partly false” claims compared to other methods. Neverthe-\nless, RefuteClaim-5F achieves superior performance in identifying\nunproven claims. This aligns intuitively with its incorporation of\nrelevant flaws, i.e., occasional faltering and insufficient support.\nMoreover, the RefuteClaim models exhibit diminished accuracy\nscores when evaluating claims as “True” in comparison to the base-\nline models. This can be attributed to the nature of RefuteClaim\nmodels, which focus on highlighting flaws. Such an emphasis in-\ncreases the likelihood of employing negative statements, potentially\nconfusing the classifier. Furthermore, our classifier exhibits notably",
+      "blocks": [
+        {
+          "bbox": [
+            53.8,
+            62.16,
+            558.2,
+            69.14
+          ],
+          "text": "Conference acronym ’XX, June 03–05, 2018, Woodstock, NY\nWei-Yu Kao and An-Zi Yen",
+          "number": 0
+        },
+        {
+          "bbox": [
+            146.73,
+            87.33,
+            511.91,
+            93.31
+          ],
+          "text": "ROUGE-1\nROUGE-2\nROUGE-L\nBERTScore",
+          "number": 1
+        },
+        {
+          "bbox": [
+            60.59,
+            98.63,
+            548.75,
+            104.61
+          ],
+          "text": "Models\nFalse\nPartly false\nUnproven\nTrue\nFalse\nPartly false\nUnproven\nTrue\nFalse\nPartly false\nUnproven\nTrue\nFalse\nPartly false\nUnproven\nTrue",
+          "number": 2
+        },
+        {
+          "bbox": [
+            60.59,
+            110.09,
+            551.41,
+            123.07
+          ],
+          "text": "Baseline\n0.3151\n0.2709\n0.3107\n0.3091\n0.1087\n0.0887\n0.1089\n0.1117\n0.1644\n0.1355\n0.1697\n0.1629\n0.8236\n0.8212\n0.8266\n0.8269\nw/ aspects\n0.3176\n0.2721\n0.2935\n0.3020\n0.1128\n0.0932\n0.0993\n0.1116\n0.1711\n0.1392\n0.1608\n0.1623\n0.8268\n0.8246\n0.8264\n0.8274",
+          "number": 3
+        },
+        {
+          "bbox": [
+            60.59,
+            128.58,
+            550.6,
+            162.25
+          ],
+          "text": "RefuteClaim-3F\n0.3119\n0.2713\n0.2836\n0.3010\n0.1033\n0.0828\n0.0873\n0.1060\n0.1683\n0.1397\n0.1577\n0.1643\n0.8215\n0.8175\n0.8167\n0.8217\nRefuteClaim-5F\n0.3235\n0.2828\n0.2994\n0.3055\n0.1122\n0.0948\n0.1004\n0.1046\n0.1726\n0.1432\n0.1641\n0.1605\n0.8261\n0.8214\n0.8224\n0.8243\nRefuteClaim-7F\n0.3266\n0.2788\n0.2838\n0.3106\n0.1109\n0.0868\n0.0832\n0.1091\n0.1739\n0.1433\n0.1493\n0.1682\n0.8245\n0.8183\n0.8179\n0.8243\nTable 1: Justification generation",
+          "number": 4
+        },
+        {
+          "bbox": [
+            131.27,
+            193.89,
+            260.08,
+            199.86
+          ],
+          "text": "Correctness\nCompleteness",
+          "number": 5
+        },
+        {
+          "bbox": [
+            57.66,
+            205.19,
+            287.53,
+            211.17
+          ],
+          "text": "Models\nFalse\nPartly false Unproven\nTrue\nFalse\nPartly false Unproven\nTrue",
+          "number": 6
+        },
+        {
+          "bbox": [
+            57.66,
+            216.68,
+            289.38,
+            229.63
+          ],
+          "text": "Baseline\n0.4770\n0.4700\n0.4311\n0.4675 0.5165\n0.4790\n0.4644\n0.5031\nw/ aspects\n0.4400\n0.4780\n0.4580\n0.5069 0.4825\n0.4827\n0.4750\n0.5394",
+          "number": 7
+        },
+        {
+          "bbox": [
+            57.66,
+            235.14,
+            290.18,
+            268.81
+          ],
+          "text": "RefuteClaim-3F 0.4540\n0.4288\n0.3778\n0.4825 0.4870\n0.4475\n0.3889\n0.5300\nRefuteClaim-5F 0.4970\n0.4970\n0.4000\n0.5075 0.5170\n0.5140\n0.4000\n0.5275\nRefuteClaim-7F 0.5088\n0.5140\n0.4356\n0.5280 0.5381\n0.5186\n0.4611\n0.5450\nTable 2: Justification evaluation using Gemini Pro",
+          "number": 8
+        },
+        {
+          "bbox": [
+            317.95,
+            193.54,
+            559.71,
+            279.16
+          ],
+          "text": "poor performance in rating claims as “Partly false” and “Unproven”.\nEven when utilizing the golden review, accuracy does not improve.\nUpon closer examination of misclassified samples, we find that the\nclassifier struggles to discern between “Partly false” and “False”,\nas well as between “Unproven” and “Partly false”. Mere incorpora-\ntion of the aspect or three-flaw modules is not enough to address\nthis challenge. However, we believe the flaw identification and\ngeneration findings are valuable for the community.",
+          "number": 16
+        },
+        {
+          "bbox": [
+            317.95,
+            289.85,
+            517.54,
+            300.76
+          ],
+          "text": "6\nCONCLUSION AND FUTURE WORK",
+          "number": 17
+        },
+        {
+          "bbox": [
+            169.46,
+            300.8,
+            196.25,
+            307.78
+          ],
+          "text": "Accuracy",
+          "number": 9
+        },
+        {
+          "bbox": [
+            63.87,
+            313.1,
+            283.97,
+            320.08
+          ],
+          "text": "Data source\nFalse\nPartly false\nUnproven\nTrue\nMacro F1",
+          "number": 10
+        },
+        {
+          "bbox": [
+            63.87,
+            325.59,
+            279.63,
+            332.56
+          ],
+          "text": "Golden review\n0.7902\n0.2111\n0.3182\n0.7431\n0.4993",
+          "number": 11
+        },
+        {
+          "bbox": [
+            63.87,
+            338.04,
+            279.62,
+            353.02
+          ],
+          "text": "Baseline\n0.7439\n0.0889\n0.0682\n0.6166\n0.3621\nw/ aspects\n0.6780\n0.0722\n0.0682\n0.6957\n0.3492",
+          "number": 12
+        },
+        {
+          "bbox": [
+            63.87,
+            358.53,
+            280.56,
+            395.23
+          ],
+          "text": "RefuteClaim-3F\n0.7122\n0.0778\n0.0227\n0.5771\n0.3255\nRefuteClaim-5F\n0.7183\n0.1278\n0.1136\n0.6087\n0.3763\nRefuteClaim-7F\n0.7439\n0.1611\n0.0455\n0.5850\n0.3733\nTable 3: Veracity classification",
+          "number": 13
+        },
+        {
+          "bbox": [
+            317.64,
+            305.13,
+            559.72,
+            423.61
+          ],
+          "text": "This paper explores the process of forming a flaw-checking perspec-\ntive to generate justifications in an effort to emulate the quality of\nfact-checking conducted by human professionals. We introduce the\nnovel task of flaw-oriented fact-checking and present FlawCheck, a\ndataset encompassing the critical aspects identified by experts and\nseven pivotal flaws that demand evaluation. A pilot framework, Re-\nfuteClaim, is proposed. The experimental results highlight the effec-\ntiveness of RefuteClaim in elucidating and classifying false claims.\nAs a pioneering work in studying flaw-oriented fact-checking, fur-\nther investigation is required to explore the optimal utilization of\naspects and flaws.",
+          "number": 18
+        },
+        {
+          "bbox": [
+            317.95,
+            434.31,
+            387.37,
+            445.21
+          ],
+          "text": "REFERENCES",
+          "number": 19
+        },
+        {
+          "bbox": [
+            321.2,
+            448.02,
+            559.27,
+            455.0
+          ],
+          "text": "[1] Pepa Atanasova, Jakob Grue Simonsen, Christina Lioma, and Isabelle Augenstein.",
+          "number": 20
+        },
+        {
+          "bbox": [
+            321.2,
+            455.99,
+            558.2,
+            470.94
+          ],
+          "text": "2020. Generating Fact Checking Explanations. In ACL 2020.\n[2] Jifan Chen, Aniruddh Sriram, Eunsol Choi, and Greg Durrett. 2022. Generating",
+          "number": 21
+        },
+        {
+          "bbox": [
+            321.2,
+            471.99,
+            559.38,
+            486.88
+          ],
+          "text": "Literal and Implied Subquestions to Fact-check Complex Claims. In EMNLP 2022.\n[3] Alexis Conneau, Kartikay Khandelwal, Naman Goyal, Vishrav Chaudhary, Guil-",
+          "number": 22
+        },
+        {
+          "bbox": [
+            321.2,
+            488.17,
+            558.97,
+            519.03
+          ],
+          "text": "laume Wenzek, Francisco Guzmán, Édouard Grave, Myle Ott, Luke Zettlemoyer,\nand Veselin Stoyanov. 2020. Unsupervised Cross-lingual Representation Learning\nat Scale. In ACL 2020.\n[4] Beizhe Hu, Qiang Sheng, Juan Cao, Yuhui Shi, Yang Li, Danding Wang, and Peng",
+          "number": 23
+        },
+        {
+          "bbox": [
+            53.8,
+            431.02,
+            295.06,
+            538.59
+          ],
+          "text": "three, five, and seven flaws suggest that a holistic consideration of\nall flaws, particularly the inclusion of “problematic assumptions”\nand “existence of alternative explanations”, benefits justification\ngeneration. For unproven claims, the model must focus on more\ntrivial details or find insufficiency in current evidence, whereas our\ndefined flaws focus more on detecting significant errors in claims\nand introducing more inferences made by GPT-3.5-turbo based\non reviews. Incorporating only aspects is a more fitting approach\nfor unproven claims, as it faithfully represents most content written\nby experts.",
+          "number": 14
+        },
+        {
+          "bbox": [
+            321.2,
+            520.08,
+            558.2,
+            542.96
+          ],
+          "text": "Qi. 2023. Bad actor, good advisor: Exploring the role of large language models in\nfake news detection. arXiv preprint arXiv:2309.12247 (2023).\n[5] Edward J Hu, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu",
+          "number": 24
+        },
+        {
+          "bbox": [
+            321.2,
+            543.94,
+            558.38,
+            566.85
+          ],
+          "text": "Wang, Weizhu Chen, et al. 2021. LoRA: Low-Rank Adaptation of Large Language\nModels. In ICLR.\n[6] Vladimir Karpukhin, Barlas Oguz, Sewon Min, Patrick Lewis, Ledell Wu, Sergey",
+          "number": 25
+        },
+        {
+          "bbox": [
+            321.2,
+            567.89,
+            559.38,
+            590.78
+          ],
+          "text": "Edunov, Danqi Chen, and Wen-tau Yih. 2020. Dense Passage Retrieval for Open-\nDomain Question Answering. In EMNLP 2020.\n[7] Kashif Khan, Ruizhe Wang, and Pascal Poupart. 2022. WatClaimCheck: A new",
+          "number": 26
+        },
+        {
+          "bbox": [
+            321.2,
+            591.76,
+            558.97,
+            606.71
+          ],
+          "text": "dataset for claim entailment and inference. In ACL 2022.\n[8] Liangming Pan, Xiaobao Wu, Xinyuan Lu, Anh Tuan Luu, William Yang Wang,",
+          "number": 27
+        },
+        {
+          "bbox": [
+            321.2,
+            607.65,
+            558.2,
+            630.61
+          ],
+          "text": "Min-Yen Kan, and Preslav Nakov. 2023. Fact-Checking Complex Claims with\nProgram-Guided Reasoning. arXiv preprint arXiv:2305.12744 (2023).\n[9] Anku Rani, SM Tonmoy, Dwip Dalal, Shreya Gautam, Megha Chakraborty, Aman",
+          "number": 28
+        },
+        {
+          "bbox": [
+            317.96,
+            631.66,
+            559.03,
+            662.5
+          ],
+          "text": "Chadha, Amit Sheth, and Amitava Das. 2023. FACTIFY-5WQA: 5W Aspect-based\nFact Verification through Question Answering. arXiv preprint arXiv:2305.04329\n(2023).\n[10] Kai Shu, Limeng Cui, Suhang Wang, Dongwon Lee, and Huan Liu. 2019. dEFEND:",
+          "number": 29
+        },
+        {
+          "bbox": [
+            317.96,
+            663.49,
+            558.97,
+            678.45
+          ],
+          "text": "Explainable fake news detection. In SIGKDD 2019.\n[11] Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu,",
+          "number": 30
+        },
+        {
+          "bbox": [
+            333.19,
+            679.38,
+            559.38,
+            702.35
+          ],
+          "text": "Yonghao Zhuang, Zi Lin, Zhuohan Li, Dacheng Li, Eric. P Xing, Hao Zhang,\nJoseph E. Gonzalez, and Ion Stoica. 2023. Judging LLM-as-a-judge with MT-\nBench and Chatbot Arena. arXiv:2306.05685",
+          "number": 31
+        },
+        {
+          "bbox": [
+            53.8,
+            547.13,
+            295.56,
+            709.56
+          ],
+          "text": "5.3.2\nVeracity Classification. Table 3 presents the results of ve-\nracity classification. “Golden review” denotes direct utilization\nof expert-written review articles to train the veracity classifier:\nthis is challenging. As shown in Table 3, RefuteClaim-7F exhibits\nthe highest macro F1 score, particularly excelling in rating “False”\nand “Partly false” claims compared to other methods. Neverthe-\nless, RefuteClaim-5F achieves superior performance in identifying\nunproven claims. This aligns intuitively with its incorporation of\nrelevant flaws, i.e., occasional faltering and insufficient support.\nMoreover, the RefuteClaim models exhibit diminished accuracy\nscores when evaluating claims as “True” in comparison to the base-\nline models. This can be attributed to the nature of RefuteClaim\nmodels, which focus on highlighting flaws. Such an emphasis in-\ncreases the likelihood of employing negative statements, potentially\nconfusing the classifier. Furthermore, our classifier exhibits notably",
+          "number": 15
+        }
+      ],
       "images": 0,
+      "figure_captions": [],
+      "table_captions": [
+        "Table 1: Justification generation",
+        "Table 2: Justification evaluation using Gemini Pro",
+        "Table 3: Veracity classification"
+      ],
       "tables": [
         [
           [
@@ -84,6 +1265,653 @@
           ]
         ]
       ]
+    }
+  ],
+  "figures": [],
+  "tables": [
+    {
+      "page": 4,
+      "index": 1,
+      "caption": "Table 1: Justification generation",
+      "rows": [
+        [
+          "ROUGE-1 ROUGE-2 ROUGE-L BERTScore\nModels False Partly false Unproven True False Partly false Unproven True False Partly false Unproven True False Partly false Unproven True",
+          "ROUGE-1",
+          "ROUGE-2",
+          "ROUGE-L",
+          "BERTScore"
+        ],
+        [
+          null,
+          "False Partly false Unproven True",
+          "False Partly false Unproven True",
+          "False Partly false Unproven True",
+          "False Partly false Unproven True"
+        ],
+        [
+          "Baseline\nw/ aspects",
+          "0.3151 0.2709 0.3107 0.3091\n0.3176 0.2721 0.2935 0.3020",
+          "0.1087 0.0887 0.1089 0.1117\n0.1128 0.0932 0.0993 0.1116",
+          "0.1644 0.1355 0.1697 0.1629\n0.1711 0.1392 0.1608 0.1623",
+          "0.8236 0.8212 0.8266 0.8269\n0.8268 0.8246 0.8264 0.8274"
+        ],
+        [
+          "RefuteClaim-3F\nRefuteClaim-5F\nRefuteClaim-7F",
+          "0.3119 0.2713 0.2836 0.3010\n0.3235 0.2828 0.2994 0.3055\n0.3266 0.2788 0.2838 0.3106",
+          "0.1033 0.0828 0.0873 0.1060\n0.1122 0.0948 0.1004 0.1046\n0.1109 0.0868 0.0832 0.1091",
+          "0.1683 0.1397 0.1577 0.1643\n0.1726 0.1432 0.1641 0.1605\n0.1739 0.1433 0.1493 0.1682",
+          "0.8215 0.8175 0.8167 0.8217\n0.8261 0.8214 0.8224 0.8243\n0.8245 0.8183 0.8179 0.8243"
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "index": 2,
+      "caption": "Table 2: Justification evaluation using Gemini Pro",
+      "rows": [
+        [
+          "Correctness Completeness\nModels False Partly false Unproven True False Partly false Unproven True",
+          "Correctness",
+          "Completeness"
+        ],
+        [
+          null,
+          "False Partly false Unproven True",
+          "False Partly false Unproven True"
+        ],
+        [
+          "Baseline\nw/ aspects",
+          "0.4770 0.4700 0.4311 0.4675\n0.4400 0.4780 0.4580 0.5069",
+          "0.5165 0.4790 0.4644 0.5031\n0.4825 0.4827 0.4750 0.5394"
+        ],
+        [
+          "RefuteClaim-3F\nRefuteClaim-5F\nRefuteClaim-7F",
+          "0.4540 0.4288 0.3778 0.4825\n0.4970 0.4970 0.4000 0.5075\n0.5088 0.5140 0.4356 0.5280",
+          "0.4870 0.4475 0.3889 0.5300\n0.5170 0.5140 0.4000 0.5275\n0.5381 0.5186 0.4611 0.5450"
+        ]
+      ]
+    }
+  ],
+  "references": [
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        448.02,
+        559.27,
+        455.0
+      ],
+      "text": "[1] Pepa Atanasova, Jakob Grue Simonsen, Christina Lioma, and Isabelle Augenstein."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        455.99,
+        558.2,
+        470.94
+      ],
+      "text": "2020. Generating Fact Checking Explanations. In ACL 2020."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        455.99,
+        558.2,
+        470.94
+      ],
+      "text": "[2] Jifan Chen, Aniruddh Sriram, Eunsol Choi, and Greg Durrett. 2022. Generating"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        471.99,
+        559.38,
+        486.88
+      ],
+      "text": "Literal and Implied Subquestions to Fact-check Complex Claims. In EMNLP 2022."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        471.99,
+        559.38,
+        486.88
+      ],
+      "text": "[3] Alexis Conneau, Kartikay Khandelwal, Naman Goyal, Vishrav Chaudhary, Guil-"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        488.17,
+        558.97,
+        519.03
+      ],
+      "text": "laume Wenzek, Francisco Guzmán, Édouard Grave, Myle Ott, Luke Zettlemoyer,"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        488.17,
+        558.97,
+        519.03
+      ],
+      "text": "and Veselin Stoyanov. 2020. Unsupervised Cross-lingual Representation Learning"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        488.17,
+        558.97,
+        519.03
+      ],
+      "text": "at Scale. In ACL 2020."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        488.17,
+        558.97,
+        519.03
+      ],
+      "text": "[4] Beizhe Hu, Qiang Sheng, Juan Cao, Yuhui Shi, Yang Li, Danding Wang, and Peng"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        431.02,
+        295.06,
+        538.59
+      ],
+      "text": "three, five, and seven flaws suggest that a holistic consideration of"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        431.02,
+        295.06,
+        538.59
+      ],
+      "text": "all flaws, particularly the inclusion of “problematic assumptions”"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        431.02,
+        295.06,
+        538.59
+      ],
+      "text": "and “existence of alternative explanations”, benefits justification"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        431.02,
+        295.06,
+        538.59
+      ],
+      "text": "generation. For unproven claims, the model must focus on more"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        431.02,
+        295.06,
+        538.59
+      ],
+      "text": "trivial details or find insufficiency in current evidence, whereas our"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        431.02,
+        295.06,
+        538.59
+      ],
+      "text": "defined flaws focus more on detecting significant errors in claims"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        431.02,
+        295.06,
+        538.59
+      ],
+      "text": "and introducing more inferences made by GPT-3.5-turbo based"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        431.02,
+        295.06,
+        538.59
+      ],
+      "text": "on reviews. Incorporating only aspects is a more fitting approach"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        431.02,
+        295.06,
+        538.59
+      ],
+      "text": "for unproven claims, as it faithfully represents most content written"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        431.02,
+        295.06,
+        538.59
+      ],
+      "text": "by experts."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        520.08,
+        558.2,
+        542.96
+      ],
+      "text": "Qi. 2023. Bad actor, good advisor: Exploring the role of large language models in"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        520.08,
+        558.2,
+        542.96
+      ],
+      "text": "fake news detection. arXiv preprint arXiv:2309.12247 (2023)."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        520.08,
+        558.2,
+        542.96
+      ],
+      "text": "[5] Edward J Hu, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        543.94,
+        558.38,
+        566.85
+      ],
+      "text": "Wang, Weizhu Chen, et al. 2021. LoRA: Low-Rank Adaptation of Large Language"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        543.94,
+        558.38,
+        566.85
+      ],
+      "text": "Models. In ICLR."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        543.94,
+        558.38,
+        566.85
+      ],
+      "text": "[6] Vladimir Karpukhin, Barlas Oguz, Sewon Min, Patrick Lewis, Ledell Wu, Sergey"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        567.89,
+        559.38,
+        590.78
+      ],
+      "text": "Edunov, Danqi Chen, and Wen-tau Yih. 2020. Dense Passage Retrieval for Open-"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        567.89,
+        559.38,
+        590.78
+      ],
+      "text": "Domain Question Answering. In EMNLP 2020."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        567.89,
+        559.38,
+        590.78
+      ],
+      "text": "[7] Kashif Khan, Ruizhe Wang, and Pascal Poupart. 2022. WatClaimCheck: A new"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        591.76,
+        558.97,
+        606.71
+      ],
+      "text": "dataset for claim entailment and inference. In ACL 2022."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        591.76,
+        558.97,
+        606.71
+      ],
+      "text": "[8] Liangming Pan, Xiaobao Wu, Xinyuan Lu, Anh Tuan Luu, William Yang Wang,"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        607.65,
+        558.2,
+        630.61
+      ],
+      "text": "Min-Yen Kan, and Preslav Nakov. 2023. Fact-Checking Complex Claims with"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        607.65,
+        558.2,
+        630.61
+      ],
+      "text": "Program-Guided Reasoning. arXiv preprint arXiv:2305.12744 (2023)."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        321.2,
+        607.65,
+        558.2,
+        630.61
+      ],
+      "text": "[9] Anku Rani, SM Tonmoy, Dwip Dalal, Shreya Gautam, Megha Chakraborty, Aman"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        317.96,
+        631.66,
+        559.03,
+        662.5
+      ],
+      "text": "Chadha, Amit Sheth, and Amitava Das. 2023. FACTIFY-5WQA: 5W Aspect-based"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        317.96,
+        631.66,
+        559.03,
+        662.5
+      ],
+      "text": "Fact Verification through Question Answering. arXiv preprint arXiv:2305.04329"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        317.96,
+        631.66,
+        559.03,
+        662.5
+      ],
+      "text": "(2023)."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        317.96,
+        631.66,
+        559.03,
+        662.5
+      ],
+      "text": "[10] Kai Shu, Limeng Cui, Suhang Wang, Dongwon Lee, and Huan Liu. 2019. dEFEND:"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        317.96,
+        663.49,
+        558.97,
+        678.45
+      ],
+      "text": "Explainable fake news detection. In SIGKDD 2019."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        317.96,
+        663.49,
+        558.97,
+        678.45
+      ],
+      "text": "[11] Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu,"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        333.19,
+        679.38,
+        559.38,
+        702.35
+      ],
+      "text": "Yonghao Zhuang, Zi Lin, Zhuohan Li, Dacheng Li, Eric. P Xing, Hao Zhang,"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        333.19,
+        679.38,
+        559.38,
+        702.35
+      ],
+      "text": "Joseph E. Gonzalez, and Ion Stoica. 2023. Judging LLM-as-a-judge with MT-"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        333.19,
+        679.38,
+        559.38,
+        702.35
+      ],
+      "text": "Bench and Chatbot Arena. arXiv:2306.05685"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "5.3.2"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "Veracity Classification. Table 3 presents the results of ve-"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "racity classification. “Golden review” denotes direct utilization"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "of expert-written review articles to train the veracity classifier:"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "this is challenging. As shown in Table 3, RefuteClaim-7F exhibits"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "the highest macro F1 score, particularly excelling in rating “False”"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "and “Partly false” claims compared to other methods. Neverthe-"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "less, RefuteClaim-5F achieves superior performance in identifying"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "unproven claims. This aligns intuitively with its incorporation of"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "relevant flaws, i.e., occasional faltering and insufficient support."
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "Moreover, the RefuteClaim models exhibit diminished accuracy"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "scores when evaluating claims as “True” in comparison to the base-"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "line models. This can be attributed to the nature of RefuteClaim"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "models, which focus on highlighting flaws. Such an emphasis in-"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "creases the likelihood of employing negative statements, potentially"
+    },
+    {
+      "page": 4,
+      "bbox": [
+        53.8,
+        547.13,
+        295.56,
+        709.56
+      ],
+      "text": "confusing the classifier. Furthermore, our classifier exhibits notably"
     }
   ],
   "sections": [

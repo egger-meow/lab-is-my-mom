@@ -4,38 +4,953 @@
   "page_count": 9,
   "parser_version": "1.28.0",
   "config": {
-    "text": "blocks-sort",
-    "tables": "find_tables"
+    "text": "blocks-sort-with-bbox",
+    "tables": "find_tables",
+    "captions": "regex-v1"
   },
   "pages": [
     {
       "page": 1,
       "text": "Visual Lifelog Retrieval through\nCaptioning-Enhanced Interpretation\nYu-Fei Shih\nDepartment of Computer Science\nAn-Zi Yen\nDepartment of Computer Science\nNational Yang Ming Chiao Tung University\nand Information Engineering\nNational Taiwan University\nHsinchu, Taiwan\nazyen@nycu.edu.tw\nTaipei, Taiwan\nyfshih@nlg.csie.ntu.edu.tw\nHsin-Hsi Chen\nDepartment of Computer Science\nHen-Hsen Huang\nInstitute of Information Science\nand Information Engineering\nAcademia Sinica\nAI Research Center (AINTU)\nNational Taiwan University\nTaipei, Taiwan\nhhhuang@iis.sinica.edu.tw\nTaipei, Taiwan\nhhchen@ntu.edu.tw\nFig. 1: A sequence of first-person viewpoint images.\nsystem to retrieve the left image in Figure 1 given the query\n“The moment that the individual is in the airport terminal”.\nThe key challenges in this task include:\nAbstract—People often struggle to remember specific details\nof past experiences, which can lead to the need to revisit these\nmemories. Consequently, lifelog retrieval has emerged as a crucial\napplication. Various studies have explored methods to facilitate\nrapid access to personal lifelogs for memory recall assistance.\nIn this paper, we propose a Captioning-Integrated Visual Lifelog\n(CIVIL) Retrieval System for extracting specific images from a\nuser’s visual lifelog based on textual queries. Unlike traditional\nembedding-based methods, our system first generates captions for\nvisual lifelogs and then utilizes a text embedding model to project\nboth the captions and user queries into a shared vector space.\nVisual lifelogs, captured through wearable cameras, provide a\nfirst-person viewpoint, necessitating the interpretation of the\nactivities of the individual behind the camera rather than merely\ndescribing the scene. To address this, we introduce three distinct\napproaches: the single caption method, the collective caption\nmethod, and the merged caption method, each designed to\ninterpret the life experiences of lifeloggers. Experimental results\nshow that our method effectively describes first-person visual\nimages, enhancing the outcomes of lifelog retrieval. Furthermore,\nwe construct a textual dataset that converts visual lifelogs into\ncaptions, thereby reconstructing personal life experiences.\narXiv:2510.04010v1  [cs.IR]  5 Oct 2025\nIndex Terms—Lifelogging, Visual Lifelog Captioning, Visual\nLifelog Retrieval.\nI. INTRODUCTION\n1) Semantic Gap: A significant semantic gap exists between\ntextual queries and lifelog images [3], [4]. For instance,\nto retrieve images of “driving to the beach,” the system\nmust go beyond object recognition and infer the activity\nfrom visual cues like a steering wheel and ocean views.\n2) Unique Characteristics of Visual Lifelogs: Unlike most\nactivity recognition tasks that use third-person images\nfrom standard datasets, visual lifelogs are typically cap-\ntured from a first-person perspective, requiring the infer-\nence of actions behind the camera from the visible scene.\n3) Identifying Lifelogger Activities from Sequential Im-\nages: Analyzing images in sequence provides a fuller un-\nderstanding of the user’s activities, locations, and context.\nFor example, as shown in Figure 1, the location in the\nright image may seem ambiguous but can be identified as\nan airport lounge with the information of the left image.\nRecent advancements in smartphones, smartwatches, and\nwearable cameras have led to a significant increase in personal\ndata generation, including images, geographical information,\nand physiological signals. This data offers insights into daily\nroutines and applications in areas like diet management [1] and\nmemory recall [2]. Therefore, an effective retrieval system to\norganize and access specific instances is crucial.\nRecent methods [5], [6] address the semantic gap by using\nCLIP or other text-image embedding models to link images\nwith text queries. However, CLIP models process images in\nisolation and don’t consider temporal sequences, limiting their\nability to accurately reconstruct a lifelogger’s experience. To\nThis paper addresses the challenge of visual lifelog retrieval,\nwhich aims to retrieve specific moment images from a lifelog-\nger’s dataset using textual queries. For example, we expect the",
+      "blocks": [
+        {
+          "bbox": [
+            132.48,
+            53.1,
+            479.52,
+            104.9
+          ],
+          "text": "Visual Lifelog Retrieval through\nCaptioning-Enhanced Interpretation",
+          "number": 0
+        },
+        {
+          "bbox": [
+            113.1,
+            122.2,
+            249.18,
+            145.22
+          ],
+          "text": "Yu-Fei Shih\nDepartment of Computer Science",
+          "number": 1
+        },
+        {
+          "bbox": [
+            316.8,
+            122.2,
+            495.41,
+            157.55
+          ],
+          "text": "An-Zi Yen\nDepartment of Computer Science\nNational Yang Ming Chiao Tung University",
+          "number": 5
+        },
+        {
+          "bbox": [
+            121.75,
+            147.58,
+            240.53,
+            157.55
+          ],
+          "text": "and Information Engineering",
+          "number": 2
+        },
+        {
+          "bbox": [
+            126.77,
+            159.91,
+            239.0,
+            169.87
+          ],
+          "text": "National Taiwan University",
+          "number": 3
+        },
+        {
+          "bbox": [
+            365.63,
+            160.09,
+            446.59,
+            182.38
+          ],
+          "text": "Hsinchu, Taiwan\nazyen@nycu.edu.tw",
+          "number": 6
+        },
+        {
+          "bbox": [
+            128.21,
+            172.42,
+            237.56,
+            194.71
+          ],
+          "text": "Taipei, Taiwan\nyfshih@nlg.csie.ntu.edu.tw",
+          "number": 4
+        },
+        {
+          "bbox": [
+            342.76,
+            208.99,
+            478.84,
+            232.01
+          ],
+          "text": "Hsin-Hsi Chen\nDepartment of Computer Science",
+          "number": 10
+        },
+        {
+          "bbox": [
+            129.67,
+            208.99,
+            258.57,
+            232.01
+          ],
+          "text": "Hen-Hsen Huang\nInstitute of Information Science",
+          "number": 7
+        },
+        {
+          "bbox": [
+            351.42,
+            234.38,
+            470.19,
+            244.34
+          ],
+          "text": "and Information Engineering",
+          "number": 11
+        },
+        {
+          "bbox": [
+            161.75,
+            234.38,
+            229.98,
+            244.34
+          ],
+          "text": "Academia Sinica",
+          "number": 8
+        },
+        {
+          "bbox": [
+            353.07,
+            246.71,
+            472.02,
+            256.67
+          ],
+          "text": "AI Research Center (AINTU)",
+          "number": 12
+        },
+        {
+          "bbox": [
+            356.43,
+            259.03,
+            468.66,
+            269.0
+          ],
+          "text": "National Taiwan University",
+          "number": 13
+        },
+        {
+          "bbox": [
+            141.88,
+            246.88,
+            249.85,
+            269.17
+          ],
+          "text": "Taipei, Taiwan\nhhhuang@iis.sinica.edu.tw",
+          "number": 9
+        },
+        {
+          "bbox": [
+            372.54,
+            271.54,
+            452.55,
+            293.83
+          ],
+          "text": "Taipei, Taiwan\nhhchen@ntu.edu.tw",
+          "number": 14
+        },
+        {
+          "bbox": [
+            329.69,
+            391.68,
+            545.33,
+            401.64
+          ],
+          "text": "Fig. 1: A sequence of first-person viewpoint images.",
+          "number": 20
+        },
+        {
+          "bbox": [
+            311.98,
+            427.37,
+            563.04,
+            461.24
+          ],
+          "text": "system to retrieve the left image in Figure 1 given the query\n“The moment that the individual is in the airport terminal”.\nThe key challenges in this task include:",
+          "number": 21
+        },
+        {
+          "bbox": [
+            48.96,
+            327.0,
+            300.02,
+            545.18
+          ],
+          "text": "Abstract—People often struggle to remember specific details\nof past experiences, which can lead to the need to revisit these\nmemories. Consequently, lifelog retrieval has emerged as a crucial\napplication. Various studies have explored methods to facilitate\nrapid access to personal lifelogs for memory recall assistance.\nIn this paper, we propose a Captioning-Integrated Visual Lifelog\n(CIVIL) Retrieval System for extracting specific images from a\nuser’s visual lifelog based on textual queries. Unlike traditional\nembedding-based methods, our system first generates captions for\nvisual lifelogs and then utilizes a text embedding model to project\nboth the captions and user queries into a shared vector space.\nVisual lifelogs, captured through wearable cameras, provide a\nfirst-person viewpoint, necessitating the interpretation of the\nactivities of the individual behind the camera rather than merely\ndescribing the scene. To address this, we introduce three distinct\napproaches: the single caption method, the collective caption\nmethod, and the merged caption method, each designed to\ninterpret the life experiences of lifeloggers. Experimental results\nshow that our method effectively describes first-person visual\nimages, enhancing the outcomes of lifelog retrieval. Furthermore,\nwe construct a textual dataset that converts visual lifelogs into\ncaptions, thereby reconstructing personal life experiences.",
+          "number": 15
+        },
+        {
+          "bbox": [
+            10.94,
+            231.02,
+            37.62,
+            560.98
+          ],
+          "text": "arXiv:2510.04010v1  [cs.IR]  5 Oct 2025",
+          "number": 24
+        },
+        {
+          "bbox": [
+            48.96,
+            546.74,
+            300.02,
+            565.67
+          ],
+          "text": "Index Terms—Lifelogging, Visual Lifelog Captioning, Visual\nLifelog Retrieval.",
+          "number": 16
+        },
+        {
+          "bbox": [
+            135.62,
+            582.26,
+            213.38,
+            592.22
+          ],
+          "text": "I. INTRODUCTION",
+          "number": 17
+        },
+        {
+          "bbox": [
+            318.62,
+            466.42,
+            563.04,
+            655.8
+          ],
+          "text": "1) Semantic Gap: A significant semantic gap exists between\ntextual queries and lifelog images [3], [4]. For instance,\nto retrieve images of “driving to the beach,” the system\nmust go beyond object recognition and infer the activity\nfrom visual cues like a steering wheel and ocean views.\n2) Unique Characteristics of Visual Lifelogs: Unlike most\nactivity recognition tasks that use third-person images\nfrom standard datasets, visual lifelogs are typically cap-\ntured from a first-person perspective, requiring the infer-\nence of actions behind the camera from the visible scene.\n3) Identifying Lifelogger Activities from Sequential Im-\nages: Analyzing images in sequence provides a fuller un-\nderstanding of the user’s activities, locations, and context.\nFor example, as shown in Figure 1, the location in the\nright image may seem ambiguous but can be identified as\nan airport lounge with the information of the left image.",
+          "number": 22
+        },
+        {
+          "bbox": [
+            48.96,
+            600.73,
+            300.02,
+            682.42
+          ],
+          "text": "Recent advancements in smartphones, smartwatches, and\nwearable cameras have led to a significant increase in personal\ndata generation, including images, geographical information,\nand physiological signals. This data offers insights into daily\nroutines and applications in areas like diet management [1] and\nmemory recall [2]. Therefore, an effective retrieval system to\norganize and access specific instances is crucial.",
+          "number": 18
+        },
+        {
+          "bbox": [
+            311.98,
+            661.07,
+            563.04,
+            718.85
+          ],
+          "text": "Recent methods [5], [6] address the semantic gap by using\nCLIP or other text-image embedding models to link images\nwith text queries. However, CLIP models process images in\nisolation and don’t consider temporal sequences, limiting their\nability to accurately reconstruct a lifelogger’s experience. To",
+          "number": 23
+        },
+        {
+          "bbox": [
+            48.96,
+            684.98,
+            300.02,
+            718.85
+          ],
+          "text": "This paper addresses the challenge of visual lifelog retrieval,\nwhich aims to retrieve specific moment images from a lifelog-\nger’s dataset using textual queries. For example, we expect the",
+          "number": 19
+        }
+      ],
       "images": 1,
+      "figure_captions": [
+        "Fig. 1: A sequence of first-person viewpoint images."
+      ],
+      "table_captions": [],
       "tables": []
     },
     {
       "page": 2,
       "text": "on segment-based retrieval, visual lifelog retrieval emphasizes\nretrieving the top K images that capture query context.\nbridge the gap further, some studies incorporate additional\ndata, such as metadata or user queries. For example, [7]\nimprove accuracy by ensembling cosine similarity scores, and\n[8] combine GPS, semantic locations, and temporal metadata\nwith query parsing. [9] use query parsing for location and\ntime to filter images, while [3] filter blurry images based on\nthe variance of the Laplacian from grayscale.\nDense Video Captioning (DVC) aims to interpret events in\nvideos and generate captions, involving video feature extrac-\ntion, temporal event localization, and dense caption gener-\nation [12]. Recent work [13] introduces a streaming model\nwith a clustering memory module and streaming decoding for\ncaptioning long videos. Similarly, our system’s merged caption\nmethod uses GPT-4-turbo-vision [14] to cluster lifelog images\nby event similarity and generate coarse-grained captions per\ngroup. Unlike DVC, however, our system is designed for\nlifelog images, processing a fixed set of images at a time.\nIII. CAPTIONING RETRIEVAL SYSTEM\nA. Overview\nThe task is defined as follows: The system receives a set of\nlifelog videos, (V0, V1, . . . , VN), where each video Vi contains\nM frames, (F 0\ni , F 1\ni , . . . , F M\ni ). The goal is to retrieve relevant\nframes from visual lifelogs based on a user query, selecting K\ncandidate frames to assist the user in recall. Figure 2 shows the\nsystem, which uses three caption generation methods: single,\ncollective, and merged caption methods.\nB. Single caption method\nWe propose a Captioning-Integrated Visual Lifelog (CIVIL)\nRetrieval System using large video language models and large\nvision-language models (LVLMs) to tackle these challenges\nwithout model training. Our approach bridges the seman-\ntic gap by converting images into textual captions. These\ncaptions, along with textual queries, are embedded into a\nunified vector space via a text embedding model. Leveraging\nmulti-modal language models’ instruction-following abilities,\nthe system adapts to lifelog images by framing prompts to\nreconstruct personal experiences. In this way, these models\ngenerate captions that reflect personal experiences in the\nvisual lifelog. We propose three captioning methods, each\nutilizing different large multi-modal language models: (1)\nthe Single Caption Method, which generates captions for\nindividual images; (2) the Collective Caption Method, which\ntreats time-consecutive images as video frames and generates\na unified caption; and (3) the Merged Caption Method,\nwhich produces fine-grained captions for each image and\ncoarse-grained captions for groups of similar images, with the\ngrouping determined by the LVLM.\nThe single caption method generates a caption for each\nframe using an LVLM, guided by a prompt that includes\nthe frame and metadata. The prompt aims to reconstruct\npersonal experiences with captions limited to 20-40 words,\nhighlighting key moments, locations, and activities. Due to the\nlow quality of images and the lack of context from neighboring\nframes, we assume that single-frame captions may be prone\nto hallucinations and are time-consuming to produce. To this\nend, we propose the collective caption method.\nC. Collective caption method\nThese methods tackle the main challenges by using tex-\ntual caption embeddings for image representation. We found\nthat averaging similarity scores across different caption types\nimproves retrieval performance with specific text embedding\nmodels. Our system outperforms direct image embedding\nmethods, such as CLIP, as shown by experimental results.\nWe conducted further analysis, including error analysis and\nan examination of the caption-query retrieval step facilitated\nby large language models (LLMs), to understand the reasons\nbehind our system’s success. In sum, this paper contributes:\nThe collective caption method uses a large video language\nmodel to generate a caption for a set of consecutive frames,\nincorporating metadata (e.g., time interval) and extending the\ncaption length to 40-60 words for comprehensiveness. Collec-\ntive captions offer broader descriptions than single captions\nbut may lack detail. Retrieving a collective caption brings\nin all associated images, make it difficult to identify the\nrelevant one in the sequence. Our combination experiment (see\nSection IV-E) provides a solution.\n1) We present a simple system that represents lifelog images\nwith captions, enabling retrieval through user queries.\n2) We provide a comprehensive analysis of our experimental\nresults and explore ways to enhance our system further.\n3) We release the generated captions1 on the NTCIR-14\nLifelog-3 dataset [10], offering a valuable resource for\nfuture visual lifelog retrieval and understanding research.\nD. Merged caption method\nII. RELATED WORKS\nTo leverage both single and collective caption strengths, we\nuse GPT-4-turbo-vision to handle complex prompts. Due to its\nhigh cost, we first apply a filtering algorithm that embeds each\nframe, calculates similarity scores, and retains frames where\nconsecutive pairs exceed a set similarity threshold.\nVideo Corpus Moment Retrieval (VCMR) involves retriev-\ning specific segments from continuous video streams based\non a text query, unlike visual lifelog retrieval, which uses\nperiodically captured frames in lifelogging datasets. VCMR\noften utilizes unimodal encoding or cross-modal interaction\nlearning. [11] presents ReLoCLNet, which trains video and\ntext encoders via contrastive learning. While VCMR focuses\n1https://github.com/ntunlplab/Visual-Lifelog-Retrieval-through-Captioning-\nEnhanced-Interpretation.git\nThe input comprises a fixed number of filtered frames,\nmetadata (time info), and a complex instruction prompt with\nthree tasks: (1) Fine-grained caption: Provide brief captions\nfor each image with metadata. (2) Frame summary: Summa-\nrize the individual’s experiences in 20-40 words. (3) Coarse-\ngrained caption: Group frames and describe each group.",
+      "blocks": [
+        {
+          "bbox": [
+            311.98,
+            51.36,
+            563.04,
+            73.27
+          ],
+          "text": "on segment-based retrieval, visual lifelog retrieval emphasizes\nretrieving the top K images that capture query context.",
+          "number": 7
+        },
+        {
+          "bbox": [
+            48.96,
+            51.35,
+            300.02,
+            133.05
+          ],
+          "text": "bridge the gap further, some studies incorporate additional\ndata, such as metadata or user queries. For example, [7]\nimprove accuracy by ensembling cosine similarity scores, and\n[8] combine GPS, semantic locations, and temporal metadata\nwith query parsing. [9] use query parsing for location and\ntime to filter images, while [3] filter blurry images based on\nthe variance of the Laplacian from grayscale.",
+          "number": 0
+        },
+        {
+          "bbox": [
+            311.98,
+            75.05,
+            563.04,
+            192.61
+          ],
+          "text": "Dense Video Captioning (DVC) aims to interpret events in\nvideos and generate captions, involving video feature extrac-\ntion, temporal event localization, and dense caption gener-\nation [12]. Recent work [13] introduces a streaming model\nwith a clustering memory module and streaming decoding for\ncaptioning long videos. Similarly, our system’s merged caption\nmethod uses GPT-4-turbo-vision [14] to cluster lifelog images\nby event similarity and generate coarse-grained captions per\ngroup. Unlike DVC, however, our system is designed for\nlifelog images, processing a fixed set of images at a time.",
+          "number": 8
+        },
+        {
+          "bbox": [
+            311.98,
+            200.02,
+            519.17,
+            224.69
+          ],
+          "text": "III. CAPTIONING RETRIEVAL SYSTEM\nA. Overview",
+          "number": 9
+        },
+        {
+          "bbox": [
+            311.98,
+            229.78,
+            563.04,
+            263.65
+          ],
+          "text": "The task is defined as follows: The system receives a set of\nlifelog videos, (V0, V1, . . . , VN), where each video Vi contains\nM frames, (F 0",
+          "number": 10
+        },
+        {
+          "bbox": [
+            368.63,
+            252.18,
+            390.68,
+            266.01
+          ],
+          "text": "i , F 1",
+          "number": 11
+        },
+        {
+          "bbox": [
+            385.32,
+            252.18,
+            428.69,
+            266.01
+          ],
+          "text": "i , . . . , F M",
+          "number": 12
+        },
+        {
+          "bbox": [
+            311.98,
+            253.46,
+            563.04,
+            311.47
+          ],
+          "text": "i ). The goal is to retrieve relevant\nframes from visual lifelogs based on a user query, selecting K\ncandidate frames to assist the user in recall. Figure 2 shows the\nsystem, which uses three caption generation methods: single,\ncollective, and merged caption methods.",
+          "number": 13
+        },
+        {
+          "bbox": [
+            311.98,
+            318.71,
+            416.63,
+            328.67
+          ],
+          "text": "B. Single caption method",
+          "number": 14
+        },
+        {
+          "bbox": [
+            48.96,
+            135.33,
+            300.02,
+            372.44
+          ],
+          "text": "We propose a Captioning-Integrated Visual Lifelog (CIVIL)\nRetrieval System using large video language models and large\nvision-language models (LVLMs) to tackle these challenges\nwithout model training. Our approach bridges the seman-\ntic gap by converting images into textual captions. These\ncaptions, along with textual queries, are embedded into a\nunified vector space via a text embedding model. Leveraging\nmulti-modal language models’ instruction-following abilities,\nthe system adapts to lifelog images by framing prompts to\nreconstruct personal experiences. In this way, these models\ngenerate captions that reflect personal experiences in the\nvisual lifelog. We propose three captioning methods, each\nutilizing different large multi-modal language models: (1)\nthe Single Caption Method, which generates captions for\nindividual images; (2) the Collective Caption Method, which\ntreats time-consecutive images as video frames and generates\na unified caption; and (3) the Merged Caption Method,\nwhich produces fine-grained captions for each image and\ncoarse-grained captions for groups of similar images, with the\ngrouping determined by the LVLM.",
+          "number": 1
+        },
+        {
+          "bbox": [
+            311.98,
+            333.76,
+            563.04,
+            439.37
+          ],
+          "text": "The single caption method generates a caption for each\nframe using an LVLM, guided by a prompt that includes\nthe frame and metadata. The prompt aims to reconstruct\npersonal experiences with captions limited to 20-40 words,\nhighlighting key moments, locations, and activities. Due to the\nlow quality of images and the lack of context from neighboring\nframes, we assume that single-frame captions may be prone\nto hallucinations and are time-consuming to produce. To this\nend, we propose the collective caption method.",
+          "number": 15
+        },
+        {
+          "bbox": [
+            311.98,
+            446.61,
+            432.68,
+            456.57
+          ],
+          "text": "C. Collective caption method",
+          "number": 16
+        },
+        {
+          "bbox": [
+            48.96,
+            374.72,
+            300.02,
+            492.28
+          ],
+          "text": "These methods tackle the main challenges by using tex-\ntual caption embeddings for image representation. We found\nthat averaging similarity scores across different caption types\nimproves retrieval performance with specific text embedding\nmodels. Our system outperforms direct image embedding\nmethods, such as CLIP, as shown by experimental results.\nWe conducted further analysis, including error analysis and\nan examination of the caption-query retrieval step facilitated\nby large language models (LLMs), to understand the reasons\nbehind our system’s success. In sum, this paper contributes:",
+          "number": 2
+        },
+        {
+          "bbox": [
+            311.98,
+            461.66,
+            563.04,
+            567.26
+          ],
+          "text": "The collective caption method uses a large video language\nmodel to generate a caption for a set of consecutive frames,\nincorporating metadata (e.g., time interval) and extending the\ncaption length to 40-60 words for comprehensiveness. Collec-\ntive captions offer broader descriptions than single captions\nbut may lack detail. Retrieving a collective caption brings\nin all associated images, make it difficult to identify the\nrelevant one in the sequence. Our combination experiment (see\nSection IV-E) provides a solution.",
+          "number": 17
+        },
+        {
+          "bbox": [
+            55.61,
+            496.88,
+            300.03,
+            578.57
+          ],
+          "text": "1) We present a simple system that represents lifelog images\nwith captions, enabling retrieval through user queries.\n2) We provide a comprehensive analysis of our experimental\nresults and explore ways to enhance our system further.\n3) We release the generated captions1 on the NTCIR-14\nLifelog-3 dataset [10], offering a valuable resource for\nfuture visual lifelog retrieval and understanding research.",
+          "number": 3
+        },
+        {
+          "bbox": [
+            311.98,
+            574.5,
+            423.35,
+            584.46
+          ],
+          "text": "D. Merged caption method",
+          "number": 18
+        },
+        {
+          "bbox": [
+            129.08,
+            589.74,
+            219.91,
+            599.7
+          ],
+          "text": "II. RELATED WORKS",
+          "number": 4
+        },
+        {
+          "bbox": [
+            311.98,
+            589.55,
+            563.04,
+            647.34
+          ],
+          "text": "To leverage both single and collective caption strengths, we\nuse GPT-4-turbo-vision to handle complex prompts. Due to its\nhigh cost, we first apply a filtering algorithm that embeds each\nframe, calculates similarity scores, and retains frames where\nconsecutive pairs exceed a set similarity threshold.",
+          "number": 19
+        },
+        {
+          "bbox": [
+            48.96,
+            606.56,
+            300.02,
+            688.26
+          ],
+          "text": "Video Corpus Moment Retrieval (VCMR) involves retriev-\ning specific segments from continuous video streams based\non a text query, unlike visual lifelog retrieval, which uses\nperiodically captured frames in lifelogging datasets. VCMR\noften utilizes unimodal encoding or cross-modal interaction\nlearning. [11] presents ReLoCLNet, which trains video and\ntext encoders via contrastive learning. While VCMR focuses",
+          "number": 5
+        },
+        {
+          "bbox": [
+            48.96,
+            700.13,
+            298.99,
+            718.37
+          ],
+          "text": "1https://github.com/ntunlplab/Visual-Lifelog-Retrieval-through-Captioning-\nEnhanced-Interpretation.git",
+          "number": 6
+        },
+        {
+          "bbox": [
+            311.98,
+            649.11,
+            563.04,
+            718.85
+          ],
+          "text": "The input comprises a fixed number of filtered frames,\nmetadata (time info), and a complex instruction prompt with\nthree tasks: (1) Fine-grained caption: Provide brief captions\nfor each image with metadata. (2) Frame summary: Summa-\nrize the individual’s experiences in 20-40 words. (3) Coarse-\ngrained caption: Group frames and describe each group.",
+          "number": 20
+        }
+      ],
       "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
       "tables": []
     },
     {
       "page": 3,
       "text": "Fig. 2: CIVIL Retrieval System Architecture. The system processes frames from multiple videos using three methods: (1)\nsingle-frame captions by an LVLM, (2) collective captions by a large video language model, and (3) fine- and coarse-grained\ncaptions by a Vision Embedding Model and LVLM. All captions and the user query are embedded in a shared text embedding\nspace, and relevant frames are retrieved based on query-caption similarity.\nimages to avoid selecting similar ones from short consecutive\nintervals. The queries, provided by ImageCLEF, are designed\nto identify specific activities or moments from the lifelog data.\nTo ensure experience consistency among model’s outputs,\nwe include the frame summary from the previous output in the\ncurrent prompt. We assume that fine-grained captions provide\ndetailed descriptions for each frame while minimizing halluci-\nnations with additional contextual information. However, the\ncomplexity of this prompt design requires a powerful LVLM,\nwhich may require additional computational resources.\nE. Frame Retrieval From User Query\nThe evaluation metrics used in this task—Cluster Recall\nat K (CR@K), Precision at K (P@K), and F1 at K\n(F1@K)—are based on the definitions established by the\nImageCLEF 2019 LMRT competition organizers. Our primary\nmetric is average P@10, with additional reports on CR@10\nand F1@10 for further performance analysis.\nB. Baseline Models\nWe compare our CIVIL Retrieval System with standard text-\nbased image retrieval methods, which directly embed images\nand user queries into a shared vector space and retrieve images\nbased on similarity scores, without using caption transforma-\ntion. The baseline models used for comparison are: CLIP ViT-\nB/32, CLIP ViT-L/14 [16], ViT-SO400M-14-SigLIP-384 [17],\nand DFN5B-CLIP-ViT-H-14 [18].\nC. Caption Models\nWe employ a text embedding model to project gener-\nated captions and user queries into a shared vector space.\nFour types of captions—single, collective, fine-grained, and\ncoarse-grained—are embedded. To enhance matching with\nuser queries, we prepend ”The individual’s experience:” before\nembedding the captions. User queries are embedded similarly,\nand similarity scores between queries and captions are com-\nputed. Based on these scores, we retrieve the top K captions\nmost similar to the query. Single and fine-grained captions\ncorrespond to individual frames (filtered frames for fine-\ngrained captions), while collective and coarse-grained captions\ncorrespond to multiple frames (multiple filtered frames for\ncoarse-grained captions).\nFor the methods in Sections III-B, III-C, and III-D, we select\ndifferent language and vision models.\nCombining the similarity scores of single or fine-grained\ncaptions with those of collective or coarse-grained captions\nimproves performance. Section IV-E details the methods.\nIV. EXPERIMENTS SETUP\nA. Dataset and Evaluation Metrics\n1) Single Caption Model: We implement the Caption Re-\ntrieval Method using several LVLMs. After generating cap-\ntions, we use a text embedding model to rank and retrieve\nimages based on similarity scores between captions and user\nqueries. The models used for this task include Idefics2 [19],\nLLaVA-NeXT-7B [20], and Internlm-xcomposer2-vl-7B [21].\nIn our experiment, we use images from the NTCIR-14\nLifelog-3 Dataset [10], focusing on data from ’User 1,’ which\nincludes approximately 63,000 images captured over 29 days.\nWe primarily use timestamps, assuming they are relevant for\nidentifying activities such as eating, waking, or sleeping.\n2) Collective Caption Model: In this approach, lifelog\nimages are treated as video frames, and a collective caption\nis generated for every set of eight consecutive frames. Images\nare then retrieved based on similarity scores between these\ncollective captions and user queries. Retrieving a single col-\nlective caption corresponds to retrieving a set of eight images,\nensuring that if the caption accurately describes the content,\nall relevant images in the set are included.\nTo evaluate retrieval performance, we use the topics, labels,\nand evaluation metrics from ImageCLEF 2019 LMRT [15],\nwhich involves retrieving relevant images based on 10 user-\nquery topics. The task emphasizes diversity in the retrieved",
+      "blocks": [
+        {
+          "bbox": [
+            48.96,
+            212.83,
+            563.03,
+            258.66
+          ],
+          "text": "Fig. 2: CIVIL Retrieval System Architecture. The system processes frames from multiple videos using three methods: (1)\nsingle-frame captions by an LVLM, (2) collective captions by a large video language model, and (3) fine- and coarse-grained\ncaptions by a Vision Embedding Model and LVLM. All captions and the user query are embedded in a shared text embedding\nspace, and relevant frames are retrieved based on query-caption similarity.",
+          "number": 0
+        },
+        {
+          "bbox": [
+            311.98,
+            282.77,
+            563.04,
+            316.64
+          ],
+          "text": "images to avoid selecting similar ones from short consecutive\nintervals. The queries, provided by ImageCLEF, are designed\nto identify specific activities or moments from the lifelog data.",
+          "number": 8
+        },
+        {
+          "bbox": [
+            48.96,
+            282.77,
+            300.02,
+            364.46
+          ],
+          "text": "To ensure experience consistency among model’s outputs,\nwe include the frame summary from the previous output in the\ncurrent prompt. We assume that fine-grained captions provide\ndetailed descriptions for each frame while minimizing halluci-\nnations with additional contextual information. However, the\ncomplexity of this prompt design requires a powerful LVLM,\nwhich may require additional computational resources.",
+          "number": 1
+        },
+        {
+          "bbox": [
+            48.96,
+            371.87,
+            204.11,
+            381.83
+          ],
+          "text": "E. Frame Retrieval From User Query",
+          "number": 2
+        },
+        {
+          "bbox": [
+            311.98,
+            319.06,
+            563.04,
+            388.8
+          ],
+          "text": "The evaluation metrics used in this task—Cluster Recall\nat K (CR@K), Precision at K (P@K), and F1 at K\n(F1@K)—are based on the definitions established by the\nImageCLEF 2019 LMRT competition organizers. Our primary\nmetric is average P@10, with additional reports on CR@10\nand F1@10 for further performance analysis.",
+          "number": 9
+        },
+        {
+          "bbox": [
+            311.98,
+            400.94,
+            392.67,
+            410.91
+          ],
+          "text": "B. Baseline Models",
+          "number": 10
+        },
+        {
+          "bbox": [
+            311.98,
+            417.7,
+            563.04,
+            499.39
+          ],
+          "text": "We compare our CIVIL Retrieval System with standard text-\nbased image retrieval methods, which directly embed images\nand user queries into a shared vector space and retrieve images\nbased on similarity scores, without using caption transforma-\ntion. The baseline models used for comparison are: CLIP ViT-\nB/32, CLIP ViT-L/14 [16], ViT-SO400M-14-SigLIP-384 [17],\nand DFN5B-CLIP-ViT-H-14 [18].",
+          "number": 11
+        },
+        {
+          "bbox": [
+            311.98,
+            511.54,
+            391.02,
+            521.5
+          ],
+          "text": "C. Caption Models",
+          "number": 12
+        },
+        {
+          "bbox": [
+            48.96,
+            386.95,
+            300.02,
+            540.37
+          ],
+          "text": "We employ a text embedding model to project gener-\nated captions and user queries into a shared vector space.\nFour types of captions—single, collective, fine-grained, and\ncoarse-grained—are embedded. To enhance matching with\nuser queries, we prepend ”The individual’s experience:” before\nembedding the captions. User queries are embedded similarly,\nand similarity scores between queries and captions are com-\nputed. Based on these scores, we retrieve the top K captions\nmost similar to the query. Single and fine-grained captions\ncorrespond to individual frames (filtered frames for fine-\ngrained captions), while collective and coarse-grained captions\ncorrespond to multiple frames (multiple filtered frames for\ncoarse-grained captions).",
+          "number": 3
+        },
+        {
+          "bbox": [
+            311.98,
+            528.29,
+            563.03,
+            550.21
+          ],
+          "text": "For the methods in Sections III-B, III-C, and III-D, we select\ndifferent language and vision models.",
+          "number": 13
+        },
+        {
+          "bbox": [
+            48.96,
+            542.18,
+            300.02,
+            576.05
+          ],
+          "text": "Combining the similarity scores of single or fine-grained\ncaptions with those of collective or coarse-grained captions\nimproves performance. Section IV-E details the methods.",
+          "number": 4
+        },
+        {
+          "bbox": [
+            48.96,
+            583.63,
+            229.32,
+            608.32
+          ],
+          "text": "IV. EXPERIMENTS SETUP\nA. Dataset and Evaluation Metrics",
+          "number": 5
+        },
+        {
+          "bbox": [
+            311.98,
+            552.66,
+            563.04,
+            622.57
+          ],
+          "text": "1) Single Caption Model: We implement the Caption Re-\ntrieval Method using several LVLMs. After generating cap-\ntions, we use a text embedding model to rank and retrieve\nimages based on similarity scores between captions and user\nqueries. The models used for this task include Idefics2 [19],\nLLaVA-NeXT-7B [20], and Internlm-xcomposer2-vl-7B [21].",
+          "number": 14
+        },
+        {
+          "bbox": [
+            48.96,
+            613.44,
+            300.02,
+            671.22
+          ],
+          "text": "In our experiment, we use images from the NTCIR-14\nLifelog-3 Dataset [10], focusing on data from ’User 1,’ which\nincludes approximately 63,000 images captured over 29 days.\nWe primarily use timestamps, assuming they are relevant for\nidentifying activities such as eating, waking, or sleeping.",
+          "number": 6
+        },
+        {
+          "bbox": [
+            311.98,
+            625.03,
+            563.04,
+            718.85
+          ],
+          "text": "2) Collective Caption Model: In this approach, lifelog\nimages are treated as video frames, and a collective caption\nis generated for every set of eight consecutive frames. Images\nare then retrieved based on similarity scores between these\ncollective captions and user queries. Retrieving a single col-\nlective caption corresponds to retrieving a set of eight images,\nensuring that if the caption accurately describes the content,\nall relevant images in the set are included.",
+          "number": 15
+        },
+        {
+          "bbox": [
+            48.96,
+            673.02,
+            300.02,
+            718.85
+          ],
+          "text": "To evaluate retrieval performance, we use the topics, labels,\nand evaluation metrics from ImageCLEF 2019 LMRT [15],\nwhich involves retrieving relevant images based on 10 user-\nquery topics. The task emphasizes diversity in the retrieved",
+          "number": 7
+        }
+      ],
       "images": 1,
+      "figure_captions": [
+        "Fig. 2: CIVIL Retrieval System Architecture. The system processes frames from multiple videos using three methods: (1)"
+      ],
+      "table_captions": [],
       "tables": []
     },
     {
       "page": 4,
       "text": "The large video language models used include Video-\nLLaVA [22] and Large-World-Model (LWM) [23].\ncaption method, despite using GPT-4-turbo-vision, did not\nexceed the baseline performance for either text embedding\nmodel, with potential performance-reducing factors discussed\nin Section VI-A3. Finally, the combination method, which\nmerged collective and single caption scores, achieved the high-\nest performance of P@10 at 0.73 with GTE-large embeddings.\nHowever, combining merged caption methods under BGE-M3\nembeddings reduced the performance significantly, dropping to\na P@10 of 0.47 from 0.57 in coarse-grained caption retrieval.\n3) Merged Caption Model:\nWe employ GPT-4-turbo-\nvision2 to generate fine-grained and coarse-grained captions\nand summaries of lifelog images in JSON format. Ten con-\nsecutive filtered images are provided to the model. The fine-\ngrained and coarse-grained captions are used for retrieval,\nsimilarly to the processes for single and collective captions,\nrespectively. The key difference is that a retrieved fine-grained\ncaption is linked to a specific filtered image, whereas a coarse-\ngrained caption corresponds to all filtered images in the group.\nD. Vision Embedding Model and Text Embedding Model\nIn summary, averaging similarity scores of BGE-M3 embed-\ndings from two captions did not outperform using GTE-large\nembeddings. Subsequent analysis focuses on the Combination\nmethod with the GTE-large model.\nVision Embedding Model: We use the DINOv2 ViT-G14\nmodel [24] for filtering algorithm in merged caption Method.\nWe compute the cosine similarity between embedded images\nand set a threshold of 0.8.\nText Embedding Model: To rank and retrieve images based\non their generated captions and user queries, we use two text\nembedding models: GTE-Large [25] and BGE-M3 [26].\n2) Cluster Recall at 10 (CR@10) and F1 at 10 (F1@10)\nResults: Without employing diversity-promoting algorithms,\nour system shows potential in CR@10 and F1@10 metrics.\nThe LLaVA-NeXT-7B model achieves a CR@10 of 0.572,\nindicating that 57.2% of the correct clusters are included in the\ntop 10 retrievals per topic. With a P@10 of 0.71, it attains an\nF1@10 of 0.541. Further investigation is needed to understand\nthe factors contributing to this performance.\nE. Combination Captions Experiment\nB. Topic-Specific Results\nP@10 scores across individual topics reveal varying degrees\nof difficulty and model effectiveness. These observations are\nspecific to our dataset and should not be generalized.\nWe investigate whether combining fine-grained and coarse-\ngrained captions, as well as single and collective captions, can\nenhance retrieval performance by providing more comprehen-\nsive information. Four combinations of similarity scores are\ntested using two different text embedding models: (1) com-\nbining fine-grained and coarse-grained captions with each\nembedding model, and (2) combining single and collective\ncaptions generated by the models with the highest average\nP@10 scores with each embedding model. The combination\nsimilarity score is calculated by averaging the similarity scores\nof the components.\nV. EXPERIMENTAL RESULTS\nA. Overall Performance Results\nTable I presents baseline and caption model performance\nwith GTE-large and BGE-M3 text embedding models.\n1) Precision at 10 (P@10) Results: Among baseline mod-\nels, ViT-SO400M-14-SigLIP-384 and DFN5B-CLIP-ViT-H-14\nachieved the highest P@10, averaging 0.58. Notably, five\nof nine caption methods surpassed this baseline with GTE-\nlarge embeddings, while only three did so with BGE-M3\nembeddings. The highest P@10 of 0.73 was achieved by\ncombining InternLM-XComposer2-VL-7B and Video-LLaVA\nunder GTE-large embeddings, indicating that 73 out of 100\nretrievals were accurate from a pool of 63,000 images.\nIn Topic 4, with only 3 correct images, baseline models\nperformed relatively better, typically retrieving 1 correct image\nout of 10, while most other methods, except the single caption\nmethod, failed to retrieve any correct images. Conversely, in\nTopic 1, with 16 correct images, some methods showed no-\ntable success. For instance, the GPT-4 coarse-grained caption\nmethod with BGE-M3 embeddings retrieved all 10 correct\nimages. In Topic 8, with 40 correct images, model effective-\nness varied. The Video-LLaVA model combined with GTE-\nlarge embeddings retrieved all 10 correct images, and 13 out\nof 22 models retrieved more than 7 correct images across\nboth embeddings and baseline models. In topics with fewer\nthan 1,000 correct images (Topics 5, 6, 7, 9), performance\nvaried. Topics 5 and 6 were relatively easier, with most\nmodels retrieving 8 to 10 correct images. Topic 9 was more\nchallenging; baseline models, collective caption methods, and\nmerged caption methods retrieved no more than 4 correct\nimages. In Topic 7, most methods retrieved over 6 correct\nimages. In topics with more than 1,000 correct images (Topics\n2, 3, 10), performance was mixed. Topic 3 posed significant\nchallenges, with many models retrieving no more than 4\ncorrect images. For the other topics, more than half of the\nmodels retrieved over 6 correct images.\nThe performance across different caption methods showed\nconsiderable variation. The single caption methods gener-\nally performed well, with LLaVA-NeXT-7B using BGE-M3\nachieving the top P@10 score of 0.71. In contrast, collective\ncaption methods showed mixed results: Video-LLaVA slightly\nunderperformed the baseline with GTE-large embeddings, and\nLWM performed poorly across both embeddings. The merged\n2Version released on 2023-11-06\nDifficulty in certain topics might be linked to blurry images\nin the lifelog dataset. For example, in Topic 3, blurry images\ncould hinder distinguishing screens displaying videos from\nthose engaged in other tasks, thereby reducing P@10 scores.",
+      "blocks": [
+        {
+          "bbox": [
+            48.96,
+            51.35,
+            300.02,
+            73.27
+          ],
+          "text": "The large video language models used include Video-\nLLaVA [22] and Large-World-Model (LWM) [23].",
+          "number": 0
+        },
+        {
+          "bbox": [
+            311.98,
+            51.36,
+            563.04,
+            156.96
+          ],
+          "text": "caption method, despite using GPT-4-turbo-vision, did not\nexceed the baseline performance for either text embedding\nmodel, with potential performance-reducing factors discussed\nin Section VI-A3. Finally, the combination method, which\nmerged collective and single caption scores, achieved the high-\nest performance of P@10 at 0.73 with GTE-large embeddings.\nHowever, combining merged caption methods under BGE-M3\nembeddings reduced the performance significantly, dropping to\na P@10 of 0.47 from 0.57 in coarse-grained caption retrieval.",
+          "number": 12
+        },
+        {
+          "bbox": [
+            48.96,
+            75.29,
+            300.02,
+            181.07
+          ],
+          "text": "3) Merged Caption Model:\nWe employ GPT-4-turbo-\nvision2 to generate fine-grained and coarse-grained captions\nand summaries of lifelog images in JSON format. Ten con-\nsecutive filtered images are provided to the model. The fine-\ngrained and coarse-grained captions are used for retrieval,\nsimilarly to the processes for single and collective captions,\nrespectively. The key difference is that a retrieved fine-grained\ncaption is linked to a specific filtered image, whereas a coarse-\ngrained caption corresponds to all filtered images in the group.",
+          "number": 1
+        },
+        {
+          "bbox": [
+            48.96,
+            190.74,
+            281.93,
+            200.7
+          ],
+          "text": "D. Vision Embedding Model and Text Embedding Model",
+          "number": 2
+        },
+        {
+          "bbox": [
+            311.98,
+            161.25,
+            563.04,
+            207.08
+          ],
+          "text": "In summary, averaging similarity scores of BGE-M3 embed-\ndings from two captions did not outperform using GTE-large\nembeddings. Subsequent analysis focuses on the Combination\nmethod with the GTE-large model.",
+          "number": 13
+        },
+        {
+          "bbox": [
+            48.96,
+            206.38,
+            300.02,
+            288.3
+          ],
+          "text": "Vision Embedding Model: We use the DINOv2 ViT-G14\nmodel [24] for filtering algorithm in merged caption Method.\nWe compute the cosine similarity between embedded images\nand set a threshold of 0.8.\nText Embedding Model: To rank and retrieve images based\non their generated captions and user queries, we use two text\nembedding models: GTE-Large [25] and BGE-M3 [26].",
+          "number": 3
+        },
+        {
+          "bbox": [
+            311.98,
+            212.35,
+            563.04,
+            306.17
+          ],
+          "text": "2) Cluster Recall at 10 (CR@10) and F1 at 10 (F1@10)\nResults: Without employing diversity-promoting algorithms,\nour system shows potential in CR@10 and F1@10 metrics.\nThe LLaVA-NeXT-7B model achieves a CR@10 of 0.572,\nindicating that 57.2% of the correct clusters are included in the\ntop 10 retrievals per topic. With a P@10 of 0.71, it attains an\nF1@10 of 0.541. Further investigation is needed to understand\nthe factors contributing to this performance.",
+          "number": 14
+        },
+        {
+          "bbox": [
+            48.96,
+            297.97,
+            203.44,
+            307.94
+          ],
+          "text": "E. Combination Captions Experiment",
+          "number": 4
+        },
+        {
+          "bbox": [
+            311.98,
+            334.27,
+            413.89,
+            344.23
+          ],
+          "text": "B. Topic-Specific Results",
+          "number": 15
+        },
+        {
+          "bbox": [
+            311.98,
+            357.59,
+            563.04,
+            391.46
+          ],
+          "text": "P@10 scores across individual topics reveal varying degrees\nof difficulty and model effectiveness. These observations are\nspecific to our dataset and should not be generalized.",
+          "number": 16
+        },
+        {
+          "bbox": [
+            48.96,
+            313.71,
+            300.02,
+            443.22
+          ],
+          "text": "We investigate whether combining fine-grained and coarse-\ngrained captions, as well as single and collective captions, can\nenhance retrieval performance by providing more comprehen-\nsive information. Four combinations of similarity scores are\ntested using two different text embedding models: (1) com-\nbining fine-grained and coarse-grained captions with each\nembedding model, and (2) combining single and collective\ncaptions generated by the models with the highest average\nP@10 scores with each embedding model. The combination\nsimilarity score is calculated by averaging the similarity scores\nof the components.",
+          "number": 5
+        },
+        {
+          "bbox": [
+            113.27,
+            453.07,
+            235.72,
+            463.03
+          ],
+          "text": "V. EXPERIMENTAL RESULTS",
+          "number": 6
+        },
+        {
+          "bbox": [
+            48.96,
+            468.79,
+            179.78,
+            478.75
+          ],
+          "text": "A. Overall Performance Results",
+          "number": 7
+        },
+        {
+          "bbox": [
+            48.96,
+            484.52,
+            300.02,
+            506.44
+          ],
+          "text": "Table I presents baseline and caption model performance\nwith GTE-large and BGE-M3 text embedding models.",
+          "number": 8
+        },
+        {
+          "bbox": [
+            48.96,
+            508.45,
+            300.02,
+            614.23
+          ],
+          "text": "1) Precision at 10 (P@10) Results: Among baseline mod-\nels, ViT-SO400M-14-SigLIP-384 and DFN5B-CLIP-ViT-H-14\nachieved the highest P@10, averaging 0.58. Notably, five\nof nine caption methods surpassed this baseline with GTE-\nlarge embeddings, while only three did so with BGE-M3\nembeddings. The highest P@10 of 0.73 was achieved by\ncombining InternLM-XComposer2-VL-7B and Video-LLaVA\nunder GTE-large embeddings, indicating that 73 out of 100\nretrievals were accurate from a pool of 63,000 images.",
+          "number": 9
+        },
+        {
+          "bbox": [
+            311.98,
+            395.75,
+            563.04,
+            668.73
+          ],
+          "text": "In Topic 4, with only 3 correct images, baseline models\nperformed relatively better, typically retrieving 1 correct image\nout of 10, while most other methods, except the single caption\nmethod, failed to retrieve any correct images. Conversely, in\nTopic 1, with 16 correct images, some methods showed no-\ntable success. For instance, the GPT-4 coarse-grained caption\nmethod with BGE-M3 embeddings retrieved all 10 correct\nimages. In Topic 8, with 40 correct images, model effective-\nness varied. The Video-LLaVA model combined with GTE-\nlarge embeddings retrieved all 10 correct images, and 13 out\nof 22 models retrieved more than 7 correct images across\nboth embeddings and baseline models. In topics with fewer\nthan 1,000 correct images (Topics 5, 6, 7, 9), performance\nvaried. Topics 5 and 6 were relatively easier, with most\nmodels retrieving 8 to 10 correct images. Topic 9 was more\nchallenging; baseline models, collective caption methods, and\nmerged caption methods retrieved no more than 4 correct\nimages. In Topic 7, most methods retrieved over 6 correct\nimages. In topics with more than 1,000 correct images (Topics\n2, 3, 10), performance was mixed. Topic 3 posed significant\nchallenges, with many models retrieving no more than 4\ncorrect images. For the other topics, more than half of the\nmodels retrieved over 6 correct images.",
+          "number": 17
+        },
+        {
+          "bbox": [
+            48.96,
+            616.36,
+            300.02,
+            698.05
+          ],
+          "text": "The performance across different caption methods showed\nconsiderable variation. The single caption methods gener-\nally performed well, with LLaVA-NeXT-7B using BGE-M3\nachieving the top P@10 score of 0.71. In contrast, collective\ncaption methods showed mixed results: Video-LLaVA slightly\nunderperformed the baseline with GTE-large embeddings, and\nLWM performed poorly across both embeddings. The merged",
+          "number": 10
+        },
+        {
+          "bbox": [
+            56.93,
+            709.1,
+            164.41,
+            718.37
+          ],
+          "text": "2Version released on 2023-11-06",
+          "number": 11
+        },
+        {
+          "bbox": [
+            311.98,
+            673.02,
+            563.04,
+            718.85
+          ],
+          "text": "Difficulty in certain topics might be linked to blurry images\nin the lifelog dataset. For example, in Topic 3, blurry images\ncould hinder distinguishing screens displaying videos from\nthose engaged in other tasks, thereby reducing P@10 scores.",
+          "number": 18
+        }
+      ],
       "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
       "tables": []
     },
     {
       "page": 5,
       "text": "Method Name\nT1\nT2\nT3\nT4\nT5\nT6\nT7\nT8\nT9\nT10\nAvg CR@10\nAvg F1@10\nAvg P@10\nBaseline\nCLIP ViT-B/32\n0.4\n1.0\n0.1\n0.1\n0.9\n0.9\n0.7\n0.9\n0.3\n0.4\n0.522\n0.447\n0.57\nCLIP ViT-L/14\n0.5\n0.8\n0.7\n0.1\n1.0\n0.8\n0.3\n0.4\n0.0\n0.8\n0.475\n0.37\n0.54\nViT-SO400M-14-SigLIP-384\n0.7\n1.0\n0.0\n0.1\n1.0\n0.6\n0.7\n0.7\n0.4\n0.6\n0.506\n0.448\n0.58\nDFN5B-CLIP-ViT-H-14\n0.4\n1.0\n0.0\n0.1\n1.0\n0.7\n0.7\n0.7\n0.4\n0.8\n0.460\n0.407\n0.58\nSingle caption method with GTE-large text embedding\nIdefics2\n0.7\n0.7\n0.1\n0.0\n1.0\n0.8\n0.7\n0.8\n0.7\n0.5\n0.446\n0.478\n0.6\nLLaVA-NeXT\n0.5\n0.9\n0.4\n0.2\n1.0\n1.0\n0.6\n0.7\n0.0\n0.6\n0.518\n0.460\n0.59\nInternlm-xcomposer2-vl-7B\n0.5\n0.9\n0.4\n0.1\n1.0\n0.8\n0.6\n0.9\n0.5\n0.9\n0.506\n0.484\n0.66\nCollective caption method with GTE-large text embedding\nVideo-LLaVA\n0.4\n1.0\n0.0\n0.0\n1.0\n0.8\n0.9\n1.0\n0.0\n0.6\n0.245\n0.278\n0.57\nLWM\n0.0\n1.0\n0.0\n0.0\n1.0\n0.0\n0.9\n0.0\n0.0\n0.0\n0.060\n0.099\n0.29\nMerged caption method with GTE-large text embedding\nGPT4 fine-grained\n0.7\n0.9\n0.5\n0.0\n0.9\n0.8\n0.6\n0.6\n0.4\n0.4\n0.482\n0.485\n0.58\nGPT4 coarse-grained\n0.8\n0.9\n0.7\n0.0\n0.9\n1.0\n0.2\n0.4\n0.1\n0.3\n0.292\n0.321\n0.53\nGTE-large text embedding Combination Method\nInternlm × Video-LLaVA\n0.5\n0.9\n0.2\n0.0\n1.0\n1.0\n0.9\n0.9\n1.0\n0.9\n0.406\n0.478\n0.73\nfine-grained × coarse-grained\n0.9\n1.0\n0.6\n0.0\n1.0\n1.0\n0.5\n0.3\n0.5\n0.5\n0.426\n0.475\n0.63\nSingle caption method with BGE-M3 text embedding\nIdefics2\n0.3\n0.7\n0.2\n0.1\n1.0\n1.0\n0.6\n0.7\n0.7\n0.3\n0.532\n0.440\n0.56\nLLaVA-NeXT\n0.8\n0.9\n0.5\n0.1\n1.0\n0.9\n0.9\n0.8\n0.3\n0.9\n0.572\n0.541\n0.71\nInternlm-xcomposer2-vl-7B\n0.6\n1.0\n0.3\n0.0\n0.9\n0.9\n0.5\n0.8\n0.7\n0.9\n0.476\n0.515\n0.66\nCollective caption method with BGE-M3 text embedding\nVideo-LLaVA\n0.4\n0.2\n0.0\n0.0\n1.0\n0.8\n0.3\n0.8\n0.3\n0.8\n0.332\n0.316\n0.46\nLWM\n0.0\n1.0\n0.8\n0.0\n1.0\n0.0\n0.6\n0.0\n0.2\n0.4\n0.084\n0.127\n0.40\nMerged caption method with BGE-M3 text embedding\nGPT4 fine-grained\n0.7\n0.8\n0.4\n0.0\n0.6\n0.9\n0.4\n0.5\n0.1\n0.7\n0.422\n0.422\n0.51\nGPT4 coarse-grained\n1.0\n0.8\n0.9\n0.0\n1.0\n1.0\n0.7\n0.0\n0.0\n0.3\n0.241\n0.299\n0.57\nBGE-M3 text embedding Combination Method\nLLaVA-NeXT × Video-LLaVA\n0.7\n1.0\n0.3\n0.0\n1.0\n1.0\n0.6\n0.9\n0.7\n0.8\n0.442\n0.497\n0.7\nfine-grained × coarse-grained\n0.9\n0.7\n0.1\n0.0\n0.9\n1.0\n0.3\n0.4\n0.1\n0.3\n0.426\n0.406\n0.47\nTABLE I: Results of baseline and our CIVIL Retrieval System. Scores for Topic1 (T1) to Topic10 (T10) represent P@10.\nVI. DISCUSSION\nA. Error Analysis\nWe document errors that result in both the exclusion of\ncorrect images from the top 10 and the inclusion of incorrect\nones across 10 topics. For Topic 4, with only three correct\nimages, we focus on the top 3 retrieved images. For the CIVIL\nRetrieval System, we use the text embedding variant with the\nhighest P@10 score, excluding the combination method (see\nSection VI-C), to reduce text embedding impact on results.\nBGE-M3 text embedding is used for the Internlm-xcomposer2-\nvl-7B model. Our analysis is limited to the top 10 retrievals\nfor each topic, ignoring errors in lower-ranked results.\nenly attributed to the lifelogger. For instance, in Figure 4(a), a\nperson taking a photo on a bridge may be misidentified as the\nlifelogger, leading to an incorrect association with Topic 4.\nObject Detection Hallucination: Error arising from object\nmisidentification. As shown in Figure 4(b), an image is re-\ntrieved for Topic 1 possibly because a food item is incorrectly\nidentified as ice cream, resulting in an erroneous retrieval.\nEvent Detection Error: Error arising from event action\nmisidentification. For example, Figure 4 (c) is retrieved for\nTopic 7, even though the depicted activity (eating food) does\nnot match the topic description (cooking).\nLabeling Error: Error stemming from incorrect labeling in\nthe dataset. In Figure 4 (d), the image is not labeled under\nTopic 9, although it shows a person in a shuttle bus at an\nairport, which matches the topic’s description.\nInterpretative Labeling Error: This error arises due to\nsubjective differences in the interpretation of the dataset’s\nlabels. For instance, Figure 4 (e) is not labeled under Topic\n8, but it could be considered as “in” a car salesroom based\non varying criteria. Such errors differ from standard labeling\nerrors as they depend on individual interpretation.\nTable II presents the frequency of each error type across\nboth models for the top 10 retrievals over 10 topics. Event\ndetection errors are the most frequent, particularly impacting\nthe accuracy of image-query text pairing. Contextual image\nerrors are also notable, especially in the DFN5B-CLIP-ViT-\nH-14 model. For a fair comparison of performance between\nbaseline models and our system, we provide a corrected\n1) Error Analysis of Image Embedding Retrieval Baseline:\nWe analyze retrieval errors on ViT-SO400M-14-SigLIP-384\nand DFN5B-CLIP-ViT-H-14 for their superior performance.\nAs the embedding models’ mechanisms are not explicitly\nknown, the following error types are based on our assumptions.\nContextual Image Error: This error arises due to the model’s\nlimitation of processing a single image without considering the\ncontext from neighboring frames. For instance, in Figure 3\n(a)(b)(c), recognizing the action in image (c) (such as eating\nice cream) would require contextual information from images\n(a) and (b). Similarly, in sequence (d)(e)(f), determining\nwhether the person in (e) is reading a book or retrieving it\nfrom a printer depends on the context provided by (d) and (f).\nFirst-Person Viewpoint Error: This error occurs when ac-\ntions performed by individuals in the background are mistak-",
+      "blocks": [
+        {
+          "bbox": [
+            63.95,
+            47.59,
+            548.05,
+            340.69
+          ],
+          "text": "Method Name\nT1\nT2\nT3\nT4\nT5\nT6\nT7\nT8\nT9\nT10\nAvg CR@10\nAvg F1@10\nAvg P@10\nBaseline\nCLIP ViT-B/32\n0.4\n1.0\n0.1\n0.1\n0.9\n0.9\n0.7\n0.9\n0.3\n0.4\n0.522\n0.447\n0.57\nCLIP ViT-L/14\n0.5\n0.8\n0.7\n0.1\n1.0\n0.8\n0.3\n0.4\n0.0\n0.8\n0.475\n0.37\n0.54\nViT-SO400M-14-SigLIP-384\n0.7\n1.0\n0.0\n0.1\n1.0\n0.6\n0.7\n0.7\n0.4\n0.6\n0.506\n0.448\n0.58\nDFN5B-CLIP-ViT-H-14\n0.4\n1.0\n0.0\n0.1\n1.0\n0.7\n0.7\n0.7\n0.4\n0.8\n0.460\n0.407\n0.58\nSingle caption method with GTE-large text embedding\nIdefics2\n0.7\n0.7\n0.1\n0.0\n1.0\n0.8\n0.7\n0.8\n0.7\n0.5\n0.446\n0.478\n0.6\nLLaVA-NeXT\n0.5\n0.9\n0.4\n0.2\n1.0\n1.0\n0.6\n0.7\n0.0\n0.6\n0.518\n0.460\n0.59\nInternlm-xcomposer2-vl-7B\n0.5\n0.9\n0.4\n0.1\n1.0\n0.8\n0.6\n0.9\n0.5\n0.9\n0.506\n0.484\n0.66\nCollective caption method with GTE-large text embedding\nVideo-LLaVA\n0.4\n1.0\n0.0\n0.0\n1.0\n0.8\n0.9\n1.0\n0.0\n0.6\n0.245\n0.278\n0.57\nLWM\n0.0\n1.0\n0.0\n0.0\n1.0\n0.0\n0.9\n0.0\n0.0\n0.0\n0.060\n0.099\n0.29\nMerged caption method with GTE-large text embedding\nGPT4 fine-grained\n0.7\n0.9\n0.5\n0.0\n0.9\n0.8\n0.6\n0.6\n0.4\n0.4\n0.482\n0.485\n0.58\nGPT4 coarse-grained\n0.8\n0.9\n0.7\n0.0\n0.9\n1.0\n0.2\n0.4\n0.1\n0.3\n0.292\n0.321\n0.53\nGTE-large text embedding Combination Method\nInternlm × Video-LLaVA\n0.5\n0.9\n0.2\n0.0\n1.0\n1.0\n0.9\n0.9\n1.0\n0.9\n0.406\n0.478\n0.73\nfine-grained × coarse-grained\n0.9\n1.0\n0.6\n0.0\n1.0\n1.0\n0.5\n0.3\n0.5\n0.5\n0.426\n0.475\n0.63\nSingle caption method with BGE-M3 text embedding\nIdefics2\n0.3\n0.7\n0.2\n0.1\n1.0\n1.0\n0.6\n0.7\n0.7\n0.3\n0.532\n0.440\n0.56\nLLaVA-NeXT\n0.8\n0.9\n0.5\n0.1\n1.0\n0.9\n0.9\n0.8\n0.3\n0.9\n0.572\n0.541\n0.71\nInternlm-xcomposer2-vl-7B\n0.6\n1.0\n0.3\n0.0\n0.9\n0.9\n0.5\n0.8\n0.7\n0.9\n0.476\n0.515\n0.66\nCollective caption method with BGE-M3 text embedding\nVideo-LLaVA\n0.4\n0.2\n0.0\n0.0\n1.0\n0.8\n0.3\n0.8\n0.3\n0.8\n0.332\n0.316\n0.46\nLWM\n0.0\n1.0\n0.8\n0.0\n1.0\n0.0\n0.6\n0.0\n0.2\n0.4\n0.084\n0.127\n0.40\nMerged caption method with BGE-M3 text embedding\nGPT4 fine-grained\n0.7\n0.8\n0.4\n0.0\n0.6\n0.9\n0.4\n0.5\n0.1\n0.7\n0.422\n0.422\n0.51\nGPT4 coarse-grained\n1.0\n0.8\n0.9\n0.0\n1.0\n1.0\n0.7\n0.0\n0.0\n0.3\n0.241\n0.299\n0.57\nBGE-M3 text embedding Combination Method\nLLaVA-NeXT × Video-LLaVA\n0.7\n1.0\n0.3\n0.0\n1.0\n1.0\n0.6\n0.9\n0.7\n0.8\n0.442\n0.497\n0.7\nfine-grained × coarse-grained\n0.9\n0.7\n0.1\n0.0\n0.9\n1.0\n0.3\n0.4\n0.1\n0.3\n0.426\n0.406\n0.47",
+          "number": 0
+        },
+        {
+          "bbox": [
+            54.89,
+            348.64,
+            557.11,
+            358.6
+          ],
+          "text": "TABLE I: Results of baseline and our CIVIL Retrieval System. Scores for Topic1 (T1) to Topic10 (T10) represent P@10.",
+          "number": 1
+        },
+        {
+          "bbox": [
+            138.35,
+            382.71,
+            210.64,
+            392.68
+          ],
+          "text": "VI. DISCUSSION",
+          "number": 2
+        },
+        {
+          "bbox": [
+            48.96,
+            401.81,
+            122.02,
+            411.78
+          ],
+          "text": "A. Error Analysis",
+          "number": 3
+        },
+        {
+          "bbox": [
+            48.96,
+            419.52,
+            300.02,
+            537.08
+          ],
+          "text": "We document errors that result in both the exclusion of\ncorrect images from the top 10 and the inclusion of incorrect\nones across 10 topics. For Topic 4, with only three correct\nimages, we focus on the top 3 retrieved images. For the CIVIL\nRetrieval System, we use the text embedding variant with the\nhighest P@10 score, excluding the combination method (see\nSection VI-C), to reduce text embedding impact on results.\nBGE-M3 text embedding is used for the Internlm-xcomposer2-\nvl-7B model. Our analysis is limited to the top 10 retrievals\nfor each topic, ignoring errors in lower-ranked results.",
+          "number": 4
+        },
+        {
+          "bbox": [
+            311.98,
+            382.71,
+            563.04,
+            634.49
+          ],
+          "text": "enly attributed to the lifelogger. For instance, in Figure 4(a), a\nperson taking a photo on a bridge may be misidentified as the\nlifelogger, leading to an incorrect association with Topic 4.\nObject Detection Hallucination: Error arising from object\nmisidentification. As shown in Figure 4(b), an image is re-\ntrieved for Topic 1 possibly because a food item is incorrectly\nidentified as ice cream, resulting in an erroneous retrieval.\nEvent Detection Error: Error arising from event action\nmisidentification. For example, Figure 4 (c) is retrieved for\nTopic 7, even though the depicted activity (eating food) does\nnot match the topic description (cooking).\nLabeling Error: Error stemming from incorrect labeling in\nthe dataset. In Figure 4 (d), the image is not labeled under\nTopic 9, although it shows a person in a shuttle bus at an\nairport, which matches the topic’s description.\nInterpretative Labeling Error: This error arises due to\nsubjective differences in the interpretation of the dataset’s\nlabels. For instance, Figure 4 (e) is not labeled under Topic\n8, but it could be considered as “in” a car salesroom based\non varying criteria. Such errors differ from standard labeling\nerrors as they depend on individual interpretation.",
+          "number": 6
+        },
+        {
+          "bbox": [
+            311.98,
+            637.16,
+            563.04,
+            718.85
+          ],
+          "text": "Table II presents the frequency of each error type across\nboth models for the top 10 retrievals over 10 topics. Event\ndetection errors are the most frequent, particularly impacting\nthe accuracy of image-query text pairing. Contextual image\nerrors are also notable, especially in the DFN5B-CLIP-ViT-\nH-14 model. For a fair comparison of performance between\nbaseline models and our system, we provide a corrected",
+          "number": 7
+        },
+        {
+          "bbox": [
+            48.96,
+            539.95,
+            300.02,
+            718.85
+          ],
+          "text": "1) Error Analysis of Image Embedding Retrieval Baseline:\nWe analyze retrieval errors on ViT-SO400M-14-SigLIP-384\nand DFN5B-CLIP-ViT-H-14 for their superior performance.\nAs the embedding models’ mechanisms are not explicitly\nknown, the following error types are based on our assumptions.\nContextual Image Error: This error arises due to the model’s\nlimitation of processing a single image without considering the\ncontext from neighboring frames. For instance, in Figure 3\n(a)(b)(c), recognizing the action in image (c) (such as eating\nice cream) would require contextual information from images\n(a) and (b). Similarly, in sequence (d)(e)(f), determining\nwhether the person in (e) is reading a book or retrieving it\nfrom a printer depends on the context provided by (d) and (f).\nFirst-Person Viewpoint Error: This error occurs when ac-\ntions performed by individuals in the background are mistak-",
+          "number": 5
+        }
+      ],
       "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
       "tables": [
         [
           [
@@ -216,26 +1131,2213 @@
     {
       "page": 6,
       "text": "evaluation on average P@10 in Table III.\n(a)\n(b)\n(c)\nFig. 4: Examples of errors across different methods.\n(d)\n(e)\n(f)\nFig. 3: Examples of Contextual Images Problem\nonly image 1 to image 3 are correct, the 8-frame window\nwould includes 5 irrelevant frames. This limitation affects\ncoarse-grained and collective caption retrieval.\nTable II summarizes the error occurrences for different\nmodels. Text-embedding retrieval and event detection errors\nare the main bottlenecks, relying heavily on text embedding\naccuracy and precise image captions. Unlike the collective\ncaption method, coarse-grained retrieval reduces error propa-\ngation by dynamically grouping images and avoiding irrelevant\nadditions. Table III presents the P@10 results after removing\nlabel errors and interpretative labeling errors. Notably, 4 out of\n10 captioning methods perform better than the baseline mod-\nels, with LLaVA-NeXT-7B and its combination with Video-\nLLaVA achieving the highest score of 0.78.\n3) Analysis of Merged Caption Method:\nGPT-4-turbo-\nvision effectively generates fine-grained captions by using\ncontext from neighboring images. However, relying on pre-\nvious summaries for subsequent captions can cause error\npropagation if inaccuracies occur. Interestingly, coarse-grained\ncaptions and experience summaries excel in reasoning across\nmultiple images, suggesting that concatenating these sum-\nmaries could reconstruct personal daily experiences.\nB. Improvement of Text Retrieval Process\nWe conducted an experiment using GPT-4o to identify the\n10 most similar captions from the top 100 initially retrieved\nusing the GTE-large text embedding model, selected for its\nsuperior performance with fine-grained captions. GPT-4o’s\nfine-grained approach was chosen due to a higher incidence\nof retrieval issues with text embeddings. To leverage GPT-\n4o’s strong instruction-following capabilities, dataset-provided\ntopic descriptions were included in the prompt.\n2) Analysis of CIVIL Retrieval Methods: CIVIL retrieval\nmethods convert images into textual captions before retrieval,\nallowing for a more interpretable analysis. While they share\nerrors similar to those observed in the baseline model—such\nas contextual image errors, first-person viewpoint errors,\nevent detection errors, object detection hallucinations, labeling\nerrors, and interpretative labeling errors—they also present\nunique challenges specific to the captioning approach. The\nfollowing errors are specific to caption retrieval methods:\nText Embedding Retrieval Error: Error in which the caption\nof an incorrect image ranks higher in retrieval due to poor text\nembedding performance or lack of better caption candidates\nin the pool. For instance, the BGE-M3 text embedding model\nranks the sentence “Driving a car, possibly starting a journey”\ncloser to Topic 9 than a more accurate description “The series\nof images show the individual engaging with their smartphone\nand holding a coffee cup while traveling on a bus”.\nLack of Specific Details: This error occurs when a caption\nomits essential details, such as location or activity information,\nthat are required by the prompt. For instance, Idefics2 gener-\nates a vague caption, “In this image I can see a screen and a\ndevice,” for Figure 4(f), without specifying that it depicts an\nairplane cabin. Note that detecting this error can be subjective.\nOver-Interpretation Error: This error occurs when caption\nmodels infer or associate details that are not clearly visible\nin the image. For example, LLaVA-NeXT-7B generates the\ncaption for Figure 4(g): “... as a person is about to enjoy\na bag of chips. The individual, whose hand is visible in the\nforeground, is holding the bag with a sense of eagerness. The\nbag is from Fresh Fish & Chips, suggesting that the person\nmight be at a seaside location...” This caption speculates\nabout the setting, incorrectly associating a bag of chips with\na “seaside location,” which is an over-interpretation.\nError Propagation: Specific to collective caption and coarse-\ngrained caption retrieval, this error arises when each retrieved\ncaption represents multiple images, and errors in that caption\npropagate across all associated images. Unlike single-image\ncaptioning, this can lead to repeated errors in retrieval.\nFixed Frame Limitation: This error occurs when a model\nprocesses a fixed number of frames (e.g., 8). For example, if\nThe result of incorporating GPT-4o shows notable improve-\nments. The P@10 scores for Topic 1 through Topic 10 were\n0.7, 0.9, 0.5, 0.0, 1.0, 1.0, 0.6, 0.5, 0.9, and 0.5, respectively.\nThis improved the average P@10 from 0.58 to 0.66, and the\ncorrected P@10 from 0.72 to 0.79, highlighting the effective-\nness of GPT-4o in aligning captions with queries. However,\ndue to the high cost of using GPT-4o, future enhancements\nmay involve exploring combination of text embedding model\nand reranker model to improve retrieval accuracy.",
+      "blocks": [
+        {
+          "bbox": [
+            48.96,
+            51.35,
+            218.24,
+            61.32
+          ],
+          "text": "evaluation on average P@10 in Table III.",
+          "number": 0
+        },
+        {
+          "bbox": [
+            99.2,
+            132.41,
+            249.79,
+            141.37
+          ],
+          "text": "(a)\n(b)\n(c)",
+          "number": 1
+        },
+        {
+          "bbox": [
+            330.52,
+            183.92,
+            544.49,
+            193.88
+          ],
+          "text": "Fig. 4: Examples of errors across different methods.",
+          "number": 5
+        },
+        {
+          "bbox": [
+            98.95,
+            198.47,
+            249.29,
+            207.44
+          ],
+          "text": "(d)\n(e)\n(f)",
+          "number": 2
+        },
+        {
+          "bbox": [
+            75.41,
+            215.05,
+            273.57,
+            225.01
+          ],
+          "text": "Fig. 3: Examples of Contextual Images Problem",
+          "number": 3
+        },
+        {
+          "bbox": [
+            311.98,
+            219.99,
+            563.04,
+            254.04
+          ],
+          "text": "only image 1 to image 3 are correct, the 8-frame window\nwould includes 5 irrelevant frames. This limitation affects\ncoarse-grained and collective caption retrieval.",
+          "number": 6
+        },
+        {
+          "bbox": [
+            311.98,
+            256.84,
+            563.04,
+            386.36
+          ],
+          "text": "Table II summarizes the error occurrences for different\nmodels. Text-embedding retrieval and event detection errors\nare the main bottlenecks, relying heavily on text embedding\naccuracy and precise image captions. Unlike the collective\ncaption method, coarse-grained retrieval reduces error propa-\ngation by dynamically grouping images and avoiding irrelevant\nadditions. Table III presents the P@10 results after removing\nlabel errors and interpretative labeling errors. Notably, 4 out of\n10 captioning methods perform better than the baseline mod-\nels, with LLaVA-NeXT-7B and its combination with Video-\nLLaVA achieving the highest score of 0.78.",
+          "number": 7
+        },
+        {
+          "bbox": [
+            311.98,
+            389.39,
+            563.04,
+            483.22
+          ],
+          "text": "3) Analysis of Merged Caption Method:\nGPT-4-turbo-\nvision effectively generates fine-grained captions by using\ncontext from neighboring images. However, relying on pre-\nvious summaries for subsequent captions can cause error\npropagation if inaccuracies occur. Interestingly, coarse-grained\ncaptions and experience summaries excel in reasoning across\nmultiple images, suggesting that concatenating these sum-\nmaries could reconstruct personal daily experiences.",
+          "number": 8
+        },
+        {
+          "bbox": [
+            311.98,
+            498.67,
+            482.76,
+            508.64
+          ],
+          "text": "B. Improvement of Text Retrieval Process",
+          "number": 9
+        },
+        {
+          "bbox": [
+            311.98,
+            516.79,
+            563.04,
+            610.44
+          ],
+          "text": "We conducted an experiment using GPT-4o to identify the\n10 most similar captions from the top 100 initially retrieved\nusing the GTE-large text embedding model, selected for its\nsuperior performance with fine-grained captions. GPT-4o’s\nfine-grained approach was chosen due to a higher incidence\nof retrieval issues with text embeddings. To leverage GPT-\n4o’s strong instruction-following capabilities, dataset-provided\ntopic descriptions were included in the prompt.",
+          "number": 10
+        },
+        {
+          "bbox": [
+            48.96,
+            239.99,
+            300.02,
+            718.85
+          ],
+          "text": "2) Analysis of CIVIL Retrieval Methods: CIVIL retrieval\nmethods convert images into textual captions before retrieval,\nallowing for a more interpretable analysis. While they share\nerrors similar to those observed in the baseline model—such\nas contextual image errors, first-person viewpoint errors,\nevent detection errors, object detection hallucinations, labeling\nerrors, and interpretative labeling errors—they also present\nunique challenges specific to the captioning approach. The\nfollowing errors are specific to caption retrieval methods:\nText Embedding Retrieval Error: Error in which the caption\nof an incorrect image ranks higher in retrieval due to poor text\nembedding performance or lack of better caption candidates\nin the pool. For instance, the BGE-M3 text embedding model\nranks the sentence “Driving a car, possibly starting a journey”\ncloser to Topic 9 than a more accurate description “The series\nof images show the individual engaging with their smartphone\nand holding a coffee cup while traveling on a bus”.\nLack of Specific Details: This error occurs when a caption\nomits essential details, such as location or activity information,\nthat are required by the prompt. For instance, Idefics2 gener-\nates a vague caption, “In this image I can see a screen and a\ndevice,” for Figure 4(f), without specifying that it depicts an\nairplane cabin. Note that detecting this error can be subjective.\nOver-Interpretation Error: This error occurs when caption\nmodels infer or associate details that are not clearly visible\nin the image. For example, LLaVA-NeXT-7B generates the\ncaption for Figure 4(g): “... as a person is about to enjoy\na bag of chips. The individual, whose hand is visible in the\nforeground, is holding the bag with a sense of eagerness. The\nbag is from Fresh Fish & Chips, suggesting that the person\nmight be at a seaside location...” This caption speculates\nabout the setting, incorrectly associating a bag of chips with\na “seaside location,” which is an over-interpretation.\nError Propagation: Specific to collective caption and coarse-\ngrained caption retrieval, this error arises when each retrieved\ncaption represents multiple images, and errors in that caption\npropagate across all associated images. Unlike single-image\ncaptioning, this can lead to repeated errors in retrieval.\nFixed Frame Limitation: This error occurs when a model\nprocesses a fixed number of frames (e.g., 8). For example, if",
+          "number": 4
+        },
+        {
+          "bbox": [
+            311.98,
+            613.25,
+            563.04,
+            718.85
+          ],
+          "text": "The result of incorporating GPT-4o shows notable improve-\nments. The P@10 scores for Topic 1 through Topic 10 were\n0.7, 0.9, 0.5, 0.0, 1.0, 1.0, 0.6, 0.5, 0.9, and 0.5, respectively.\nThis improved the average P@10 from 0.58 to 0.66, and the\ncorrected P@10 from 0.72 to 0.79, highlighting the effective-\nness of GPT-4o in aligning captions with queries. However,\ndue to the high cost of using GPT-4o, future enhancements\nmay involve exploring combination of text embedding model\nand reranker model to improve retrieval accuracy.",
+          "number": 11
+        }
+      ],
       "images": 7,
+      "figure_captions": [
+        "Fig. 4: Examples of errors across different methods.",
+        "Fig. 3: Examples of Contextual Images Problem"
+      ],
+      "table_captions": [],
       "tables": []
     },
     {
       "page": 7,
       "text": "(a)\n(b)\n(c)\n(d)\n(e)\n(f)\n(g)\n(h)\n(i)\n(j)\n(k)\nViT-SO400M-14-SigLIP-384\n4\n2\n-\n18\n-\n-\n3\n10\n3\n-\n-\nDFN5B-CLIP-ViT-H-14\n8\n1\n-\n19\n-\n-\n4\n7\n3\n-\n-\nSingle Caption Method: Idefics2\n8\n2\n11\n14\n2\n0\n0\n5\n4\n-\n-\nSingle Caption Method: LLaVA-NeXT\n3\n0\n4\n6\n0\n3\n3\n5\n2\n-\n-\nSingle Caption Method: Internlm-xcomposer2-vl-7B\n8\n0\n13\n11\n1\n1\n0\n1\n2\n-\n-\nCollective Caption Method: Video-LLaVA\n-\n0\n4\n2\n3\n0\n0\n0\n0\n39\n5\nCollective Caption Method: LWM\n-\n0\n7\n10\n2\n0\n0\n1\n0\n64\n4\nMerged Caption Method: GPT4 fine-grained\n-\n1\n15\n11\n9\n0\n1\n8\n6\n-\n-\nMerged Caption Method: GPT4 coarse-grained\n-\n0\n10\n8\n1\n1\n0\n3\n6\n14\n2\nTABLE II: Error occurrences among different methods. (a) Contextual Images Error (b) First-Person Viewpoint Error (c) Text\nEmbedding Retrieval Problem (d) Event Detection Error (e) Lack of Specific Details (f) Over-Interpretation Error (g) Object\nDetection Hallucination (h) Labeling Error (i) Interpretative Labeling Error (j) Errors Propagation (k) Fixed Frame Limitation\nText Embedding\nMethod\nCorrected\nAvg P@10\nGuinness and a glass of water. ” The coarse-grained caption\nstates: “Consuming a beverage in a restaurant with a pint\nof Guinness and empty dishes. ” The coarse-grained caption\nsuggests a restaurant setting, while the fine-grained caption\nconfirms the specific image in the sequence. The ranking\nimproved from 197th to 7th when combined with the coarse-\ngrained caption’s score, which initially ranked 4th.\nModel\nViT-SO400M-14-SigLIP-384\n0.71\n-\nDFN5B-CLIP-ViT-H-14\n0.68\n-\nIdefics2\n0.69\nGTE-large\nLLaVA-NeXT\n0.78\nBGE-M3\nInternlm-xcomposer2-vl-7B\n0.69\nBGE-M3\nVideo-LLaVA\n0.57\nGTE-large\nLWM\n0.41\nBGE-M3\nGPT4 fine-grained\n0.72\nGTE-large\nGPT4 coarse-grained\n0.66\nBGE-M3\nInternlm × Video-LLaVA\n0.76\nGTE-large\nLLaVA-NeXT × Video-LLaVA\n0.78\nBGE-M3\nfine-grained × coarse-grained\n0.70\nGTE-large\nTABLE III: Correction of the label error and the problem of\nerror depending on individual interpretation.\nC. Impact of Combination Method\nNegative Replacement Effect Analysis: In Figure 5 (c), the\nimage is incorrectly categorized under topic 1. The single\ncaption reads: “The image captures a convenience store at\n18:15, with the cash register and various snacks on display.”\nThe collective caption states: “At 18:14, a person is seen\nholding a cone of ice cream, ready to enjoy a sweet treat. The\nscene is set on a beach.. ”. Although the sequence of images\nassociated with the collective caption contains the correct\nlabeled images, some accurate single captions within this\nsequence are not ranked higher. As a result, no improvement is\nobserved after applying the combination method. The ranking\nimproved from 2828th with the single caption to 4th after the\ncombination, with the collective caption initially ranked 2nd.\nWe analyze the replacement effects from combining simi-\nlarity scores using GTE-large embeddings, focusing on cases\nwhere an image with the lowest similarity score—whether\nfrom a single or fine-grained caption—enters the top 10\nretrievals. If a correct image enters the top 10, it is termed a\npositive replacement effect; conversely, if an incorrect image\nenters, it is termed a negative replacement effect. The replace-\nment effect does not guarantee whether a correct or incorrect\nimage will be replaced, and identifying the specific image\nreplaced after using the combination method is challenging.\nIn Figure 5 (d), the image is incorrectly labeled as topic 10.\nThe fine-grained caption is: “Reading a text-heavy document\non a brightly lit screen in darkness.” The coarse-grained\ncaption is: “Reading and reviewing text-heavy documents with\ncolorful highlights on a screen in darkness.” These captions are\nsimilar due to the design of the merging method. The ranking\ndifference between fine-grained and coarse-grained captions\nmay be due to the GTE-large embedding model’s performance\nor the lack of a suitable coarse-grained caption for Topic\n10. The ranking increased from 153rd with the fine-grained\ncaption to 7th after the combination, with the coarse-grained\ncaption initially ranked 7th.\nFigure 5 presents examples of positive and negative replace-\nment effects for combinations of single caption from Internlm-\nxcomposer2-vl-7B and collective captions from LLaVA-\nNeXT-7B, as well as fine-grained and coarse-grained captions.\nPositive Replacement Effect Analysis: In Figure 5 (a), the\ncorrect label is topic 1. The single caption reads: “A person\nis holding an ice cream cone in their hand.”. The collective\ncaption reads: “ At 18:14, a person is seen holding a cone of\nice cream, . . . , The scene is set on a beach, ...”. While the\nsingle caption lacks beach context, it helps identify the specific\nimage among collectively captioned images. The image’s\nranking improved from 4,978th to 9th when combined with\nthe collective caption score, originally ranked 5th.\nThere are 41 positive replacement effects in the Internlm ×\nVideo-LLaVA combination and 32 in the GPT4 fine-grained\n× GPT4 coarse-grained combination. In contrast, there are 22\nnegative effects in the first combination and 24 in the second.\nWhile it remains unclear how many incorrect images are\nreplaced by positive effects, these results provide insights into\nwhy the combination method surpasses single and collective\ncaption methods with GTE-large text embeddings.\nIn Figure 5 (b), the correct label is topic 2. The fine-grained\ncaption states: “Person at a restaurant table with a pint of",
+      "blocks": [
+        {
+          "bbox": [
+            51.95,
+            47.53,
+            553.9,
+            147.75
+          ],
+          "text": "(a)\n(b)\n(c)\n(d)\n(e)\n(f)\n(g)\n(h)\n(i)\n(j)\n(k)\nViT-SO400M-14-SigLIP-384\n4\n2\n-\n18\n-\n-\n3\n10\n3\n-\n-\nDFN5B-CLIP-ViT-H-14\n8\n1\n-\n19\n-\n-\n4\n7\n3\n-\n-\nSingle Caption Method: Idefics2\n8\n2\n11\n14\n2\n0\n0\n5\n4\n-\n-\nSingle Caption Method: LLaVA-NeXT\n3\n0\n4\n6\n0\n3\n3\n5\n2\n-\n-\nSingle Caption Method: Internlm-xcomposer2-vl-7B\n8\n0\n13\n11\n1\n1\n0\n1\n2\n-\n-\nCollective Caption Method: Video-LLaVA\n-\n0\n4\n2\n3\n0\n0\n0\n0\n39\n5\nCollective Caption Method: LWM\n-\n0\n7\n10\n2\n0\n0\n1\n0\n64\n4\nMerged Caption Method: GPT4 fine-grained\n-\n1\n15\n11\n9\n0\n1\n8\n6\n-\n-\nMerged Caption Method: GPT4 coarse-grained\n-\n0\n10\n8\n1\n1\n0\n3\n6\n14\n2",
+          "number": 0
+        },
+        {
+          "bbox": [
+            48.96,
+            155.76,
+            563.03,
+            189.64
+          ],
+          "text": "TABLE II: Error occurrences among different methods. (a) Contextual Images Error (b) First-Person Viewpoint Error (c) Text\nEmbedding Retrieval Problem (d) Event Detection Error (e) Lack of Specific Details (f) Over-Interpretation Error (g) Object\nDetection Hallucination (h) Labeling Error (i) Interpretative Labeling Error (j) Errors Propagation (k) Fixed Frame Limitation",
+          "number": 1
+        },
+        {
+          "bbox": [
+            230.82,
+            209.92,
+            290.98,
+            218.89
+          ],
+          "text": "Text Embedding",
+          "number": 3
+        },
+        {
+          "bbox": [
+            58.01,
+            209.92,
+            226.84,
+            228.85
+          ],
+          "text": "Method\nCorrected\nAvg P@10",
+          "number": 2
+        },
+        {
+          "bbox": [
+            311.98,
+            213.75,
+            563.04,
+            295.44
+          ],
+          "text": "Guinness and a glass of water. ” The coarse-grained caption\nstates: “Consuming a beverage in a restaurant with a pint\nof Guinness and empty dishes. ” The coarse-grained caption\nsuggests a restaurant setting, while the fine-grained caption\nconfirms the specific image in the sequence. The ranking\nimproved from 197th to 7th when combined with the coarse-\ngrained caption’s score, which initially ranked 4th.",
+          "number": 10
+        },
+        {
+          "bbox": [
+            58.01,
+            219.88,
+            280.0,
+            350.39
+          ],
+          "text": "Model\nViT-SO400M-14-SigLIP-384\n0.71\n-\nDFN5B-CLIP-ViT-H-14\n0.68\n-\nIdefics2\n0.69\nGTE-large\nLLaVA-NeXT\n0.78\nBGE-M3\nInternlm-xcomposer2-vl-7B\n0.69\nBGE-M3\nVideo-LLaVA\n0.57\nGTE-large\nLWM\n0.41\nBGE-M3\nGPT4 fine-grained\n0.72\nGTE-large\nGPT4 coarse-grained\n0.66\nBGE-M3\nInternlm × Video-LLaVA\n0.76\nGTE-large\nLLaVA-NeXT × Video-LLaVA\n0.78\nBGE-M3\nfine-grained × coarse-grained\n0.70\nGTE-large",
+          "number": 4
+        },
+        {
+          "bbox": [
+            48.96,
+            358.4,
+            300.02,
+            380.32
+          ],
+          "text": "TABLE III: Correction of the label error and the problem of\nerror depending on individual interpretation.",
+          "number": 5
+        },
+        {
+          "bbox": [
+            48.96,
+            404.96,
+            191.43,
+            414.93
+          ],
+          "text": "C. Impact of Combination Method",
+          "number": 6
+        },
+        {
+          "bbox": [
+            311.98,
+            306.97,
+            563.04,
+            460.49
+          ],
+          "text": "Negative Replacement Effect Analysis: In Figure 5 (c), the\nimage is incorrectly categorized under topic 1. The single\ncaption reads: “The image captures a convenience store at\n18:15, with the cash register and various snacks on display.”\nThe collective caption states: “At 18:14, a person is seen\nholding a cone of ice cream, ready to enjoy a sweet treat. The\nscene is set on a beach.. ”. Although the sequence of images\nassociated with the collective caption contains the correct\nlabeled images, some accurate single captions within this\nsequence are not ranked higher. As a result, no improvement is\nobserved after applying the combination method. The ranking\nimproved from 2828th with the single caption to 4th after the\ncombination, with the collective caption initially ranked 2nd.",
+          "number": 11
+        },
+        {
+          "bbox": [
+            48.96,
+            421.17,
+            300.02,
+            538.72
+          ],
+          "text": "We analyze the replacement effects from combining simi-\nlarity scores using GTE-large embeddings, focusing on cases\nwhere an image with the lowest similarity score—whether\nfrom a single or fine-grained caption—enters the top 10\nretrievals. If a correct image enters the top 10, it is termed a\npositive replacement effect; conversely, if an incorrect image\nenters, it is termed a negative replacement effect. The replace-\nment effect does not guarantee whether a correct or incorrect\nimage will be replaced, and identifying the specific image\nreplaced after using the combination method is challenging.",
+          "number": 7
+        },
+        {
+          "bbox": [
+            311.98,
+            472.11,
+            563.04,
+            613.58
+          ],
+          "text": "In Figure 5 (d), the image is incorrectly labeled as topic 10.\nThe fine-grained caption is: “Reading a text-heavy document\non a brightly lit screen in darkness.” The coarse-grained\ncaption is: “Reading and reviewing text-heavy documents with\ncolorful highlights on a screen in darkness.” These captions are\nsimilar due to the design of the merging method. The ranking\ndifference between fine-grained and coarse-grained captions\nmay be due to the GTE-large embedding model’s performance\nor the lack of a suitable coarse-grained caption for Topic\n10. The ranking increased from 153rd with the fine-grained\ncaption to 7th after the combination, with the coarse-grained\ncaption initially ranked 7th.",
+          "number": 12
+        },
+        {
+          "bbox": [
+            48.96,
+            540.98,
+            300.02,
+            694.67
+          ],
+          "text": "Figure 5 presents examples of positive and negative replace-\nment effects for combinations of single caption from Internlm-\nxcomposer2-vl-7B and collective captions from LLaVA-\nNeXT-7B, as well as fine-grained and coarse-grained captions.\nPositive Replacement Effect Analysis: In Figure 5 (a), the\ncorrect label is topic 1. The single caption reads: “A person\nis holding an ice cream cone in their hand.”. The collective\ncaption reads: “ At 18:14, a person is seen holding a cone of\nice cream, . . . , The scene is set on a beach, ...”. While the\nsingle caption lacks beach context, it helps identify the specific\nimage among collectively captioned images. The image’s\nranking improved from 4,978th to 9th when combined with\nthe collective caption score, originally ranked 5th.",
+          "number": 8
+        },
+        {
+          "bbox": [
+            311.98,
+            624.84,
+            563.04,
+            718.85
+          ],
+          "text": "There are 41 positive replacement effects in the Internlm ×\nVideo-LLaVA combination and 32 in the GPT4 fine-grained\n× GPT4 coarse-grained combination. In contrast, there are 22\nnegative effects in the first combination and 24 in the second.\nWhile it remains unclear how many incorrect images are\nreplaced by positive effects, these results provide insights into\nwhy the combination method surpasses single and collective\ncaption methods with GTE-large text embeddings.",
+          "number": 13
+        },
+        {
+          "bbox": [
+            48.96,
+            696.93,
+            300.02,
+            718.85
+          ],
+          "text": "In Figure 5 (b), the correct label is topic 2. The fine-grained\ncaption states: “Person at a restaurant table with a pint of",
+          "number": 9
+        }
+      ],
       "images": 0,
+      "figure_captions": [
+        "Figure 5 presents examples of positive and negative replace-"
+      ],
+      "table_captions": [],
       "tables": []
     },
     {
       "page": 8,
       "text": "REFERENCES\n[1] T. Maekawa, “A sensor device for automatic food lifelogging that is\nembedded in home ceiling light: A preliminary investigation,” in 2013\n7th International Conference on Pervasive Computing Technologies for\nHealthcare and Workshops, 2013, pp. 405–407.\n[2] A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Unanswerable question\nFig. 5: Examples of Combination effect.\ncorrection in question answering over personal knowledge base,” AAAI,\nvol. 35, no. 16, pp. 14 266–14 275, May 2021.\n[3] A. Yen, M. Fu, W. Ang, T. Chu, S. Tsai, H. Huang, and H. Chen,\nVII. CONCLUSION AND FUTURE WORK\n“Visual lifelog retrieval: humans and machines interpretation on first-\nperson images,” Multimedia Tools and Applications, vol. 82, no. 24, pp.\n37 757–37 787, Oct. 2023.\n[4] T.-T. Chu, A.-Z. Yen, W.-H. Ang, H.-H. Huang, and H.-H. Chen,\n“Vidlife: A dataset for life event extraction from videos,” in CIKM,\n2021, pp. 4436–4444.\n[5] Q.-L. Tran, L.-D. Tran, B. Nguyen, and C. Gurrin, “Memoriease: An\ninteractive lifelog retrieval system for lsc’23,” in Proceedings of the 6th\nAnnual ACM Lifelog Search Challenge, 2023, p. 30–35.\n[6] K. Schoeffmann, “lifexplore at the lifelog search challenge 2023,” in\nProceedings of the 6th Annual ACM Lifelog Search Challenge, 2023, p.\n53–58.\n[7] N. Alam, Y. Graham, and C. Gurrin, “Memento 2.0: An improved lifelog\nsearch engine for lsc’22,” in Proceedings of the 5th Annual on Lifelog\nSearch Challenge, 2022, p. 2–7.\n[8] L.-D. Tran, M.-D. Nguyen, B. Nguyen, H. Lee, L. Zhou, and C. Gurrin,\n“E-mysc´eal: Embedding-based interactive lifelog retrieval system for\nlsc’22,” in Proceedings of the 5th Annual on Lifelog Search Challenge,\n2022, p. 32–37.\n[9] T.-N. Nguyen, T.-K. Le, V.-T. Ninh, C. Gurrin, M.-T. Tran, T. B. Nguyen,\nRecently, individuals increasingly document their lives\nthrough blogs, social media, photos, and videos, significantly\ncontributing to the massive data generation. This vast amount\nof personal data holds potential for life assistance services,\nenabling users to retrieve related images from given text\nqueries. However, the semantic gap between textual queries\nand visual lifelogs often impedes the retrieval of desired\nexperiences. To address this, we propose a Caption-Integrated\nVisual Lifelog Retrieval System that converts images into\ncaptions and uses a text embedding model to map both image\ncaptions and user queries into a unified vector space. Our\napproach outperforms baseline methods that directly embed\nimages and text into the same vector space.\nG. Healy, A. Caputo, and S. Smyth, “E-lifeseeker: An interactive lifelog\nsearch engine for lsc’23,” in Proceedings of the 6th Annual ACM Lifelog\nSearch Challenge, 2023, p. 13–17.\n[10] C. Gurrin, H. Joho, F. Hopfgartner, L. Zhou, V.-T. Ninh, T.-K. Le,\nR. Albatal, D.-T. Dang-Nguyen, and G. Healy, “Overview of the ntcir-\n14 lifelog-3 task,” in Proceedings of the 14th NTCIR conference.\nNII,\n2019, pp. 14–26.\n[11] H. Zhang, A. Sun, W. Jing, G. Nan, L. Zhen, J. T. Zhou, and R. S. M.\nGoh, “Video corpus moment retrieval with contrastive learning,” in\nSIGIR, ser. SIGIR ’21, 2021.\n[12] I. Qasim, A. Horsch, and D. K. Prasad, “Dense video captioning: A\nWe also provide a textual dataset in our experiment gen-\nerated from the NTCIR-14 Lifelog-3 dataset, to support fur-\nther research in lifelogging retrieval and comprehension. The\ndataset includes captions generated by single, collective, and\nmerged caption methods, the latter offering fine-grained cap-\ntions, group-level coarse-grained captions, and comprehensive\nexperience summaries. This enables analysis of how LVLMs\ncan reconstruct daily events through concatenated experience\nsummaries or coarse-grained captions.\nsurvey of techniques, datasets and evaluation protocols,” 2023.\n[13] X. Zhou, A. Arnab, S. Buch, S. Yan, A. Myers, X. Xiong, A. Nagrani,\nand C. Schmid, “Streaming dense video captioning,” 2024.\n[14] J. Achiam, S. Adler, S. Agarwal, L. Ahmad, I. Akkaya, F. L. Aleman,\nD. Almeida, J. Altenschmidt, S. Altman, S. Anadkat et al., “Gpt-4\ntechnical report,” arXiv preprint arXiv:2303.08774, 2023.\n[15] B. Ionescu, H. M¨uller, R. P´eteri, Y. D. Cid, V. Liauchuk, V. Kovalev,\nFuture work will incorporate methods to improve cluster\nrecall into our system, enhancing the diversity of retrieved\nimages to better align with real-world user needs. Furthermore,\nwith advancements in LVLMs like GPT-4o and Gemini-Pro,\nwe aim to explore how well-crafted prompts can reduce issues\nsuch as hallucinations and improve accuracy in identifying key\nelements within visual data.\nD. Klimuk, A. Tarasau, A. B. Abacha, S. A. Hasan et al., “ImageCLEF\n2019: Multimedia retrieval in medicine, lifelogging, security and nature,”\nin Experimental IR Meets Multilinguality, Multimodality, and Interac-\ntion, ser. Proceedings of the 10th International Conference of the CLEF\nAssociation (CLEF 2019), 2019.\n[16] A. Radford, J. W. Kim, C. Hallacy, A. Ramesh, G. Goh, S. Agarwal,\nACKNOWLEDGEMENTS\nG. Sastry, A. Askell, P. Mishkin, J. Clark, G. Krueger, and I. Sutskever,\n“Learning transferable visual models from natural language supervi-\nsion,” 2021.\n[17] X. Zhai, B. Mustafa, A. Kolesnikov, and L. Beyer, “Sigmoid loss for\nlanguage image pre-training,” 2023.\n[18] A. Fang, A. M. Jose, A. Jain, L. Schmidt, A. Toshev, and V. Shankar,\n“Data filtering networks,” 2023.\n[19] H. Laurenc¸on, L. Tronchon, M. Cord, and V. Sanh, “What matters when\nThis research was partially supported by Google gift toward\nthe work on Multimodal User Profiling for Personalized Infor-\nmation Access, National Science and Technology Council, Tai-\nwan, under grants NSTC 112-2634-F-002-005-, and Ministry\nof Education (MOE) in Taiwan, under grants 113L900901.\nbuilding vision-language models?” 2024.\n[20] H. Liu, C. Li, Y. Li, B. Li, Y. Zhang, S. Shen, and Y. J. Lee, “Llava-next:\nIEEE COPYRIGHT NOTICE\nImproved reasoning, ocr, and world knowledge,” January 2024.\n[21] X. Dong, P. Zhang, Y. Zang, Y. Cao, B. Wang, L. Ouyang, X. Wei,\nS. Zhang, H. Duan, M. Cao, W. Zhang, Y. Li, H. Yan, Y. Gao, X. Zhang,\nW. Li, J. Li, K. Chen, C. He, X. Zhang, Y. Qiao, D. Lin, and J. Wang,\n“Internlm-xcomposer2: Mastering free-form text-image composition and\ncomprehension in vision-language large model,” 2024.\n[22] B. Lin, Y. Ye, B. Zhu, J. Cui, M. Ning, P. Jin, and L. Yuan, “Video-llava:\nLearning united visual representation by alignment before projection,”\n2023.\n© 2024 IEEE. Personal use of this material is permitted. Permission from\nIEEE must be obtained for all other uses, in any current or future media,\nincluding reprinting/republishing this material for advertising or promotional\npurposes, creating new collective works, for resale or redistribution to servers\nor lists, or reuse of any copyrighted component of this work in other works.\nDOI: 10.1109/BigData62323.2024.10825835",
+      "blocks": [
+        {
+          "bbox": [
+            409.61,
+            51.36,
+            465.41,
+            61.32
+          ],
+          "text": "REFERENCES",
+          "number": 9
+        },
+        {
+          "bbox": [
+            315.96,
+            71.75,
+            563.04,
+            79.72
+          ],
+          "text": "[1] T. Maekawa, “A sensor device for automatic food lifelogging that is",
+          "number": 10
+        },
+        {
+          "bbox": [
+            315.96,
+            80.57,
+            563.04,
+            116.11
+          ],
+          "text": "embedded in home ceiling light: A preliminary investigation,” in 2013\n7th International Conference on Pervasive Computing Technologies for\nHealthcare and Workshops, 2013, pp. 405–407.\n[2] A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Unanswerable question",
+          "number": 11
+        },
+        {
+          "bbox": [
+            91.74,
+            120.81,
+            257.25,
+            130.77
+          ],
+          "text": "Fig. 5: Examples of Combination effect.",
+          "number": 0
+        },
+        {
+          "bbox": [
+            315.96,
+            116.96,
+            563.04,
+            143.53
+          ],
+          "text": "correction in question answering over personal knowledge base,” AAAI,\nvol. 35, no. 16, pp. 14 266–14 275, May 2021.\n[3] A. Yen, M. Fu, W. Ang, T. Chu, S. Tsai, H. Huang, and H. Chen,",
+          "number": 12
+        },
+        {
+          "bbox": [
+            89.6,
+            158.04,
+            259.39,
+            168.0
+          ],
+          "text": "VII. CONCLUSION AND FUTURE WORK",
+          "number": 1
+        },
+        {
+          "bbox": [
+            315.96,
+            144.53,
+            563.04,
+            179.92
+          ],
+          "text": "“Visual lifelog retrieval: humans and machines interpretation on first-\nperson images,” Multimedia Tools and Applications, vol. 82, no. 24, pp.\n37 757–37 787, Oct. 2023.\n[4] T.-T. Chu, A.-Z. Yen, W.-H. Ang, H.-H. Huang, and H.-H. Chen,",
+          "number": 13
+        },
+        {
+          "bbox": [
+            315.96,
+            180.78,
+            563.04,
+            207.34
+          ],
+          "text": "“Vidlife: A dataset for life event extraction from videos,” in CIKM,\n2021, pp. 4436–4444.\n[5] Q.-L. Tran, L.-D. Tran, B. Nguyen, and C. Gurrin, “Memoriease: An",
+          "number": 14
+        },
+        {
+          "bbox": [
+            315.96,
+            208.2,
+            563.04,
+            234.77
+          ],
+          "text": "interactive lifelog retrieval system for lsc’23,” in Proceedings of the 6th\nAnnual ACM Lifelog Search Challenge, 2023, p. 30–35.\n[6] K. Schoeffmann, “lifexplore at the lifelog search challenge 2023,” in",
+          "number": 15
+        },
+        {
+          "bbox": [
+            315.96,
+            235.62,
+            563.04,
+            262.19
+          ],
+          "text": "Proceedings of the 6th Annual ACM Lifelog Search Challenge, 2023, p.\n53–58.\n[7] N. Alam, Y. Graham, and C. Gurrin, “Memento 2.0: An improved lifelog",
+          "number": 16
+        },
+        {
+          "bbox": [
+            315.96,
+            263.05,
+            563.04,
+            289.61
+          ],
+          "text": "search engine for lsc’22,” in Proceedings of the 5th Annual on Lifelog\nSearch Challenge, 2022, p. 2–7.\n[8] L.-D. Tran, M.-D. Nguyen, B. Nguyen, H. Lee, L. Zhou, and C. Gurrin,",
+          "number": 17
+        },
+        {
+          "bbox": [
+            315.96,
+            290.57,
+            563.04,
+            326.0
+          ],
+          "text": "“E-mysc´eal: Embedding-based interactive lifelog retrieval system for\nlsc’22,” in Proceedings of the 5th Annual on Lifelog Search Challenge,\n2022, p. 32–37.\n[9] T.-N. Nguyen, T.-K. Le, V.-T. Ninh, C. Gurrin, M.-T. Tran, T. B. Nguyen,",
+          "number": 18
+        },
+        {
+          "bbox": [
+            48.96,
+            180.24,
+            300.02,
+            333.66
+          ],
+          "text": "Recently, individuals increasingly document their lives\nthrough blogs, social media, photos, and videos, significantly\ncontributing to the massive data generation. This vast amount\nof personal data holds potential for life assistance services,\nenabling users to retrieve related images from given text\nqueries. However, the semantic gap between textual queries\nand visual lifelogs often impedes the retrieval of desired\nexperiences. To address this, we propose a Caption-Integrated\nVisual Lifelog Retrieval System that converts images into\ncaptions and uses a text embedding model to map both image\ncaptions and user queries into a unified vector space. Our\napproach outperforms baseline methods that directly embed\nimages and text into the same vector space.",
+          "number": 2
+        },
+        {
+          "bbox": [
+            311.98,
+            327.0,
+            563.04,
+            362.39
+          ],
+          "text": "G. Healy, A. Caputo, and S. Smyth, “E-lifeseeker: An interactive lifelog\nsearch engine for lsc’23,” in Proceedings of the 6th Annual ACM Lifelog\nSearch Challenge, 2023, p. 13–17.\n[10] C. Gurrin, H. Joho, F. Hopfgartner, L. Zhou, V.-T. Ninh, T.-K. Le,",
+          "number": 19
+        },
+        {
+          "bbox": [
+            311.98,
+            363.39,
+            563.04,
+            398.78
+          ],
+          "text": "R. Albatal, D.-T. Dang-Nguyen, and G. Healy, “Overview of the ntcir-\n14 lifelog-3 task,” in Proceedings of the 14th NTCIR conference.\nNII,\n2019, pp. 14–26.\n[11] H. Zhang, A. Sun, W. Jing, G. Nan, L. Zhen, J. T. Zhou, and R. S. M.",
+          "number": 20
+        },
+        {
+          "bbox": [
+            311.98,
+            399.78,
+            563.04,
+            426.21
+          ],
+          "text": "Goh, “Video corpus moment retrieval with contrastive learning,” in\nSIGIR, ser. SIGIR ’21, 2021.\n[12] I. Qasim, A. Horsch, and D. K. Prasad, “Dense video captioning: A",
+          "number": 21
+        },
+        {
+          "bbox": [
+            48.96,
+            336.84,
+            300.02,
+            442.44
+          ],
+          "text": "We also provide a textual dataset in our experiment gen-\nerated from the NTCIR-14 Lifelog-3 dataset, to support fur-\nther research in lifelogging retrieval and comprehension. The\ndataset includes captions generated by single, collective, and\nmerged caption methods, the latter offering fine-grained cap-\ntions, group-level coarse-grained captions, and comprehensive\nexperience summaries. This enables analysis of how LVLMs\ncan reconstruct daily events through concatenated experience\nsummaries or coarse-grained captions.",
+          "number": 3
+        },
+        {
+          "bbox": [
+            311.98,
+            427.2,
+            563.04,
+            444.66
+          ],
+          "text": "survey of techniques, datasets and evaluation protocols,” 2023.\n[13] X. Zhou, A. Arnab, S. Buch, S. Yan, A. Myers, X. Xiong, A. Nagrani,",
+          "number": 22
+        },
+        {
+          "bbox": [
+            311.98,
+            445.66,
+            563.04,
+            463.12
+          ],
+          "text": "and C. Schmid, “Streaming dense video captioning,” 2024.\n[14] J. Achiam, S. Adler, S. Agarwal, L. Ahmad, I. Akkaya, F. L. Aleman,",
+          "number": 23
+        },
+        {
+          "bbox": [
+            311.98,
+            463.97,
+            563.04,
+            490.54
+          ],
+          "text": "D. Almeida, J. Altenschmidt, S. Altman, S. Anadkat et al., “Gpt-4\ntechnical report,” arXiv preprint arXiv:2303.08774, 2023.\n[15] B. Ionescu, H. M¨uller, R. P´eteri, Y. D. Cid, V. Liauchuk, V. Kovalev,",
+          "number": 24
+        },
+        {
+          "bbox": [
+            48.96,
+            445.62,
+            300.02,
+            527.31
+          ],
+          "text": "Future work will incorporate methods to improve cluster\nrecall into our system, enhancing the diversity of retrieved\nimages to better align with real-world user needs. Furthermore,\nwith advancements in LVLMs like GPT-4o and Gemini-Pro,\nwe aim to explore how well-crafted prompts can reduce issues\nsuch as hallucinations and improve accuracy in identifying key\nelements within visual data.",
+          "number": 4
+        },
+        {
+          "bbox": [
+            311.98,
+            491.4,
+            563.04,
+            544.86
+          ],
+          "text": "D. Klimuk, A. Tarasau, A. B. Abacha, S. A. Hasan et al., “ImageCLEF\n2019: Multimedia retrieval in medicine, lifelogging, security and nature,”\nin Experimental IR Meets Multilinguality, Multimodality, and Interac-\ntion, ser. Proceedings of the 10th International Conference of the CLEF\nAssociation (CLEF 2019), 2019.\n[16] A. Radford, J. W. Kim, C. Hallacy, A. Ramesh, G. Goh, S. Agarwal,",
+          "number": 25
+        },
+        {
+          "bbox": [
+            125.91,
+            546.09,
+            223.09,
+            556.05
+          ],
+          "text": "ACKNOWLEDGEMENTS",
+          "number": 5
+        },
+        {
+          "bbox": [
+            311.98,
+            545.86,
+            563.04,
+            581.25
+          ],
+          "text": "G. Sastry, A. Askell, P. Mishkin, J. Clark, G. Krueger, and I. Sutskever,\n“Learning transferable visual models from natural language supervi-\nsion,” 2021.\n[17] X. Zhai, B. Mustafa, A. Kolesnikov, and L. Beyer, “Sigmoid loss for",
+          "number": 26
+        },
+        {
+          "bbox": [
+            311.98,
+            582.25,
+            563.04,
+            599.71
+          ],
+          "text": "language image pre-training,” 2023.\n[18] A. Fang, A. M. Jose, A. Jain, L. Schmidt, A. Toshev, and V. Shankar,",
+          "number": 27
+        },
+        {
+          "bbox": [
+            311.98,
+            600.71,
+            563.04,
+            618.17
+          ],
+          "text": "“Data filtering networks,” 2023.\n[19] H. Laurenc¸on, L. Tronchon, M. Cord, and V. Sanh, “What matters when",
+          "number": 28
+        },
+        {
+          "bbox": [
+            48.96,
+            568.29,
+            300.02,
+            626.07
+          ],
+          "text": "This research was partially supported by Google gift toward\nthe work on Multimodal User Profiling for Personalized Infor-\nmation Access, National Science and Technology Council, Tai-\nwan, under grants NSTC 112-2634-F-002-005-, and Ministry\nof Education (MOE) in Taiwan, under grants 113L900901.",
+          "number": 6
+        },
+        {
+          "bbox": [
+            311.98,
+            619.16,
+            563.04,
+            636.62
+          ],
+          "text": "building vision-language models?” 2024.\n[20] H. Liu, C. Li, Y. Li, B. Li, Y. Zhang, S. Shen, and Y. J. Lee, “Llava-next:",
+          "number": 29
+        },
+        {
+          "bbox": [
+            118.14,
+            644.85,
+            230.86,
+            654.81
+          ],
+          "text": "IEEE COPYRIGHT NOTICE",
+          "number": 7
+        },
+        {
+          "bbox": [
+            311.98,
+            637.62,
+            563.04,
+            655.08
+          ],
+          "text": "Improved reasoning, ocr, and world knowledge,” January 2024.\n[21] X. Dong, P. Zhang, Y. Zang, Y. Cao, B. Wang, L. Ouyang, X. Wei,",
+          "number": 30
+        },
+        {
+          "bbox": [
+            311.98,
+            656.08,
+            563.04,
+            700.44
+          ],
+          "text": "S. Zhang, H. Duan, M. Cao, W. Zhang, Y. Li, H. Yan, Y. Gao, X. Zhang,\nW. Li, J. Li, K. Chen, C. He, X. Zhang, Y. Qiao, D. Lin, and J. Wang,\n“Internlm-xcomposer2: Mastering free-form text-image composition and\ncomprehension in vision-language large model,” 2024.\n[22] B. Lin, Y. Ye, B. Zhu, J. Cui, M. Ning, P. Jin, and L. Yuan, “Video-llava:",
+          "number": 31
+        },
+        {
+          "bbox": [
+            330.24,
+            701.43,
+            563.04,
+            718.37
+          ],
+          "text": "Learning united visual representation by alignment before projection,”\n2023.",
+          "number": 32
+        },
+        {
+          "bbox": [
+            48.96,
+            665.57,
+            300.02,
+            718.37
+          ],
+          "text": "© 2024 IEEE. Personal use of this material is permitted. Permission from\nIEEE must be obtained for all other uses, in any current or future media,\nincluding reprinting/republishing this material for advertising or promotional\npurposes, creating new collective works, for resale or redistribution to servers\nor lists, or reuse of any copyrighted component of this work in other works.\nDOI: 10.1109/BigData62323.2024.10825835",
+          "number": 8
+        }
+      ],
       "images": 1,
+      "figure_captions": [
+        "Fig. 5: Examples of Combination effect."
+      ],
+      "table_captions": [],
       "tables": []
     },
     {
       "page": 9,
       "text": "[23] H. Liu, W. Yan, M. Zaharia, and P. Abbeel, “World model on million-\nlength video and language with blockwise ringattention,” 2024.\n[24] M. Oquab, T. Darcet, T. Moutakanni, H. Vo, M. Szafraniec, V. Khalidov,\nP. Fernandez, D. Haziza, F. Massa, A. El-Nouby, M. Assran, N. Ballas\net al., “Dinov2: Learning robust visual features without supervision,”\n2024.\n[25] Z. Li, X. Zhang, Y. Zhang, D. Long, P. Xie, and M. Zhang, “Towards\ngeneral text embeddings with multi-stage contrastive learning,” 2023.\n[26] J. Chen, S. Xiao, P. Zhang, K. Luo, D. Lian, and Z. Liu, “Bge\nm3-embedding: Multi-lingual, multi-functionality, multi-granularity text\nembeddings through self-knowledge distillation,” 2024.",
+      "blocks": [
+        {
+          "bbox": [
+            48.96,
+            52.87,
+            300.02,
+            60.84
+          ],
+          "text": "[23] H. Liu, W. Yan, M. Zaharia, and P. Abbeel, “World model on million-",
+          "number": 0
+        },
+        {
+          "bbox": [
+            48.96,
+            61.83,
+            300.02,
+            78.77
+          ],
+          "text": "length video and language with blockwise ringattention,” 2024.\n[24] M. Oquab, T. Darcet, T. Moutakanni, H. Vo, M. Szafraniec, V. Khalidov,",
+          "number": 1
+        },
+        {
+          "bbox": [
+            48.96,
+            79.76,
+            300.02,
+            114.63
+          ],
+          "text": "P. Fernandez, D. Haziza, F. Massa, A. El-Nouby, M. Assran, N. Ballas\net al., “Dinov2: Learning robust visual features without supervision,”\n2024.\n[25] Z. Li, X. Zhang, Y. Zhang, D. Long, P. Xie, and M. Zhang, “Towards",
+          "number": 2
+        },
+        {
+          "bbox": [
+            48.96,
+            115.63,
+            300.02,
+            132.57
+          ],
+          "text": "general text embeddings with multi-stage contrastive learning,” 2023.\n[26] J. Chen, S. Xiao, P. Zhang, K. Luo, D. Lian, and Z. Liu, “Bge",
+          "number": 3
+        },
+        {
+          "bbox": [
+            67.22,
+            133.56,
+            300.02,
+            150.5
+          ],
+          "text": "m3-embedding: Multi-lingual, multi-functionality, multi-granularity text\nembeddings through self-knowledge distillation,” 2024.",
+          "number": 4
+        }
+      ],
       "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
       "tables": []
+    }
+  ],
+  "figures": [
+    {
+      "page": 1,
+      "caption": "Fig. 1: A sequence of first-person viewpoint images."
+    },
+    {
+      "page": 3,
+      "caption": "Fig. 2: CIVIL Retrieval System Architecture. The system processes frames from multiple videos using three methods: (1)"
+    },
+    {
+      "page": 6,
+      "caption": "Fig. 4: Examples of errors across different methods."
+    },
+    {
+      "page": 6,
+      "caption": "Fig. 3: Examples of Contextual Images Problem"
+    },
+    {
+      "page": 7,
+      "caption": "Figure 5 presents examples of positive and negative replace-"
+    },
+    {
+      "page": 8,
+      "caption": "Fig. 5: Examples of Combination effect."
+    }
+  ],
+  "tables": [
+    {
+      "page": 5,
+      "index": 1,
+      "caption": null,
+      "rows": [
+        [
+          "T1",
+          "T2",
+          "T3",
+          "T4",
+          "T5",
+          "T6",
+          "T7",
+          "T8",
+          "T9",
+          "T10",
+          "Avg CR@10",
+          "Avg F1@10"
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "index": 2,
+      "caption": null,
+      "rows": [
+        [
+          "CLIP ViT-B/32\nCLIP ViT-L/14\nViT-SO400M-14-SigLIP-384\nDFN5B-CLIP-ViT-H-14",
+          "0.4\n0.5\n0.7\n0.4",
+          "1.0\n0.8\n1.0\n1.0",
+          "0.1\n0.7\n0.0\n0.0",
+          "0.1\n0.1\n0.1\n0.1",
+          "0.9\n1.0\n1.0\n1.0",
+          "0.9\n0.8\n0.6\n0.7",
+          "0.7\n0.3\n0.7\n0.7",
+          "0.9\n0.4\n0.7\n0.7",
+          "0.3\n0.0\n0.4\n0.4",
+          "0.4\n0.8\n0.6\n0.8",
+          "0.522\n0.475\n0.506\n0.460",
+          "0.447\n0.37\n0.448\n0.407",
+          "0.57\n0.54\n0.58\n0.58"
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "index": 3,
+      "caption": null,
+      "rows": [
+        [
+          "Idefics2\nLLaVA-NeXT\nInternlm-xcomposer2-vl-7B",
+          "0.7\n0.5\n0.5",
+          "0.7\n0.9\n0.9",
+          "0.1\n0.4\n0.4",
+          "0.0\n0.2\n0.1",
+          "1.0\n1.0\n1.0",
+          "0.8\n1.0\n0.8",
+          "0.7\n0.6\n0.6",
+          "0.8\n0.7\n0.9",
+          "0.7\n0.0\n0.5",
+          "0.5\n0.6\n0.9",
+          "0.446\n0.518\n0.506",
+          "0.478\n0.460\n0.484",
+          "0.6\n0.59\n0.66"
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "index": 4,
+      "caption": null,
+      "rows": [
+        [
+          "0.4\n0.0",
+          "1.0\n1.0",
+          "0.0\n0.0",
+          "0.0\n0.0",
+          "1.0\n1.0",
+          "0.8\n0.0",
+          "0.9\n0.9",
+          "1.0\n0.0",
+          "0.0\n0.0",
+          "0.6\n0.0",
+          "0.245\n0.060",
+          "0.278\n0.099"
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "index": 5,
+      "caption": null,
+      "rows": [
+        [
+          "GPT4 fine-grained\nGPT4 coarse-grained",
+          "0.7\n0.8",
+          "0.9\n0.9",
+          "0.5\n0.7",
+          "0.0\n0.0",
+          "0.9\n0.9",
+          "0.8\n1.0",
+          "0.6\n0.2",
+          "0.6\n0.4",
+          "0.4\n0.1",
+          "0.4\n0.3",
+          "0.482\n0.292",
+          "0.485\n0.321",
+          "0.58\n0.53"
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "index": 6,
+      "caption": null,
+      "rows": [
+        [
+          "Internlm × Video-LLaVA\nfine-grained × coarse-grained",
+          "0.5\n0.9",
+          "0.9\n1.0",
+          "0.2\n0.6",
+          "0.0\n0.0",
+          "1.0\n1.0",
+          "1.0\n1.0",
+          "0.9\n0.5",
+          "0.9\n0.3",
+          "1.0\n0.5",
+          "0.9\n0.5",
+          "0.406\n0.426",
+          "0.478\n0.475",
+          "0.73\n0.63"
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "index": 7,
+      "caption": null,
+      "rows": [
+        [
+          "Idefics2\nLLaVA-NeXT\nInternlm-xcomposer2-vl-7B",
+          "0.3\n0.8\n0.6",
+          "0.7\n0.9\n1.0",
+          "0.2\n0.5\n0.3",
+          "0.1\n0.1\n0.0",
+          "1.0\n1.0\n0.9",
+          "1.0\n0.9\n0.9",
+          "0.6\n0.9\n0.5",
+          "0.7\n0.8\n0.8",
+          "0.7\n0.3\n0.7",
+          "0.3\n0.9\n0.9",
+          "0.532\n0.572\n0.476",
+          "0.440\n0.541\n0.515",
+          "0.56\n0.71\n0.66"
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "index": 8,
+      "caption": null,
+      "rows": [
+        [
+          "0.4\n0.0",
+          "0.2\n1.0",
+          "0.0\n0.8",
+          "0.0\n0.0",
+          "1.0\n1.0",
+          "0.8\n0.0",
+          "0.3\n0.6",
+          "0.8\n0.0",
+          "0.3\n0.2",
+          "0.8\n0.4",
+          "0.332\n0.084",
+          "0.316\n0.127"
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "index": 9,
+      "caption": null,
+      "rows": [
+        [
+          "GPT4 fine-grained\nGPT4 coarse-grained",
+          "0.7\n1.0",
+          "0.8\n0.8",
+          "0.4\n0.9",
+          "0.0\n0.0",
+          "0.6\n1.0",
+          "0.9\n1.0",
+          "0.4\n0.7",
+          "0.5\n0.0",
+          "0.1\n0.0",
+          "0.7\n0.3",
+          "0.422\n0.241",
+          "0.422\n0.299",
+          "0.51\n0.57"
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "index": 10,
+      "caption": null,
+      "rows": [
+        [
+          "LLaVA-NeXT × Video-LLaVA\nfine-grained × coarse-grained",
+          "0.7\n0.9",
+          "1.0\n0.7",
+          "0.3\n0.1",
+          "0.0\n0.0",
+          "1.0\n0.9",
+          "1.0\n1.0",
+          "0.6\n0.3",
+          "0.9\n0.4",
+          "0.7\n0.1",
+          "0.8\n0.3",
+          "0.442\n0.426",
+          "0.497\n0.406",
+          "0.7\n0.47"
+        ]
+      ]
+    }
+  ],
+  "references": [
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        71.75,
+        563.04,
+        79.72
+      ],
+      "text": "[1] T. Maekawa, “A sensor device for automatic food lifelogging that is"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        80.57,
+        563.04,
+        116.11
+      ],
+      "text": "embedded in home ceiling light: A preliminary investigation,” in 2013"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        80.57,
+        563.04,
+        116.11
+      ],
+      "text": "7th International Conference on Pervasive Computing Technologies for"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        80.57,
+        563.04,
+        116.11
+      ],
+      "text": "Healthcare and Workshops, 2013, pp. 405–407."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        80.57,
+        563.04,
+        116.11
+      ],
+      "text": "[2] A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Unanswerable question"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        91.74,
+        120.81,
+        257.25,
+        130.77
+      ],
+      "text": "Fig. 5: Examples of Combination effect."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        116.96,
+        563.04,
+        143.53
+      ],
+      "text": "correction in question answering over personal knowledge base,” AAAI,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        116.96,
+        563.04,
+        143.53
+      ],
+      "text": "vol. 35, no. 16, pp. 14 266–14 275, May 2021."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        116.96,
+        563.04,
+        143.53
+      ],
+      "text": "[3] A. Yen, M. Fu, W. Ang, T. Chu, S. Tsai, H. Huang, and H. Chen,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        89.6,
+        158.04,
+        259.39,
+        168.0
+      ],
+      "text": "VII. CONCLUSION AND FUTURE WORK"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        144.53,
+        563.04,
+        179.92
+      ],
+      "text": "“Visual lifelog retrieval: humans and machines interpretation on first-"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        144.53,
+        563.04,
+        179.92
+      ],
+      "text": "person images,” Multimedia Tools and Applications, vol. 82, no. 24, pp."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        144.53,
+        563.04,
+        179.92
+      ],
+      "text": "37 757–37 787, Oct. 2023."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        144.53,
+        563.04,
+        179.92
+      ],
+      "text": "[4] T.-T. Chu, A.-Z. Yen, W.-H. Ang, H.-H. Huang, and H.-H. Chen,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        180.78,
+        563.04,
+        207.34
+      ],
+      "text": "“Vidlife: A dataset for life event extraction from videos,” in CIKM,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        180.78,
+        563.04,
+        207.34
+      ],
+      "text": "2021, pp. 4436–4444."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        180.78,
+        563.04,
+        207.34
+      ],
+      "text": "[5] Q.-L. Tran, L.-D. Tran, B. Nguyen, and C. Gurrin, “Memoriease: An"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        208.2,
+        563.04,
+        234.77
+      ],
+      "text": "interactive lifelog retrieval system for lsc’23,” in Proceedings of the 6th"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        208.2,
+        563.04,
+        234.77
+      ],
+      "text": "Annual ACM Lifelog Search Challenge, 2023, p. 30–35."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        208.2,
+        563.04,
+        234.77
+      ],
+      "text": "[6] K. Schoeffmann, “lifexplore at the lifelog search challenge 2023,” in"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        235.62,
+        563.04,
+        262.19
+      ],
+      "text": "Proceedings of the 6th Annual ACM Lifelog Search Challenge, 2023, p."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        235.62,
+        563.04,
+        262.19
+      ],
+      "text": "53–58."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        235.62,
+        563.04,
+        262.19
+      ],
+      "text": "[7] N. Alam, Y. Graham, and C. Gurrin, “Memento 2.0: An improved lifelog"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        263.05,
+        563.04,
+        289.61
+      ],
+      "text": "search engine for lsc’22,” in Proceedings of the 5th Annual on Lifelog"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        263.05,
+        563.04,
+        289.61
+      ],
+      "text": "Search Challenge, 2022, p. 2–7."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        263.05,
+        563.04,
+        289.61
+      ],
+      "text": "[8] L.-D. Tran, M.-D. Nguyen, B. Nguyen, H. Lee, L. Zhou, and C. Gurrin,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        290.57,
+        563.04,
+        326.0
+      ],
+      "text": "“E-mysc´eal: Embedding-based interactive lifelog retrieval system for"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        290.57,
+        563.04,
+        326.0
+      ],
+      "text": "lsc’22,” in Proceedings of the 5th Annual on Lifelog Search Challenge,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        290.57,
+        563.04,
+        326.0
+      ],
+      "text": "2022, p. 32–37."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        315.96,
+        290.57,
+        563.04,
+        326.0
+      ],
+      "text": "[9] T.-N. Nguyen, T.-K. Le, V.-T. Ninh, C. Gurrin, M.-T. Tran, T. B. Nguyen,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "Recently, individuals increasingly document their lives"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "through blogs, social media, photos, and videos, significantly"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "contributing to the massive data generation. This vast amount"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "of personal data holds potential for life assistance services,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "enabling users to retrieve related images from given text"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "queries. However, the semantic gap between textual queries"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "and visual lifelogs often impedes the retrieval of desired"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "experiences. To address this, we propose a Caption-Integrated"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "Visual Lifelog Retrieval System that converts images into"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "captions and uses a text embedding model to map both image"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "captions and user queries into a unified vector space. Our"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "approach outperforms baseline methods that directly embed"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        180.24,
+        300.02,
+        333.66
+      ],
+      "text": "images and text into the same vector space."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        327.0,
+        563.04,
+        362.39
+      ],
+      "text": "G. Healy, A. Caputo, and S. Smyth, “E-lifeseeker: An interactive lifelog"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        327.0,
+        563.04,
+        362.39
+      ],
+      "text": "search engine for lsc’23,” in Proceedings of the 6th Annual ACM Lifelog"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        327.0,
+        563.04,
+        362.39
+      ],
+      "text": "Search Challenge, 2023, p. 13–17."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        327.0,
+        563.04,
+        362.39
+      ],
+      "text": "[10] C. Gurrin, H. Joho, F. Hopfgartner, L. Zhou, V.-T. Ninh, T.-K. Le,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        363.39,
+        563.04,
+        398.78
+      ],
+      "text": "R. Albatal, D.-T. Dang-Nguyen, and G. Healy, “Overview of the ntcir-"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        363.39,
+        563.04,
+        398.78
+      ],
+      "text": "14 lifelog-3 task,” in Proceedings of the 14th NTCIR conference."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        363.39,
+        563.04,
+        398.78
+      ],
+      "text": "NII,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        363.39,
+        563.04,
+        398.78
+      ],
+      "text": "2019, pp. 14–26."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        363.39,
+        563.04,
+        398.78
+      ],
+      "text": "[11] H. Zhang, A. Sun, W. Jing, G. Nan, L. Zhen, J. T. Zhou, and R. S. M."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        399.78,
+        563.04,
+        426.21
+      ],
+      "text": "Goh, “Video corpus moment retrieval with contrastive learning,” in"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        399.78,
+        563.04,
+        426.21
+      ],
+      "text": "SIGIR, ser. SIGIR ’21, 2021."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        399.78,
+        563.04,
+        426.21
+      ],
+      "text": "[12] I. Qasim, A. Horsch, and D. K. Prasad, “Dense video captioning: A"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        336.84,
+        300.02,
+        442.44
+      ],
+      "text": "We also provide a textual dataset in our experiment gen-"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        336.84,
+        300.02,
+        442.44
+      ],
+      "text": "erated from the NTCIR-14 Lifelog-3 dataset, to support fur-"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        336.84,
+        300.02,
+        442.44
+      ],
+      "text": "ther research in lifelogging retrieval and comprehension. The"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        336.84,
+        300.02,
+        442.44
+      ],
+      "text": "dataset includes captions generated by single, collective, and"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        336.84,
+        300.02,
+        442.44
+      ],
+      "text": "merged caption methods, the latter offering fine-grained cap-"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        336.84,
+        300.02,
+        442.44
+      ],
+      "text": "tions, group-level coarse-grained captions, and comprehensive"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        336.84,
+        300.02,
+        442.44
+      ],
+      "text": "experience summaries. This enables analysis of how LVLMs"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        336.84,
+        300.02,
+        442.44
+      ],
+      "text": "can reconstruct daily events through concatenated experience"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        336.84,
+        300.02,
+        442.44
+      ],
+      "text": "summaries or coarse-grained captions."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        427.2,
+        563.04,
+        444.66
+      ],
+      "text": "survey of techniques, datasets and evaluation protocols,” 2023."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        427.2,
+        563.04,
+        444.66
+      ],
+      "text": "[13] X. Zhou, A. Arnab, S. Buch, S. Yan, A. Myers, X. Xiong, A. Nagrani,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        445.66,
+        563.04,
+        463.12
+      ],
+      "text": "and C. Schmid, “Streaming dense video captioning,” 2024."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        445.66,
+        563.04,
+        463.12
+      ],
+      "text": "[14] J. Achiam, S. Adler, S. Agarwal, L. Ahmad, I. Akkaya, F. L. Aleman,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        463.97,
+        563.04,
+        490.54
+      ],
+      "text": "D. Almeida, J. Altenschmidt, S. Altman, S. Anadkat et al., “Gpt-4"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        463.97,
+        563.04,
+        490.54
+      ],
+      "text": "technical report,” arXiv preprint arXiv:2303.08774, 2023."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        463.97,
+        563.04,
+        490.54
+      ],
+      "text": "[15] B. Ionescu, H. M¨uller, R. P´eteri, Y. D. Cid, V. Liauchuk, V. Kovalev,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        445.62,
+        300.02,
+        527.31
+      ],
+      "text": "Future work will incorporate methods to improve cluster"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        445.62,
+        300.02,
+        527.31
+      ],
+      "text": "recall into our system, enhancing the diversity of retrieved"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        445.62,
+        300.02,
+        527.31
+      ],
+      "text": "images to better align with real-world user needs. Furthermore,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        445.62,
+        300.02,
+        527.31
+      ],
+      "text": "with advancements in LVLMs like GPT-4o and Gemini-Pro,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        445.62,
+        300.02,
+        527.31
+      ],
+      "text": "we aim to explore how well-crafted prompts can reduce issues"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        445.62,
+        300.02,
+        527.31
+      ],
+      "text": "such as hallucinations and improve accuracy in identifying key"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        445.62,
+        300.02,
+        527.31
+      ],
+      "text": "elements within visual data."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        491.4,
+        563.04,
+        544.86
+      ],
+      "text": "D. Klimuk, A. Tarasau, A. B. Abacha, S. A. Hasan et al., “ImageCLEF"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        491.4,
+        563.04,
+        544.86
+      ],
+      "text": "2019: Multimedia retrieval in medicine, lifelogging, security and nature,”"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        491.4,
+        563.04,
+        544.86
+      ],
+      "text": "in Experimental IR Meets Multilinguality, Multimodality, and Interac-"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        491.4,
+        563.04,
+        544.86
+      ],
+      "text": "tion, ser. Proceedings of the 10th International Conference of the CLEF"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        491.4,
+        563.04,
+        544.86
+      ],
+      "text": "Association (CLEF 2019), 2019."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        491.4,
+        563.04,
+        544.86
+      ],
+      "text": "[16] A. Radford, J. W. Kim, C. Hallacy, A. Ramesh, G. Goh, S. Agarwal,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        125.91,
+        546.09,
+        223.09,
+        556.05
+      ],
+      "text": "ACKNOWLEDGEMENTS"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        545.86,
+        563.04,
+        581.25
+      ],
+      "text": "G. Sastry, A. Askell, P. Mishkin, J. Clark, G. Krueger, and I. Sutskever,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        545.86,
+        563.04,
+        581.25
+      ],
+      "text": "“Learning transferable visual models from natural language supervi-"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        545.86,
+        563.04,
+        581.25
+      ],
+      "text": "sion,” 2021."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        545.86,
+        563.04,
+        581.25
+      ],
+      "text": "[17] X. Zhai, B. Mustafa, A. Kolesnikov, and L. Beyer, “Sigmoid loss for"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        582.25,
+        563.04,
+        599.71
+      ],
+      "text": "language image pre-training,” 2023."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        582.25,
+        563.04,
+        599.71
+      ],
+      "text": "[18] A. Fang, A. M. Jose, A. Jain, L. Schmidt, A. Toshev, and V. Shankar,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        600.71,
+        563.04,
+        618.17
+      ],
+      "text": "“Data filtering networks,” 2023."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        600.71,
+        563.04,
+        618.17
+      ],
+      "text": "[19] H. Laurenc¸on, L. Tronchon, M. Cord, and V. Sanh, “What matters when"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        568.29,
+        300.02,
+        626.07
+      ],
+      "text": "This research was partially supported by Google gift toward"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        568.29,
+        300.02,
+        626.07
+      ],
+      "text": "the work on Multimodal User Profiling for Personalized Infor-"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        568.29,
+        300.02,
+        626.07
+      ],
+      "text": "mation Access, National Science and Technology Council, Tai-"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        568.29,
+        300.02,
+        626.07
+      ],
+      "text": "wan, under grants NSTC 112-2634-F-002-005-, and Ministry"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        568.29,
+        300.02,
+        626.07
+      ],
+      "text": "of Education (MOE) in Taiwan, under grants 113L900901."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        619.16,
+        563.04,
+        636.62
+      ],
+      "text": "building vision-language models?” 2024."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        619.16,
+        563.04,
+        636.62
+      ],
+      "text": "[20] H. Liu, C. Li, Y. Li, B. Li, Y. Zhang, S. Shen, and Y. J. Lee, “Llava-next:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        118.14,
+        644.85,
+        230.86,
+        654.81
+      ],
+      "text": "IEEE COPYRIGHT NOTICE"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        637.62,
+        563.04,
+        655.08
+      ],
+      "text": "Improved reasoning, ocr, and world knowledge,” January 2024."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        637.62,
+        563.04,
+        655.08
+      ],
+      "text": "[21] X. Dong, P. Zhang, Y. Zang, Y. Cao, B. Wang, L. Ouyang, X. Wei,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        656.08,
+        563.04,
+        700.44
+      ],
+      "text": "S. Zhang, H. Duan, M. Cao, W. Zhang, Y. Li, H. Yan, Y. Gao, X. Zhang,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        656.08,
+        563.04,
+        700.44
+      ],
+      "text": "W. Li, J. Li, K. Chen, C. He, X. Zhang, Y. Qiao, D. Lin, and J. Wang,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        656.08,
+        563.04,
+        700.44
+      ],
+      "text": "“Internlm-xcomposer2: Mastering free-form text-image composition and"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        656.08,
+        563.04,
+        700.44
+      ],
+      "text": "comprehension in vision-language large model,” 2024."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        656.08,
+        563.04,
+        700.44
+      ],
+      "text": "[22] B. Lin, Y. Ye, B. Zhu, J. Cui, M. Ning, P. Jin, and L. Yuan, “Video-llava:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        330.24,
+        701.43,
+        563.04,
+        718.37
+      ],
+      "text": "Learning united visual representation by alignment before projection,”"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        330.24,
+        701.43,
+        563.04,
+        718.37
+      ],
+      "text": "2023."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        665.57,
+        300.02,
+        718.37
+      ],
+      "text": "© 2024 IEEE. Personal use of this material is permitted. Permission from"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        665.57,
+        300.02,
+        718.37
+      ],
+      "text": "IEEE must be obtained for all other uses, in any current or future media,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        665.57,
+        300.02,
+        718.37
+      ],
+      "text": "including reprinting/republishing this material for advertising or promotional"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        665.57,
+        300.02,
+        718.37
+      ],
+      "text": "purposes, creating new collective works, for resale or redistribution to servers"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        665.57,
+        300.02,
+        718.37
+      ],
+      "text": "or lists, or reuse of any copyrighted component of this work in other works."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        665.57,
+        300.02,
+        718.37
+      ],
+      "text": "DOI: 10.1109/BigData62323.2024.10825835"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        60.84
+      ],
+      "text": "[23] H. Liu, W. Yan, M. Zaharia, and P. Abbeel, “World model on million-"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        61.83,
+        300.02,
+        78.77
+      ],
+      "text": "length video and language with blockwise ringattention,” 2024."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        61.83,
+        300.02,
+        78.77
+      ],
+      "text": "[24] M. Oquab, T. Darcet, T. Moutakanni, H. Vo, M. Szafraniec, V. Khalidov,"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        79.76,
+        300.02,
+        114.63
+      ],
+      "text": "P. Fernandez, D. Haziza, F. Massa, A. El-Nouby, M. Assran, N. Ballas"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        79.76,
+        300.02,
+        114.63
+      ],
+      "text": "et al., “Dinov2: Learning robust visual features without supervision,”"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        79.76,
+        300.02,
+        114.63
+      ],
+      "text": "2024."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        79.76,
+        300.02,
+        114.63
+      ],
+      "text": "[25] Z. Li, X. Zhang, Y. Zhang, D. Long, P. Xie, and M. Zhang, “Towards"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        115.63,
+        300.02,
+        132.57
+      ],
+      "text": "general text embeddings with multi-stage contrastive learning,” 2023."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        115.63,
+        300.02,
+        132.57
+      ],
+      "text": "[26] J. Chen, S. Xiao, P. Zhang, K. Luo, D. Lian, and Z. Liu, “Bge"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        67.22,
+        133.56,
+        300.02,
+        150.5
+      ],
+      "text": "m3-embedding: Multi-lingual, multi-functionality, multi-granularity text"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        67.22,
+        133.56,
+        300.02,
+        150.5
+      ],
+      "text": "embeddings through self-knowledge distillation,” 2024."
     }
   ],
   "sections": [
