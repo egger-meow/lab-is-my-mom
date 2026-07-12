@@ -1,0 +1,6 @@
+flowchart LR
+  Q[Stem + target word] --> G[CDGP-CSG candidate generator]
+  G --> S[LLM selector]
+  S --> V[Binary-choice self-review validator]
+  V -->|valid| O[Distractor suggestions]
+  V -->|invalid| S

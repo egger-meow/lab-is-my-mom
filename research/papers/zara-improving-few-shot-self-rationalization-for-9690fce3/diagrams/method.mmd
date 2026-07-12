@@ -1,0 +1,5 @@
+flowchart LR
+  U[Unlabeled input] --> G[Small model: rationale + answer]
+  G --> N[NLI plausibility approximator]
+  N -->|high confidence| P[Pseudo rationale-answer pair]
+  P --> F[Fine-tuned self-rationalizer]

@@ -1,0 +1,8 @@
+flowchart LR
+  U[Customer utterance] --> R[Response retrieval pre-training]
+  U --> G[Response generation pre-training]
+  A[Historical agent response] --> R
+  A --> G
+  R --> F[Intent fine-tuning]
+  G --> F
+  F --> I[Customer intent]

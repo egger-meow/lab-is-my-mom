@@ -1,0 +1,7 @@
+flowchart LR
+  S[Source sentence] --> P[LLM paraphrase aligned to target structure]
+  S --> D[Original translation pair]
+  P --> A[Paraphrase-aligned pair]
+  D --> F[LoRA fine-tuning]
+  A --> F
+  F --> T[Translation]

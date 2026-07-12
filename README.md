@@ -1,0 +1,23 @@
+# Research OS
+
+Research OS is a local, deterministic research repository for professor and lab pages. The first vertical slice is configured for An-Zi Yen and the NYCU NLP Lab. It is corpus infrastructure, not a runtime AI-agent product.
+
+## Quick start
+
+```bash
+uv sync
+uv run research-os bootstrap --professor-url https://azyen0522.github.io/ --seed-file "NYCU NLP Lab Intro.pdf"
+uv run research-os papers an-zi-yen
+uv run research-os search "fact-checking"
+uv run research-os report an-zi-yen
+```
+
+For offline or reproducible parser runs, use the checked-in fixture:
+
+```bash
+uv run research-os bootstrap --professor-url https://azyen0522.github.io/ --source-file data/an-zi-yen-live.html --seed-file "NYCU NLP Lab Intro.pdf"
+```
+
+The SQLite database lives at `.research-os/research.db`. HTML snapshots, PDFs, and the supplied seed are SHA-256 hashed and retained with source URLs. PyMuPDF extracts page-level text, image counts, detected tables, and section anchors to `extraction.json`. Papers with no verified full text remain `unresolved` rather than being presented as fetched.
+
+The current resolver handles direct arXiv routes and project-page identifier hints. Optional layout-preserving translation belongs behind a separate BabelDOC subprocess adapter because BabelDOC is AGPL-3.0; no translation service is bundled or required for the core pipeline.

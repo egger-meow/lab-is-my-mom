@@ -1,0 +1,8 @@
+flowchart LR
+  D[Dialogue] --> E[Life-event extraction]
+  E --> T[Verb, class, frame]
+  E --> P[Participants and coreference]
+  E --> S[Polarity, modality, time]
+  T --> K[Personal knowledge representation]
+  P --> K
+  S --> K

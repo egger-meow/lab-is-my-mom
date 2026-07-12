@@ -1,0 +1,5 @@
+flowchart LR
+  I[First-person image sequence] --> C[Single / collective / merged captions]
+  C --> E[Text embeddings]
+  Q[Memory query] --> E
+  E --> R[Top-K relevant frames]

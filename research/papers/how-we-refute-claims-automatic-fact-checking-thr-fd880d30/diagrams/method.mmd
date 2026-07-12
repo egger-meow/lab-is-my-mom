@@ -1,0 +1,7 @@
+flowchart LR
+  C[Claim] --> R[Dense evidence retriever]
+  R --> A[Aspect generator]
+  A --> F[Flaw checker]
+  R --> F
+  F --> J[Justification generator]
+  R --> J

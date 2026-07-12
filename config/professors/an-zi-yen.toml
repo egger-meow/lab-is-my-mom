@@ -1,0 +1,23 @@
+id = "an-zi-yen"
+name = "An-Zi Yen"
+aliases = ["An-Zi Yen", "A-Z Yen", "顏安孜"]
+affiliation = "Department of Computer Science, National Yang Ming Chiao Tung University"
+professor_url = "https://azyen0522.github.io/"
+same_site_depth = 1
+seed_file = "NYCU NLP Lab Intro.pdf"
+adapters = ["html-publication-list", "arxiv"]
+
+[[paper_hints]]
+title = "E-QGen: Educational Lecture Abstract-based Question Generation System"
+arxiv_id = "2404.13547"
+evidence = "Lab project card links to arXiv."
+
+[[paper_hints]]
+title = "How We Refute Claims: Automatic Fact-Checking through Flaw Identification and Explanation"
+arxiv_id = "2401.15312"
+evidence = "Lab project card links to arXiv."
+
+[[paper_hints]]
+title = "Iterative Selection with Self-Review for Vocabulary Test Distractor Generation"
+arxiv_id = "2501.03462"
+evidence = "OpenAlex resolution identifies the same public arXiv preprint as ISSR."

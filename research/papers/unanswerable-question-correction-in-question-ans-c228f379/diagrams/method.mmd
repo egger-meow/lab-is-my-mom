@@ -1,0 +1,7 @@
+flowchart LR
+  Q[User memory question] --> G[Candidate query graphs]
+  G --> A{KB answerable?}
+  A -->|yes| O[Answer]
+  A -->|no| C[Corrected query graph]
+  C --> N[Construct and edit question]
+  N --> S[Question suggestion]
