@@ -1,0 +1,115 @@
+<!DOCTYPE HTML>
+<!--
+	Strata by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>An-Zi Yen</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+	</head>
+	<body class="is-preload">
+
+		<!-- Header -->
+			<header id="header">
+				<div class="inner">
+					<a href="#" class="image headshot"><img src="images/head_shot.jpg" alt="" /></a>
+					<div id="nav">
+						<h1><a href="index.html#lab">NYCU NLP Lab</a><br /></h1>
+						<h1><a href="index.html#projects">Projects</a><br /></h1>
+						<h1><a href="index.html#publications">Publications</a><br /></h1>
+						<h1><a href="index.html#honors">Honors</a><br /></h1>
+						<h1><a href="index.html#contact">Contact</a></h1>
+						<h1><a href="index.html#education">Education</a><br /> </h1>
+						<h1><a href="index.html#experience">Experience</a><br />
+					</div>
+				</div>
+			</header>
+
+		<!-- Main -->
+			<div id="main">
+
+
+					<section id="projects">
+						<header class="major">
+							<h2>Projects<br /></h2>
+						<div class="row">
+							<article class="col-6 col-12-xsmall work-item">
+								<a href="https://openreview.net/forum?id=X6Gr7CHO2y" class="image fit thumb"><img class="imgshowcase" src="images/ISSR.png" alt="" /></a>
+								<h3>ACML 2025 ISSR</h3>
+								<p>LLMs for Vocabulary Test Distractor Generation <a href="https://youtu.be/u9apI9MoHF8">[video]</a></p>
+							</article>
+							<article class="col-6 col-12-xsmall work-item">
+								<a href="https://arxiv.org/abs/2504.09903" class="image fit thumb"><img class="imgshowcase" src="images/Refining Financial Consumer Complaints.png" alt="" /></a>
+								<h3>2024 法律 X 法遵科技黑客松 (榮獲理律學堂跨領域特別獎)</h3>
+								<p>NLPFIN X NYCU-NLP | 金融消費者權益領航員 <a href="https://youtu.be/KdIrrJAmspQ">[video]</a></p>
+							</article>
+							<article class="col-6 col-12-xsmall work-item">
+								<a href="http://arxiv.org/abs/2404.13547" class="image fit thumb"><img class="imgshowcase" src="images/E-QGen.png" alt="" /></a>
+								<h3>IJCAI 2024 E-QGen</h3>
+								<p>Educational Lecture Abstract-based Question Generation <a href="https://youtu.be/SuiroLobtEU">[video]</a></p>
+							</article>
+							<article class="col-6 col-12-xsmall work-item">
+								<a href="" class="image fit thumb"><img class="imgshowcase" src="images/ConvLogRecaller.png" alt=""/></a>
+								<h3>SIGIR 2024 ConvLogRecaller</h3>
+								<p>Real-Time Conversational Information Recall <a href="https://drive.google.com/file/d/15puaP0z9Ere8ctG8lzG4unj84rf2E_-a/view?usp=sharing">[video]</a></p>
+								<p>(Collaboration with NTU NLP Lab)</p>
+							</article>
+							<article class="col-6 col-12-xsmall work-item">
+								<a href="" class="image fit thumb"><img class="imgshowcase" src="images/MAGIC.png" alt="" /></a>
+								<h3>COLING 2024 MAGIC</h3>
+								<p>Domain Generalization in Automatic Fact-Checking <a href="https://youtu.be/Hit4pBRYOGs">[video]</a></p>
+							</article>
+							<article class="col-6 col-12-xsmall work-item">
+								<a href="https://arxiv.org/abs/2401.15312" class="image fit thumb"><img class="imgshowcase" src="images/RefuteClaim.png" alt="" /></a>
+								<h3>WWW 2024 RefuteClaim</h3>
+								<p>Automatic Fact-Checking through Flaw Identification and Explanation <a href="https://youtu.be/hLgLXMZczYo">[video]</a></p>
+							</article>
+							<article class="col-6 col-12-xsmall work-item">
+								<a href="https://aclanthology.org/2023.findings-emnlp.201/" class="image fit thumb"><img class="imgshowcase" src="images/EMNLP2023_MathEDU.png" alt="" /></a>
+								<h3>EMNLP 2023 MathEDU</h3>
+								<p>LLMs and the Future of Mathematics Education <a href="https://youtu.be/QaeCrZThyeU">[video]</a></p>
+							</article>
+						</div>
+					</section>
+
+
+
+			</div>
+
+		<!-- Footer -->
+			<footer id="footer">
+				<div class="inner">
+					<ul class="copyright">
+						<li>&copy; All rights reserved.</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+					</ul>
+				</div>
+			</footer>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.poptrox.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+			<script>
+				$(document).ready(function() {
+					$("li").each(function() {
+						var p = $(this).prop("parentElement");
+						if ($(p).attr("class") != "publications")
+							return;
+						var text = $(this).html();
+						text = text.replace("An-Zi Yen", "<u>An-Zi Yen</u>");
+				//		text = text.replace(/\((.+?)\)/, '(<strong><i>$1</i></strong>)');
+						text = text.replace(/In (Proceeding[^(,]+)/, 'In <i>$1</i>');
+						text = text.replace(/To appear in (Proceeding[^(,]+)/, 'To appear in <i>$1</i>');
+						$(this).html(text);
+					});
+				});
+				</script>
+	</body>
+</html>

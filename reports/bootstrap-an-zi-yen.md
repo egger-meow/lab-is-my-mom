@@ -2,13 +2,13 @@
 
 ## Run evidence
 
-- Professor page: `https://azyen0522.github.io/`; its snapshot is `.research-os/snapshots/professor.html`. URL, fetch timestamp, and SHA-256 are stored in `.research-os/research.db`.
+- Professor page: `https://azyen0522.github.io/`; its snapshot is `.research-os/snapshots/professor.html`. The bounded same-site crawl also archived the relevant `member.html` and `projects.html` pages. URLs, fetch timestamps, hashes, and followed crawl edges are stored in `.research-os/research.db`.
 - Seed: the untouched `NYCU NLP Lab Intro.pdf` is preserved at `research/seeds/NYCU NLP Lab Intro.pdf` and hashed in the database.
 - Authorship rule: a publication-list entry must match a configured author alias. Project descriptions and unrelated mentions are excluded.
 
 ## Result
 
-The July 12, 2026 crawl found 39 authored publication-list entries. Identifier-based deduplication merges the ISSR preprint and later conference-title entry, producing 38 canonical works. Thirteen full texts have source-backed public PDF routes and were fetched, hashed, extracted, and digested:
+The July 13, 2026 crawl found 39 authored publication-list entries. Identifier-based deduplication merges the ISSR preprint and later conference-title entry, producing 38 canonical works. Thirteen full texts have source-backed public PDF routes and were fetched, hashed, extracted, and digested:
 
 1. E-QGen - arXiv:2404.13547; 4 pages.
 2. How We Refute Claims / RefuteClaim - arXiv:2401.15312; 4 pages.

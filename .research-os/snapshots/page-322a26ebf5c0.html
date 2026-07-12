@@ -1,0 +1,116 @@
+<!DOCTYPE HTML>
+<!--
+	Strata by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>An-Zi Yen</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+	</head>
+	<body class="is-preload">
+
+		<!-- Header -->
+			<header id="header">
+				<div class="inner">
+					<a href="#" class="image headshot"><img src="images/head_shot.jpg" alt="" /></a>
+					<div id="nav">
+						<h1><a href="index.html#lab">NYCU NLP Lab</a><br /></h1>
+						<h1><a href="index.html#projects">Projects</a><br /></h1>
+						<h1><a href="index.html#publications">Publications</a><br /></h1>
+						<h1><a href="index.html#honors">Honors</a><br /></h1>
+						<h1><a href="index.html#contact">Contact</a></h1>
+						<h1><a href="index.html#education">Education</a><br /> </h1>
+						<h1><a href="index.html#experience">Experience</a><br />
+					</div>
+				</div>
+			</header>
+
+		<!-- Main -->
+			<div id="main">
+				<section id="members">
+				<h2>Current Members</h2>
+				<div class="row">
+				<ul>
+					<li>PhD Students
+						<ul>
+							<li>Yu-Chien Tang</li>
+						</ul>
+						
+					</li>
+					<li>Master Students
+						<ul>
+							<li>Yu-Hang Deng</li>
+							<li>Jun-Han Chen</li>
+							<li>Bo-Cheng Pan</li>
+							<li>Min-Kuang Tsu</li>
+							<li>Yu-Tung Chou</li>
+							<li>Chun-Wei Kang</li>
+							<li>You-Mei Huang</li>
+							<li>Hsiang-Yu Cheng</li>
+							<li>Ding-Xin Kang</li>
+							<li>Nien-Hui Huang</li>
+							<li>Yong-Xuan Zheng</li>
+							<li>Wei-Lin Wen</li>
+							<li>Ting-Shian Kuo</li>
+							<li>Lai-Sen Cao</li>
+						</ul>
+					</li>
+				<h2>Alumni</h2>
+					<li>Master's Graduates
+						<ul>
+							<li>Guan-Yi He</li>
+							<li>Wei-Ling Hsu</li>
+							<li>Yu-Cheng Liu</li>
+							<li>Bo-Wei Chen</li>
+							<li>Cheng-Xin Song</li>
+							<li>Hisu-Hung Lee</li>
+							<li>Yen-Chun Huang</li>
+							<li>Yu-Chen Kang</li>
+							<li>Jou-Chia Chiang</li>
+						</ul>
+					</li>
+					
+				</ul>
+					</section>
+
+
+
+			</div>
+
+		<!-- Footer -->
+			<footer id="footer">
+				<div class="inner">
+					<ul class="copyright">
+						<li>&copy; All rights reserved.</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+					</ul>
+				</div>
+			</footer>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.poptrox.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+			<script>
+				$(document).ready(function() {
+					$("li").each(function() {
+						var p = $(this).prop("parentElement");
+						if ($(p).attr("class") != "publications")
+							return;
+						var text = $(this).html();
+						text = text.replace("An-Zi Yen", "<u>An-Zi Yen</u>");
+				//		text = text.replace(/\((.+?)\)/, '(<strong><i>$1</i></strong>)');
+						text = text.replace(/In (Proceeding[^(,]+)/, 'In <i>$1</i>');
+						text = text.replace(/To appear in (Proceeding[^(,]+)/, 'To appear in <i>$1</i>');
+						$(this).html(text);
+					});
+				});
+				</script>
+	</body>
+</html>
