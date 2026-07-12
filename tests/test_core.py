@@ -1,8 +1,12 @@
 from pathlib import Path
+import subprocess
+
+import pytest
 
 from research_os import cli
 from research_os.cli import crawl_same_site, process_pdf
 from research_os.core import Store, normalize_title, parse_publications, relevant_same_site_links
+from research_os.translation import BabelDocTranslator, TranslationUnavailable
 
 
 def test_normalize_title_dedup_key():
@@ -87,6 +91,28 @@ def test_bounded_crawl_snapshots_relevant_pages_and_collects_authored_papers(tmp
     assert (tmp_path / ".research-os" / "snapshots" / "professor.html").exists()
     assert len(list((tmp_path / ".research-os" / "snapshots").glob("page-*.html"))) == 1
     store.close()
+
+
+def test_babeldoc_adapter_is_optional_and_uses_documented_config_cli(tmp_path: Path, monkeypatch):
+    source = tmp_path / "source.pdf"
+    config = tmp_path / "babeldoc.toml"
+    executable = tmp_path / "babeldoc.exe"
+    source.write_bytes(b"%PDF-1.7\n")
+    config.write_text("[babeldoc]\noutput = 'output'\n", encoding="utf-8")
+    translator = BabelDocTranslator(str(executable))
+    with pytest.raises(TranslationUnavailable):
+        translator.translate(source, config)
+    executable.write_bytes(b"placeholder")
+    captured = {}
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured["kwargs"] = kwargs
+        return subprocess.CompletedProcess(command, 0, stdout="done", stderr="")
+    monkeypatch.setattr("research_os.translation.subprocess.run", fake_run)
+    result = translator.translate(source, config, timeout=12)
+    assert result.return_code == 0
+    assert captured["command"] == (str(executable), "--config", str(config), "--files", str(source))
+    assert captured["kwargs"]["timeout"] == 12
 
 
 def test_store_merges_records_with_same_external_identifier(tmp_path: Path):

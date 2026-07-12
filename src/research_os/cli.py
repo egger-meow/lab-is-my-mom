@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .core import Publication, Store, fetch_url, parse_publications, relevant_same_site_links, sha256_bytes
 from .providers import ArxivProvider, CrossrefProvider, OpenAlexProvider
+from .translation import BabelDocTranslator, TranslationUnavailable
 
 
 def load_config(root: Path, professor_id: str | None = None) -> dict:
@@ -198,6 +199,46 @@ def process_paper(args: argparse.Namespace) -> int:
         store.close()
 
 
+def translate_paper(args: argparse.Namespace) -> int:
+    """Optionally create a BabelDOC output while preserving the source PDF."""
+    root = Path(args.root).resolve()
+    store = Store(root)
+    row = store.paper(args.paper_id)
+    if not row or not row["pdf_path"]:
+        store.close()
+        raise SystemExit("paper has no fetched PDF; run fetch first")
+    config_path = Path(args.config)
+    if not config_path.is_absolute():
+        config_path = root / config_path
+    translator = BabelDocTranslator(args.executable)
+    try:
+        result = translator.translate(Path(row["pdf_path"]), config_path, timeout=args.timeout)
+    except (TranslationUnavailable, ValueError) as error:
+        store.record_failure("translate", row["id"], str(error))
+        store.close()
+        print(f"{row['id']}: BabelDOC unavailable ({error})")
+        return 1
+    provenance = {
+        "engine": "BabelDOC CLI",
+        "source_pdf": row["pdf_path"],
+        "source_sha256": row["pdf_sha256"],
+        "config_sha256": sha256_bytes(config_path.read_bytes()),
+        "command": list(result.command),
+        "return_code": result.return_code,
+        "output_note": "BabelDOC output is controlled by the caller-provided TOML config; config contents are intentionally not stored.",
+    }
+    output = Path(row["pdf_path"]).parent / "translation.json"
+    output.write_text(json.dumps(provenance, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if result.return_code:
+        store.record_failure("translate", row["id"], result.stderr[-1000:] or "BabelDOC returned a non-zero status")
+        store.close()
+        print(f"{row['id']}: BabelDOC failed (exit {result.return_code})")
+        return 1
+    store.close()
+    print(f"{row['id']}: BabelDOC completed; provenance at {output}")
+    return 0
+
+
 def page_anchor(payload: dict, heading: str) -> str:
     for section in payload.get("sections", []):
         if heading.lower() in section["heading"].lower():
@@ -312,6 +353,7 @@ def main() -> int:
     fetch = commands.add_parser("fetch"); fetch.add_argument("paper_id"); fetch.set_defaults(func=fetch_paper)
     resolver = commands.add_parser("resolve"); resolver.add_argument("professor_id"); resolver.add_argument("--limit", type=int); resolver.add_argument("--fulltext", action="store_true", help="query OpenAlex for lawful open-access PDF locations"); resolver.set_defaults(func=resolve)
     process = commands.add_parser("process"); process.add_argument("paper_id"); process.set_defaults(func=process_paper)
+    translate = commands.add_parser("translate"); translate.add_argument("paper_id"); translate.add_argument("--config", required=True, help="local BabelDOC TOML; not copied into the corpus"); translate.add_argument("--executable", default="babeldoc"); translate.add_argument("--timeout", type=int, default=3600); translate.set_defaults(func=translate_paper)
     query = commands.add_parser("search"); query.add_argument("query"); query.set_defaults(func=search)
     report_parser = commands.add_parser("report"); report_parser.add_argument("professor_id"); report_parser.set_defaults(func=report)
     return args.func(args) if (args := parser.parse_args()).func else 1
