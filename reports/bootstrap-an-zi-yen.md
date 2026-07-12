@@ -44,3 +44,5 @@ uv run research-os process <paper-id>
 ```
 
 SQLite artifact paths and checked-in extraction payloads are repository-relative, so a fresh clone does not inherit this machine's filesystem locations.
+
+On July 13, 2026, a fresh local Git clone was verified with the checked-in fixture (`--source-file data/an-zi-yen-live.html --crawl-depth 0`): bootstrap recovered 39 raw entries and 38 canonical works, all 13 fetched artifacts resolved within the clone, no stored path was absolute, and the test suite passed (11 tests).
