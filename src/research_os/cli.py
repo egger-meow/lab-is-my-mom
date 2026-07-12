@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import sys
 import tomllib
 from pathlib import Path
 
-from .core import Publication, Store, fetch_url, parse_publications, sha256_bytes
+from .core import Publication, Store, fetch_url, parse_publications, relevant_same_site_links, sha256_bytes
 from .providers import ArxivProvider, CrossrefProvider, OpenAlexProvider
 
 
@@ -25,6 +26,38 @@ def snapshot(root: Path, name: str, data: bytes) -> Path:
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_bytes(data)
     return destination
+
+
+def crawl_same_site(root: Path, store: Store, start_url: str, initial_data: bytes, initial_content_type: str,
+                    max_depth: int = 1, max_pages: int = 12) -> list[Publication]:
+    """Crawl a small, auditable set of relevant same-site HTML pages."""
+    pages: list[tuple[str, bytes, str, int]] = [(start_url, initial_data, initial_content_type, 0)]
+    visited: set[str] = set()
+    publications: list[Publication] = []
+    config = load_config(root)
+    while pages and len(visited) < max_pages:
+        page_url, data, content_type, depth = pages.pop(0)
+        if page_url in visited:
+            continue
+        visited.add(page_url)
+        filename = "professor.html" if depth == 0 else f"page-{hashlib.sha256(page_url.encode()).hexdigest()[:12]}.html"
+        local = snapshot(root, filename, data)
+        store.record_source(page_url, data, content_type=content_type, local_path=local)
+        text = data.decode("utf-8", "replace")
+        publications.extend(parse_publications(text, page_url, config["aliases"]))
+        if depth >= max_depth or content_type not in {"text/html", "application/xhtml+xml"}:
+            continue
+        for target in relevant_same_site_links(text, page_url):
+            if target in visited or any(queued[0] == target for queued in pages) or len(visited) + len(pages) >= max_pages:
+                continue
+            store.record_crawl_edge(page_url, target, depth + 1)
+            try:
+                child_data, final_url, child_type = fetch_url(target)
+                pages.append((final_url, child_data, child_type, depth + 1))
+            except Exception as error:
+                store.record_source(target, b"", content_type="text/html", local_path=None, status="failed", error=str(error))
+                store.record_failure("crawl", target, str(error))
+    return publications
 
 
 def import_seed(root: Path, seed_file: str | None) -> Path | None:
@@ -57,9 +90,8 @@ def bootstrap(args: argparse.Namespace) -> int:
             final_url, content_type = args.professor_url, "text/html"
         else:
             data, final_url, content_type = fetch_url(args.professor_url)
-        local = snapshot(root, "professor.html", data)
-        store.record_source(final_url, data, content_type=content_type, local_path=local)
-        publications = parse_publications(data.decode("utf-8", "replace"), final_url, config["aliases"])
+        publications = crawl_same_site(root, store, final_url, data, content_type,
+                                       max_depth=getattr(args, "crawl_depth", 1))
         store.upsert_papers(publications)
         store.apply_paper_hints(config.get("paper_hints", []))
         store.deduplicate_by_identifier()
@@ -230,7 +262,7 @@ def search(args: argparse.Namespace) -> int:
 
 def refresh(args: argparse.Namespace) -> int:
     config = load_config(Path(args.root).resolve(), args.professor_id)
-    args.professor_url = config["professor_url"]; args.seed_file = None; args.source_file = None
+    args.professor_url = config["professor_url"]; args.seed_file = None; args.source_file = None; args.crawl_depth = 1
     return bootstrap(args)
 
 
@@ -274,7 +306,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="research-os")
     parser.add_argument("--root", default=".")
     commands = parser.add_subparsers(dest="command", required=True)
-    boot = commands.add_parser("bootstrap"); boot.add_argument("--professor-url", required=True); boot.add_argument("--seed-file"); boot.add_argument("--source-file"); boot.set_defaults(func=bootstrap)
+    boot = commands.add_parser("bootstrap"); boot.add_argument("--professor-url", required=True); boot.add_argument("--seed-file"); boot.add_argument("--source-file"); boot.add_argument("--crawl-depth", type=int, default=1); boot.set_defaults(func=bootstrap)
     refresh_parser = commands.add_parser("refresh"); refresh_parser.add_argument("professor_id"); refresh_parser.set_defaults(func=refresh)
     papers = commands.add_parser("papers"); papers.add_argument("professor_id", nargs="?"); papers.set_defaults(func=list_papers)
     fetch = commands.add_parser("fetch"); fetch.add_argument("paper_id"); fetch.set_defaults(func=fetch_paper)

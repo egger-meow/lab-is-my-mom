@@ -21,6 +21,7 @@ from typing import Iterable
 
 
 USER_AGENT = "research-os/0.2 (+local deterministic corpus builder)"
+RELEVANT_PAGE_TERMS = ("publication", "paper", "research", "project", "profile", "people", "person", "lab", "about")
 
 
 def utc_now() -> str:
@@ -139,6 +140,56 @@ class LabPageParser(HTMLParser):
             self._li_parts.append(data)
         if self._anchor_href:
             self._anchor_parts.append(data)
+
+
+class LinkCollector(HTMLParser):
+    """Collect anchors without interpreting them as publications."""
+
+    def __init__(self, base_url: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.base_url = base_url
+        self.links: list[Link] = []
+        self._href: str | None = None
+        self._text: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "a":
+            href = dict(attrs).get("href")
+            if href:
+                self._href = urllib.parse.urljoin(self.base_url, href)
+                self._text = []
+
+    def handle_data(self, data: str) -> None:
+        if self._href:
+            self._text.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "a" and self._href:
+            self.links.append(Link(self._href, " ".join(self._text).strip()))
+            self._href = None
+
+
+def relevant_same_site_links(source: str, source_url: str) -> list[str]:
+    """Return deterministic, de-fragmented navigation targets worth crawling.
+
+    The predicate is intentionally conservative: it follows only pages on the
+    exact host whose URL path or anchor text advertises professor/lab research
+    content.  Scholarly links are preserved as paper links, not crawled as lab
+    pages.
+    """
+    origin = urllib.parse.urlsplit(source_url)
+    parser = LinkCollector(source_url)
+    parser.feed(source)
+    targets: set[str] = set()
+    for link in parser.links:
+        parsed = urllib.parse.urlsplit(link.href)
+        if parsed.scheme not in {"http", "https"} or parsed.netloc != origin.netloc:
+            continue
+        normalized = urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, parsed.path or "/", parsed.query, ""))
+        haystack = f"{parsed.path} {link.text}".lower()
+        if normalized != source_url and any(term in haystack for term in RELEVANT_PAGE_TERMS):
+            targets.add(normalized)
+    return sorted(targets)
 
 
 def _extract_title(raw: str) -> str | None:
@@ -276,6 +327,12 @@ class Store:
 
     def record_failure(self, stage: str, subject: str, message: str) -> None:
         self.db.execute("INSERT INTO failures(stage,subject,message,created_at) VALUES(?,?,?,?)", (stage, subject, message, utc_now()))
+        self.db.commit()
+
+    def record_crawl_edge(self, source_url: str, target_url: str, depth: int) -> None:
+        self.db.execute("""INSERT INTO crawl_edges(source_url,target_url,depth,followed_at)
+        VALUES(?,?,?,?) ON CONFLICT(source_url,target_url) DO UPDATE SET depth=excluded.depth,followed_at=excluded.followed_at""",
+                        (source_url, target_url, depth, utc_now()))
         self.db.commit()
 
     def upsert_professor(self, professor_id: str, name: str, url: str, affiliation: str, aliases: list[str]) -> None:

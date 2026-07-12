@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from research_os.cli import process_pdf
-from research_os.core import Store, normalize_title, parse_publications
+from research_os import cli
+from research_os.cli import crawl_same_site, process_pdf
+from research_os.core import Store, normalize_title, parse_publications, relevant_same_site_links
 
 
 def test_normalize_title_dedup_key():
@@ -48,6 +49,43 @@ def test_source_provenance_retains_hash_timestamp_and_local_path(tmp_path: Path)
     assert row["fetched_at"]
     assert Path(row["local_path"]) == snapshot
     assert row["status"] == "ok"
+    store.close()
+
+
+def test_same_site_crawl_targets_are_relevance_filtered_and_recordable(tmp_path: Path):
+    source = """
+    <a href="/research">Research</a>
+    <a href="/news">News</a>
+    <a href="https://outside.example/projects">Outside project</a>
+    <a href="/publications#recent">Publications</a>
+    """
+    targets = relevant_same_site_links(source, "https://lab.example/")
+    assert targets == ["https://lab.example/publications", "https://lab.example/research"]
+    store = Store(tmp_path)
+    store.record_crawl_edge("https://lab.example/", targets[0], 1)
+    edge = store.db.execute("select source_url,target_url,depth,followed_at from crawl_edges").fetchone()
+    assert edge["target_url"] == targets[0]
+    assert edge["depth"] == 1
+    assert edge["followed_at"]
+    store.close()
+
+
+def test_bounded_crawl_snapshots_relevant_pages_and_collects_authored_papers(tmp_path: Path, monkeypatch):
+    root_url = "https://lab.example/"
+    research_url = "https://lab.example/research"
+    root_html = b'<a href="/research">Research</a><a href="/news">News</a>'
+    research_html = b'''<ol class="publications"><h4>Conference Papers:</h4>
+    <li>Collaborator, An-Zi Yen (2025). "Crawled Paper." In ACL.</li></ol>'''
+    responses = {research_url: (research_html, research_url, "text/html")}
+    monkeypatch.setattr(cli, "load_config", lambda root: {"aliases": ["An-Zi Yen"]})
+    monkeypatch.setattr(cli, "fetch_url", lambda url: responses[url])
+    store = Store(tmp_path)
+    papers = crawl_same_site(tmp_path, store, root_url, root_html, "text/html", max_depth=1)
+    assert [paper.title for paper in papers] == ["Crawled Paper"]
+    assert store.db.execute("select count(*) from sources").fetchone()[0] == 2
+    assert store.db.execute("select count(*) from crawl_edges").fetchone()[0] == 1
+    assert (tmp_path / ".research-os" / "snapshots" / "professor.html").exists()
+    assert len(list((tmp_path / ".research-os" / "snapshots").glob("page-*.html"))) == 1
     store.close()
 
 

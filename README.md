@@ -12,10 +12,14 @@ uv run research-os search "fact-checking"
 uv run research-os report an-zi-yen
 ```
 
-For offline or reproducible parser runs, use the checked-in fixture:
+Bootstrap follows a bounded (default depth-one, maximum 12-page) set of
+same-host links whose path or anchor text signals profile, lab, project,
+research, paper, or publication content. Every followed edge and fetched HTML
+snapshot is recorded in SQLite. For a strictly offline parser run, disable the
+follow-up crawl and use the checked-in fixture:
 
 ```bash
-uv run research-os bootstrap --professor-url https://azyen0522.github.io/ --source-file data/an-zi-yen-live.html --seed-file "NYCU NLP Lab Intro.pdf"
+uv run research-os bootstrap --professor-url https://azyen0522.github.io/ --source-file data/an-zi-yen-live.html --crawl-depth 0 --seed-file "NYCU NLP Lab Intro.pdf"
 ```
 
 The SQLite database lives at `.research-os/research.db`. HTML snapshots, PDFs, and the supplied seed are SHA-256 hashed and retained with source URLs. PyMuPDF extracts page-level text, image counts, detected tables, and section anchors to `extraction.json`. Papers with no verified full text remain `unresolved` rather than being presented as fetched.
