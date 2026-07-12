@@ -66,6 +66,11 @@ def test_semantic_scholar_provider_keeps_only_high_similarity_open_access_matche
     assert results[0].pdf_url == "https://example.test/paper.pdf"
 
 
+def test_semantic_scholar_provider_rejects_a_low_similarity_title(monkeypatch):
+    monkeypatch.setattr("research_os.providers.fetch_url", lambda url, timeout: (b'{"title":"Different Work"}', url, "application/json"))
+    assert SemanticScholarProvider().resolve("Exact Research Paper") == []
+
+
 def test_store_deduplicates_and_searches_by_provenance(tmp_path: Path):
     html = '<ol class="publications"><h4>Other Publication:</h4><li>An-Zi Yen (2024). “Fact Check.” arXiv preprint arXiv:2401.00001.</li></ol>'
     paper = parse_publications(html, "https://example.test/", ["An-Zi Yen"])[0]

@@ -337,12 +337,17 @@ def refresh(args: argparse.Namespace) -> int:
 
 def resolve(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve(); store = Store(root)
-    providers = (OpenAlexProvider(),) if args.fulltext else (CrossrefProvider(), OpenAlexProvider())
     if args.semantic_scholar:
-        providers = (*providers, SemanticScholarProvider())
+        providers = (SemanticScholarProvider(),)
+    else:
+        providers = (OpenAlexProvider(),) if args.fulltext else (CrossrefProvider(), OpenAlexProvider())
     acl = AclAnthologyProvider()
     resolved = 0
-    if args.fulltext:
+    if args.semantic_scholar:
+        candidates = [row for row in store.papers() if row["fulltext_status"] == "unresolved"
+                      and not store.db.execute("SELECT 1 FROM resolutions WHERE paper_id=? AND provider='semantic-scholar'", (row["id"],)).fetchone()
+                      and not store.db.execute("SELECT 1 FROM failures WHERE subject=? AND stage='resolve:semantic-scholar'", (row["id"],)).fetchone()]
+    elif args.fulltext:
         candidates = [row for row in store.papers() if row["fulltext_status"] == "unresolved" and not store.db.execute("SELECT 1 FROM resolutions WHERE paper_id=? AND provider='openalex'", (row["id"],)).fetchone() and not store.db.execute("SELECT 1 FROM failures WHERE subject=? AND stage='resolve'", (row["id"],)).fetchone()]
     else:
         candidates = [row for row in store.papers() if not row["arxiv_id"] and not row["doi"]]
@@ -371,7 +376,8 @@ def resolve(args: argparse.Namespace) -> int:
             except Exception as error:
                 store.record_failure("resolve:" + provider.name, row["id"], str(error))
         if not matched:
-            store.record_failure("resolve", row["id"], "No source candidate met the 0.84 normalized-title similarity threshold.")
+            stage = "resolve:semantic-scholar" if args.semantic_scholar else "resolve"
+            store.record_failure(stage, row["id"], "No source candidate met the 0.84 normalized-title similarity threshold.")
     config = load_config(root, args.professor_id)
     store.deduplicate_by_identifier()
     write_research_map(root, store, config, root / "research" / "seeds" / Path(config["seed_file"]).name)

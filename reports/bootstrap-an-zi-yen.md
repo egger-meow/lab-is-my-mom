@@ -32,6 +32,8 @@ The remaining 25 canonical works retain `fulltext_status = unresolved`. The curr
 
 The OpenAlex-discovered ACM PDF route for *RAG-Enhanced Evidence Recommendation in Financial Legal Resolutions* was attempted but did not return a PDF to the fetcher; its fetch failure is stored in SQLite. Four titles also had no source candidate above the conservative 0.84 title-similarity threshold: *Follow-up Question Modeling for Open-Retrieval Conversations with Wh-Questions*, *Personalized Graph-Empowered Large Language Model for Proactive Information Access*, *Opportunities and challenges of explainable artificial intelligence in medicine*, and *Learning to Generate Explanation from e-Hospital Services for Medical Suggestion*.
 
+The optional Semantic Scholar title-match fallback was also tried on a bounded unresolved batch. It returned no additional high-confidence result (two conservative no-matches and one API 404); those provider-specific outcomes are retained in SQLite and are not presented as missing-paper facts.
+
 ## Reproducibility
 
 ```text
