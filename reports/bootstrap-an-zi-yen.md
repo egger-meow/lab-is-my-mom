@@ -28,7 +28,7 @@ Each fetched paper has its PDF, extraction JSON, study notes, and Mermaid diagra
 
 ## Visible unresolved and unavailable records
 
-The remaining 25 canonical works retain `fulltext_status = unresolved`. The current pipeline records high-confidence Crossref/OpenAlex metadata, direct arXiv routes, ACL PDF locations, AAAI PDFs, and project-page identifier hints. It does not present metadata-only records as downloaded or digested.
+The remaining 25 canonical works retain `fulltext_status = unresolved`. The current pipeline records high-confidence Crossref/OpenAlex metadata, direct arXiv routes, ACL PDF locations, AAAI PDFs, and project-page identifier hints. A bounded OpenAlex pass is now exhausted for all unresolved records: each has either an OpenAlex resolution or a recorded conservative title-match failure, so rerunning the command does not silently retry the same cases. Metadata-only records are not presented as downloaded or digested.
 
 The OpenAlex-discovered ACM PDF route for *RAG-Enhanced Evidence Recommendation in Financial Legal Resolutions* was attempted but did not return a PDF to the fetcher; its fetch failure is stored in SQLite. Four titles also had no source candidate above the conservative 0.84 title-similarity threshold: *Follow-up Question Modeling for Open-Retrieval Conversations with Wh-Questions*, *Personalized Graph-Empowered Large Language Model for Proactive Information Access*, *Opportunities and challenges of explainable artificial intelligence in medicine*, and *Learning to Generate Explanation from e-Hospital Services for Medical Suggestion*.
 
