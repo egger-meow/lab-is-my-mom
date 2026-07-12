@@ -5,7 +5,7 @@ import pytest
 
 from research_os import cli
 from research_os.cli import crawl_same_site, process_pdf
-from research_os.core import Store, normalize_title, parse_publications, relevant_same_site_links
+from research_os.core import Store, classify_link, normalize_title, parse_publications, relevant_same_site_links
 from research_os.translation import BabelDocTranslator, TranslationUnavailable
 
 
@@ -27,6 +27,19 @@ def test_parser_keeps_authored_entries_links_and_excludes_unrelated_mentions():
     assert papers[0].category == "conference-papers"
     assert papers[0].arxiv_id == "2401.00001"
     assert papers[0].links[0].href == "https://arxiv.org/abs/2401.00001"
+
+
+def test_direct_source_pdf_links_are_classified_as_fetch_candidates(tmp_path: Path):
+    source = '''<ol class="publications"><h4>Conference Papers:</h4>
+    <li>An-Zi Yen (2024). "Hosted PDF." In ACL. <a href="/papers/hosted.pdf">Paper</a></li></ol>'''
+    paper = parse_publications(source, "https://lab.example/", ["An-Zi Yen"])[0]
+    store = Store(tmp_path)
+    store.upsert_papers([paper])
+    link = store.db.execute("select url,kind from paper_links where paper_id=?", (paper.id,)).fetchone()
+    assert link["url"] == "https://lab.example/papers/hosted.pdf"
+    assert link["kind"] == "pdf"
+    assert classify_link("https://lab.example/paper", "Download PDF") == "pdf"
+    store.close()
 
 
 def test_store_deduplicates_and_searches_by_provenance(tmp_path: Path):

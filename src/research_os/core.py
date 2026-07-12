@@ -41,6 +41,19 @@ def normalize_title(title: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", title.lower()).strip()
 
 
+def classify_link(url: str, label: str = "") -> str:
+    """Classify a source-backed scholarly link without treating it as a fetch."""
+    path = urllib.parse.urlsplit(url).path.lower()
+    label_lower = label.lower()
+    if "arxiv.org" in url:
+        return "arxiv"
+    if "doi.org" in url:
+        return "doi"
+    if path.endswith(".pdf") or "pdf" in label_lower:
+        return "pdf"
+    return "external"
+
+
 def fetch_url(url: str, timeout: int = 30) -> tuple[bytes, str, str]:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(request, timeout=timeout) as response:
@@ -313,6 +326,11 @@ class Store:
         );
         CREATE VIRTUAL TABLE IF NOT EXISTS paper_search USING fts5(paper_id UNINDEXED, title, authors, venue, evidence);
         """)
+        # Older databases classified every non-arXiv/non-DOI source link as
+        # external. Upgrade obvious direct-PDF routes without asserting that
+        # they were downloaded.
+        self.db.execute("""UPDATE paper_links SET kind='pdf' WHERE kind='external'
+        AND (lower(url) LIKE '%.pdf%' OR lower(COALESCE(label,'')) LIKE '%pdf%')""")
         self.db.commit()
 
     def close(self) -> None:
@@ -351,7 +369,7 @@ class Store:
                              pub.source_url, pub.evidence, pub.arxiv_id, pub.doi, utc_now()))
             row = self.db.execute("SELECT id FROM papers WHERE normalized_title=?", (normalize_title(pub.title),)).fetchone()
             for link in pub.links:
-                kind = "arxiv" if "arxiv.org" in link.href else "doi" if "doi.org" in link.href else "external"
+                kind = classify_link(link.href, link.text)
                 self.db.execute("INSERT OR IGNORE INTO paper_links(paper_id,url,label,kind) VALUES(?,?,?,?)", (row["id"], link.href, link.text, kind))
             self.db.execute("DELETE FROM paper_search WHERE paper_id=?", (row["id"],))
             self.db.execute("INSERT INTO paper_search(paper_id,title,authors,venue,evidence) VALUES(?,?,?,?,?)",
