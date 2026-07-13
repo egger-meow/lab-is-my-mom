@@ -324,6 +324,21 @@ class Store:
           arxiv_id TEXT, pdf_url TEXT, resolved_at TEXT NOT NULL,
           UNIQUE(paper_id, provider, evidence_url)
         );
+        CREATE TABLE IF NOT EXISTS discovery_candidates (
+          id TEXT PRIMARY KEY, title TEXT NOT NULL, normalized_title TEXT NOT NULL,
+          payload_json TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'candidate',
+          imported_paper_id TEXT REFERENCES papers(id), created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS discovery_runs (
+          id INTEGER PRIMARY KEY, query TEXT NOT NULL, filters_json TEXT NOT NULL,
+          candidate_ids_json TEXT NOT NULL, failures_json TEXT NOT NULL, created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS candidate_relations (
+          source_candidate_id TEXT NOT NULL REFERENCES discovery_candidates(id) ON DELETE CASCADE,
+          target_candidate_id TEXT NOT NULL REFERENCES discovery_candidates(id) ON DELETE CASCADE,
+          relation TEXT NOT NULL, provider TEXT NOT NULL, created_at TEXT NOT NULL,
+          UNIQUE(source_candidate_id,target_candidate_id,relation,provider)
+        );
         CREATE VIRTUAL TABLE IF NOT EXISTS paper_search USING fts5(paper_id UNINDEXED, title, authors, venue, evidence);
         """)
         # Older databases classified every non-arXiv/non-DOI source link as
@@ -441,6 +456,46 @@ class Store:
         if resolution.pdf_url:
             self.db.execute("INSERT OR IGNORE INTO paper_links(paper_id,url,label,kind) VALUES(?,?,?,?)",
                             (paper_id_value, resolution.pdf_url, resolution.provider, "pdf"))
+        self.db.commit()
+
+    def record_discovery(self, query: str, filters: dict, candidates: Iterable, failures: dict) -> None:
+        ids = []
+        for candidate in candidates:
+            payload = candidate.payload() if hasattr(candidate, "payload") else dict(candidate)
+            candidate_id = payload["id"]; ids.append(candidate_id)
+            existing = self.db.execute("SELECT state,imported_paper_id FROM discovery_candidates WHERE id=?", (candidate_id,)).fetchone()
+            state = existing["state"] if existing else "candidate"
+            imported = existing["imported_paper_id"] if existing else None
+            self.db.execute("""INSERT INTO discovery_candidates(id,title,normalized_title,payload_json,state,imported_paper_id,created_at,updated_at)
+            VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,
+            normalized_title=excluded.normalized_title,payload_json=excluded.payload_json,state=?,imported_paper_id=?,updated_at=excluded.updated_at""",
+                            (candidate_id, payload["title"], normalize_title(payload["title"]), json.dumps(payload, ensure_ascii=False), state, imported, utc_now(), utc_now(), state, imported))
+        self.db.execute("INSERT INTO discovery_runs(query,filters_json,candidate_ids_json,failures_json,created_at) VALUES(?,?,?,?,?)",
+                        (query, json.dumps(filters, ensure_ascii=False), json.dumps(ids), json.dumps(failures, ensure_ascii=False), utc_now()))
+        self.db.commit()
+
+    def discovery_candidate(self, candidate_id: str) -> dict | None:
+        row = self.db.execute("SELECT * FROM discovery_candidates WHERE id=?", (candidate_id,)).fetchone()
+        if not row: return None
+        result = json.loads(row["payload_json"]); result.update({"state": row["state"], "imported_paper_id": row["imported_paper_id"]})
+        return result
+
+    def discovery_candidates(self) -> list[dict]:
+        rows = self.db.execute("SELECT * FROM discovery_candidates ORDER BY updated_at DESC").fetchall(); results=[]
+        for row in rows:
+            item=json.loads(row["payload_json"]); item.update({"state":row["state"],"imported_paper_id":row["imported_paper_id"]}); results.append(item)
+        return results
+
+    def save_candidate(self, candidate_id: str) -> bool:
+        cursor=self.db.execute("UPDATE discovery_candidates SET state='saved',updated_at=? WHERE id=? AND state!='imported'", (utc_now(),candidate_id)); self.db.commit()
+        return bool(cursor.rowcount)
+
+    def mark_candidate_imported(self, candidate_id: str, imported_paper_id: str) -> None:
+        self.db.execute("UPDATE discovery_candidates SET state='imported',imported_paper_id=?,updated_at=? WHERE id=?", (imported_paper_id,utc_now(),candidate_id)); self.db.commit()
+
+    def record_candidate_relation(self, source: str, target: str, relation: str, providers: Iterable[str]) -> None:
+        for provider in providers:
+            self.db.execute("INSERT OR IGNORE INTO candidate_relations VALUES(?,?,?,?,?)", (source,target,relation,provider,utc_now()))
         self.db.commit()
 
     def deduplicate_by_identifier(self) -> int:

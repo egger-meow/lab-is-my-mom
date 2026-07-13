@@ -2,6 +2,7 @@ __pycache__/
 .pytest_cache/
 .pytest-*/
 .uv-cache/
+.research-os/cache/
 .venv/
 .pytest-tmp*/
 *.py[cod]

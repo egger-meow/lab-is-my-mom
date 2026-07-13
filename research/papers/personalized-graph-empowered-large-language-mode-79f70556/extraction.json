@@ -1,0 +1,4084 @@
+{
+  "source": "research\\papers\\personalized-graph-empowered-large-language-mode-79f70556\\source.pdf",
+  "sha256": "75abf5463bd96aa572798c501d0967a3134eb4ace30e0b981c00a49da62b0fd7",
+  "page_count": 9,
+  "parser_version": "1.28.0",
+  "config": {
+    "text": "blocks-sort-with-bbox",
+    "tables": "find_tables",
+    "captions": "regex-v1"
+  },
+  "pages": [
+    {
+      "page": 1,
+      "text": "Personalized Graph-Empowered Large Language\nModel for Proactive Information Access\nChia Cheng Chang\nDepartment of Computer Science\nAn-Zi Yen\nDepartment of Computer Science\nNational Yang Ming Chiao Tung University\nand Information Engineering\nNational Taiwan University\nHsinchu, Taiwan\nazyen@nycu.edu.tw\nTaipei, Taiwan\nchangcc@nlg.csie.ntu.edu.tw\nHsin-Hsi Chen\nDepartment of Computer Science\nHen-Hsen Huang\nInstitute of Information Science\nand Information Engineering\nAcademia Sinica\nAI Research Center (AINTU)\nNational Taiwan University\nTaipei, Taiwan\nhhhuang@iis.sinica.edu.tw\nTaipei, Taiwan\nhhchen@ntu.edu.tw\n[4] propose a reactive system that can utilize the personal\nknowledge graphs to answer users’ queries about life experi-\nence. [5] propose a proactive system to detect four situations\nwhere people struggle to recall past experiences in their nar-\nratives. (1) If the description of a life event matches the user’s\nexperience, no memory access assistance is required. (2) Since\npeople often forget certain details, they might recall events\nwith similar but unrelated information, leading to conflicts\nwith facts, making it necessary to detect these inconsistencies.\n(3) If certain events are not mentioned, it suggests the user may\nhave forgotten them. The system should remind the user of\nthese forgotten events. (4) Users may elaborate on additional\nevents that have not yet been logged. In such cases, the system\nshould assist users in updating their personal knowledge graph.\nAbstract—Since individuals may struggle to recall all life\ndetails and often confuse events, establishing a system to as-\nsist users in recalling forgotten experiences is essential. While\nnumerous studies have proposed memory recall systems, these\nprimarily rely on deep learning techniques that require extensive\ntraining and often face data scarcity due to the limited avail-\nability of personal lifelogs. As lifelogs grow over time, systems\nmust also adapt quickly to newly accumulated data. Recently,\nlarge language models (LLMs) have demonstrated remarkable\ncapabilities across various tasks, making them promising for\npersonalized applications. In this work, we present a framework\nthat leverages LLMs for proactive information access, integrating\npersonal knowledge graphs to enhance the detection of access\nneeds through a refined decision-making process. Our framework\noffers high flexibility, enabling the replacement of base models\nand the modification of fact retrieval methods for continuous im-\nprovement. Experimental results demonstrate that our approach\neffectively identifies forgotten events, supporting users in recalling\npast experiences more efficiently.\nIndex Terms—Proactive Information Access, Personal Knowl-\nedge Graph, Lifelogging\nI. INTRODUCTION\narXiv:2602.21862v1  [cs.CL]  25 Feb 2026\nPersonal life experiences rapidly accumulate over time, with\nevents continually being updated. However, most previous\nworks primarily rely on fine-tuned models [5], [6] to support\nusers in recalling experiences from a specific period. Conse-\nquently, these models face challenges in adapting frequently\nupdated personal knowledge graphs to provide information\naccess service. Large language models (LLMs) now serve as\nthe fundamental models for numerous tasks across different\ndomains [7] by following instructions [8], [9]. [10] conversa-\ntions focused on memory recall, using LLMs to assist users\nin recalling experiences with task-specific instructions. When\nusers forget details, the system auto-completes their narratives\nand identifies discrepancies between the current description\nand past experiences, offering corrections. Preliminary exper-\niments on a limited sample suggest the feasibility of applying\nLLMs for memory recall assistance. Therefore, following the\nwork of [5], we further investigate the application of LLMs\nin detecting users’ information access needs to address the\naforementioned issues.\nSeveral works have explored lifelogging from various per-\nspectives. [1] introduce a method to automatically infer the\nlifestyle for visual lifelogs. [2] focus on detecting irregular\nheart rhythms using a wearable lifelogging camera. [3] utilize\na camera to photo daily meals for weight loss promotion.\nBeyond such applications, several studies explore how past\nlifelogs can support personal information access services. In\nour daily lives, we encounter a variety of events. As time\npasses, the details of these past events are often forgotten,\nleading to potential inaccuracies or omissions when recalling\nthem. Hence, a system capable of proactively detecting and\nassisting in accessing personal information is essential.",
+      "blocks": [
+        {
+          "bbox": [
+            66.23,
+            53.1,
+            545.77,
+            77.01
+          ],
+          "text": "Personalized Graph-Empowered Large Language",
+          "number": 0
+        },
+        {
+          "bbox": [
+            108.47,
+            80.99,
+            503.54,
+            104.9
+          ],
+          "text": "Model for Proactive Information Access",
+          "number": 1
+        },
+        {
+          "bbox": [
+            113.1,
+            122.2,
+            249.18,
+            145.22
+          ],
+          "text": "Chia Cheng Chang\nDepartment of Computer Science",
+          "number": 2
+        },
+        {
+          "bbox": [
+            316.8,
+            122.2,
+            495.41,
+            157.55
+          ],
+          "text": "An-Zi Yen\nDepartment of Computer Science\nNational Yang Ming Chiao Tung University",
+          "number": 6
+        },
+        {
+          "bbox": [
+            121.75,
+            147.58,
+            240.53,
+            157.55
+          ],
+          "text": "and Information Engineering",
+          "number": 3
+        },
+        {
+          "bbox": [
+            126.76,
+            159.91,
+            239.0,
+            169.87
+          ],
+          "text": "National Taiwan University",
+          "number": 4
+        },
+        {
+          "bbox": [
+            365.63,
+            160.09,
+            446.59,
+            182.38
+          ],
+          "text": "Hsinchu, Taiwan\nazyen@nycu.edu.tw",
+          "number": 7
+        },
+        {
+          "bbox": [
+            124.34,
+            172.42,
+            241.42,
+            194.71
+          ],
+          "text": "Taipei, Taiwan\nchangcc@nlg.csie.ntu.edu.tw",
+          "number": 5
+        },
+        {
+          "bbox": [
+            342.76,
+            208.99,
+            478.84,
+            232.01
+          ],
+          "text": "Hsin-Hsi Chen\nDepartment of Computer Science",
+          "number": 11
+        },
+        {
+          "bbox": [
+            129.67,
+            208.99,
+            258.57,
+            232.01
+          ],
+          "text": "Hen-Hsen Huang\nInstitute of Information Science",
+          "number": 8
+        },
+        {
+          "bbox": [
+            351.41,
+            234.38,
+            470.19,
+            244.34
+          ],
+          "text": "and Information Engineering",
+          "number": 12
+        },
+        {
+          "bbox": [
+            161.75,
+            234.38,
+            229.98,
+            244.34
+          ],
+          "text": "Academia Sinica",
+          "number": 9
+        },
+        {
+          "bbox": [
+            353.07,
+            246.71,
+            472.02,
+            256.67
+          ],
+          "text": "AI Research Center (AINTU)",
+          "number": 13
+        },
+        {
+          "bbox": [
+            356.43,
+            259.03,
+            468.66,
+            269.0
+          ],
+          "text": "National Taiwan University",
+          "number": 14
+        },
+        {
+          "bbox": [
+            141.88,
+            246.88,
+            249.85,
+            269.17
+          ],
+          "text": "Taipei, Taiwan\nhhhuang@iis.sinica.edu.tw",
+          "number": 10
+        },
+        {
+          "bbox": [
+            372.54,
+            271.54,
+            452.55,
+            293.83
+          ],
+          "text": "Taipei, Taiwan\nhhchen@ntu.edu.tw",
+          "number": 15
+        },
+        {
+          "bbox": [
+            311.98,
+            326.32,
+            563.04,
+            491.7
+          ],
+          "text": "[4] propose a reactive system that can utilize the personal\nknowledge graphs to answer users’ queries about life experi-\nence. [5] propose a proactive system to detect four situations\nwhere people struggle to recall past experiences in their nar-\nratives. (1) If the description of a life event matches the user’s\nexperience, no memory access assistance is required. (2) Since\npeople often forget certain details, they might recall events\nwith similar but unrelated information, leading to conflicts\nwith facts, making it necessary to detect these inconsistencies.\n(3) If certain events are not mentioned, it suggests the user may\nhave forgotten them. The system should remind the user of\nthese forgotten events. (4) Users may elaborate on additional\nevents that have not yet been logged. In such cases, the system\nshould assist users in updating their personal knowledge graph.",
+          "number": 20
+        },
+        {
+          "bbox": [
+            48.96,
+            327.0,
+            300.02,
+            515.29
+          ],
+          "text": "Abstract—Since individuals may struggle to recall all life\ndetails and often confuse events, establishing a system to as-\nsist users in recalling forgotten experiences is essential. While\nnumerous studies have proposed memory recall systems, these\nprimarily rely on deep learning techniques that require extensive\ntraining and often face data scarcity due to the limited avail-\nability of personal lifelogs. As lifelogs grow over time, systems\nmust also adapt quickly to newly accumulated data. Recently,\nlarge language models (LLMs) have demonstrated remarkable\ncapabilities across various tasks, making them promising for\npersonalized applications. In this work, we present a framework\nthat leverages LLMs for proactive information access, integrating\npersonal knowledge graphs to enhance the detection of access\nneeds through a refined decision-making process. Our framework\noffers high flexibility, enabling the replacement of base models\nand the modification of fact retrieval methods for continuous im-\nprovement. Experimental results demonstrate that our approach\neffectively identifies forgotten events, supporting users in recalling\npast experiences more efficiently.",
+          "number": 16
+        },
+        {
+          "bbox": [
+            48.96,
+            517.27,
+            300.02,
+            536.2
+          ],
+          "text": "Index Terms—Proactive Information Access, Personal Knowl-\nedge Graph, Lifelogging",
+          "number": 17
+        },
+        {
+          "bbox": [
+            135.62,
+            556.38,
+            213.38,
+            566.34
+          ],
+          "text": "I. INTRODUCTION",
+          "number": 18
+        },
+        {
+          "bbox": [
+            10.94,
+            222.68,
+            37.62,
+            569.32
+          ],
+          "text": "arXiv:2602.21862v1  [cs.CL]  25 Feb 2026",
+          "number": 22
+        },
+        {
+          "bbox": [
+            311.98,
+            493.7,
+            563.04,
+            718.85
+          ],
+          "text": "Personal life experiences rapidly accumulate over time, with\nevents continually being updated. However, most previous\nworks primarily rely on fine-tuned models [5], [6] to support\nusers in recalling experiences from a specific period. Conse-\nquently, these models face challenges in adapting frequently\nupdated personal knowledge graphs to provide information\naccess service. Large language models (LLMs) now serve as\nthe fundamental models for numerous tasks across different\ndomains [7] by following instructions [8], [9]. [10] conversa-\ntions focused on memory recall, using LLMs to assist users\nin recalling experiences with task-specific instructions. When\nusers forget details, the system auto-completes their narratives\nand identifies discrepancies between the current description\nand past experiences, offering corrections. Preliminary exper-\niments on a limited sample suggest the feasibility of applying\nLLMs for memory recall assistance. Therefore, following the\nwork of [5], we further investigate the application of LLMs\nin detecting users’ information access needs to address the\naforementioned issues.",
+          "number": 21
+        },
+        {
+          "bbox": [
+            48.96,
+            577.38,
+            300.02,
+            718.85
+          ],
+          "text": "Several works have explored lifelogging from various per-\nspectives. [1] introduce a method to automatically infer the\nlifestyle for visual lifelogs. [2] focus on detecting irregular\nheart rhythms using a wearable lifelogging camera. [3] utilize\na camera to photo daily meals for weight loss promotion.\nBeyond such applications, several studies explore how past\nlifelogs can support personal information access services. In\nour daily lives, we encounter a variety of events. As time\npasses, the details of these past events are often forgotten,\nleading to potential inaccuracies or omissions when recalling\nthem. Hence, a system capable of proactively detecting and\nassisting in accessing personal information is essential.",
+          "number": 19
+        }
+      ],
+      "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
+      "tables": []
+    },
+    {
+      "page": 2,
+      "text": "frameworks to enable LLMs to mutually assist and enhance\nKGs’ capabilities. [22] utilizes KGs to enhance the reasoning\ncapabilities of LLMs and to provide clear visualization of the\nreasoning process. [23] integrates the knowledge of LLMs and\ngraphs through graph instruction tuning. This work introduces\na framework that leverages personal KGs to refine LLM\nanswers and improve detection of information access needs.\nIII. TASK DEFINITION\nSpecifically, we propose a framework that comprises three\nmodules. The base module employs a language model to ana-\nlyze user descriptions and detect the four situations to provide\ncorresponding services. The support module integrates struc-\ntured information from a personal knowledge graph to identify\nthe user’s information access needs. Finally, the correction\nmodule synthesizes predictions from the base and support\nmodules. Based on our established refinement mechanism, it\nmakes the final decision on which type of service to provide.\nWe refer to this framework as the Graph-Empowered Refine-\nment (GER) Framework hereafter. In sum, the contributions\nof our work are threefold:\n1) We explore the utilization of LLMs to support the\ndetection of information access needs.\n2) A framework is proposed that leverages both textual and\nstructured information to enhance the correctness and\nreliability of the detection results.\n3) Experimental results show that our proposed framework\nachieves promising performance in detecting forgotten\nlife events, and its flexibility allows for the substitution\nof various base models to enhance performance by\nincorporating advanced models.\nII. RELATED WORK\n[11] propose an approach to extract relevant life events\nbased on tweet descriptions. Similarly, using social media\nposts as lifelog data, [12] propose a method to extract life\nevents from tweets and construct a personal knowledge base\nwith structured information in the form of subject, predicate,\nobject, and time.\nIn addition to analyzing text-based data, [13] investigate the\nissue of extracting lifelogs from multimodal data.\nWe utilize the NIR dataset [5] to investigate the issues\nof detecting users’ information access needs.1 This dataset\ncomprises two categories of stories: pre-retold story A and\npost-retold story B. The life experiences were written by users\nat time point t (for the pre-retold story A) and at time point\nt+d (for the post-retold story B). Over time, users may forget\nor misremember events. [5] compared these paired stories\nand annotated five event types. Events mentioned in A need\nto be checked to ensure they have not been forgotten and\nomitted in B. When an event e is mentioned in B, we need to\nexamine whether e is consistent with the described experiences\npreviously recorded in A or if it represents additional new\ninformation about past life experiences. In NIR, five event\ntypes are defined:\nConsistent: The described event in B matches the user’s life\nexperiences in A. Both stories mention going to the zoo with\nthe user’s girlfriend.\nInconsistent: The event description in B conflicts with the\nfacts described in A. The user mentions “it was either April\nor June,” while A specifies “the middle of July,” showing con-\nfusion. The system should correct such inaccuracies promptly.\nAdditional: Extra information about a life event that was not\nrecorded in A and does not conflict with the facts. B adds\nnew details like “spiders, snakes, and scorpions,” which were\nnot in A but do not conflict with it. These details should be\nstored in the user’s personal KG.\nForgotten: Life events that have been omitted or not men-\ntioned in B. The event about “saw some seals” is omitted\nin B, indicating it was forgotten. The system should provide\nreminders.\nUnforgotten: The described event in A matches the user’s life\nexperiences in B.\nTo assist users in recalling experiences, [14]–[17] introduce\na new task to retrieve the corresponding visual lifelogs with\nthe given query. For example, if a user searches for a photo\nof eating ice cream at the beach, the system should retrieve\nrelevant first-person photos from wearable devices. Apart from\nvisual lifelogs retrieval, [18] categorize the information access\nservice into reactive mode and proactive mode. In reactive\nmode, the user actively initiates a memory recall request,\nusually by asking about specific details of a life event. [4] de-\nvelop a question-answering system that can reactively answer\npast life experiences based on the personal knowledge base\nwith the given question. In proactive mode, the system must\ndetect when the user needs memory recall assistance, such as\nwhen the user hesitates while recounting an experience [19],\nomits details, or provides incorrect event details. [5] propose\na Structured Event Enhancement Network (SEEN) to support\ninformation access service, combining the transformer frame-\nwork with a graph neural network. [10] develop an LLM-based\nsystem that detects when users are recalling their experiences\nduring online conversations.\nWe extend the setting designed by SEEN [5] that uses one\nstory as the reference story and compare event triples in the\nother story (the target story) with all sentences in the reference\nstory to identify the event type. In other words, given a pair\nof stories, our task is to examine each event triple in the\ntarget story and determine its event type by comparing it with\nall sentences in the reference story. To identify Consistent,\nInconsistent, and Additional events, A serves as the reference.\nConversely, to identify Forgotten and Unforgotten events, B\n1We use only NIR due to the lack of related public datasets. NIR: https:\n//github.com/ntunlplab/SEEN/tree/main/data/scripts\nAfter the rise of LLMs, many studies have focused on\nhow to leverage graph information within LLMs. [20] refine\nraw text using LLMs and extract a knowledge graph (KG)\nfrom the refined text via LLMs. [21] proposes three distinct",
+      "blocks": [
+        {
+          "bbox": [
+            311.98,
+            51.36,
+            563.04,
+            133.05
+          ],
+          "text": "frameworks to enable LLMs to mutually assist and enhance\nKGs’ capabilities. [22] utilizes KGs to enhance the reasoning\ncapabilities of LLMs and to provide clear visualization of the\nreasoning process. [23] integrates the knowledge of LLMs and\ngraphs through graph instruction tuning. This work introduces\na framework that leverages personal KGs to refine LLM\nanswers and improve detection of information access needs.",
+          "number": 7
+        },
+        {
+          "bbox": [
+            389.71,
+            156.5,
+            485.31,
+            166.46
+          ],
+          "text": "III. TASK DEFINITION",
+          "number": 8
+        },
+        {
+          "bbox": [
+            48.96,
+            51.35,
+            300.02,
+            192.82
+          ],
+          "text": "Specifically, we propose a framework that comprises three\nmodules. The base module employs a language model to ana-\nlyze user descriptions and detect the four situations to provide\ncorresponding services. The support module integrates struc-\ntured information from a personal knowledge graph to identify\nthe user’s information access needs. Finally, the correction\nmodule synthesizes predictions from the base and support\nmodules. Based on our established refinement mechanism, it\nmakes the final decision on which type of service to provide.\nWe refer to this framework as the Graph-Empowered Refine-\nment (GER) Framework hereafter. In sum, the contributions\nof our work are threefold:",
+          "number": 0
+        },
+        {
+          "bbox": [
+            58.93,
+            196.82,
+            300.02,
+            314.38
+          ],
+          "text": "1) We explore the utilization of LLMs to support the\ndetection of information access needs.\n2) A framework is proposed that leverages both textual and\nstructured information to enhance the correctness and\nreliability of the detection results.\n3) Experimental results show that our proposed framework\nachieves promising performance in detecting forgotten\nlife events, and its flexibility allows for the substitution\nof various base models to enhance performance by\nincorporating advanced models.",
+          "number": 1
+        },
+        {
+          "bbox": [
+            131.54,
+            323.14,
+            217.45,
+            333.1
+          ],
+          "text": "II. RELATED WORK",
+          "number": 2
+        },
+        {
+          "bbox": [
+            48.96,
+            338.26,
+            300.02,
+            408.0
+          ],
+          "text": "[11] propose an approach to extract relevant life events\nbased on tweet descriptions. Similarly, using social media\nposts as lifelog data, [12] propose a method to extract life\nevents from tweets and construct a personal knowledge base\nwith structured information in the form of subject, predicate,\nobject, and time.",
+          "number": 3
+        },
+        {
+          "bbox": [
+            48.96,
+            410.0,
+            300.02,
+            431.92
+          ],
+          "text": "In addition to analyzing text-based data, [13] investigate the\nissue of extracting lifelogs from multimodal data.",
+          "number": 4
+        },
+        {
+          "bbox": [
+            311.98,
+            181.99,
+            563.05,
+            571.22
+          ],
+          "text": "We utilize the NIR dataset [5] to investigate the issues\nof detecting users’ information access needs.1 This dataset\ncomprises two categories of stories: pre-retold story A and\npost-retold story B. The life experiences were written by users\nat time point t (for the pre-retold story A) and at time point\nt+d (for the post-retold story B). Over time, users may forget\nor misremember events. [5] compared these paired stories\nand annotated five event types. Events mentioned in A need\nto be checked to ensure they have not been forgotten and\nomitted in B. When an event e is mentioned in B, we need to\nexamine whether e is consistent with the described experiences\npreviously recorded in A or if it represents additional new\ninformation about past life experiences. In NIR, five event\ntypes are defined:\nConsistent: The described event in B matches the user’s life\nexperiences in A. Both stories mention going to the zoo with\nthe user’s girlfriend.\nInconsistent: The event description in B conflicts with the\nfacts described in A. The user mentions “it was either April\nor June,” while A specifies “the middle of July,” showing con-\nfusion. The system should correct such inaccuracies promptly.\nAdditional: Extra information about a life event that was not\nrecorded in A and does not conflict with the facts. B adds\nnew details like “spiders, snakes, and scorpions,” which were\nnot in A but do not conflict with it. These details should be\nstored in the user’s personal KG.\nForgotten: Life events that have been omitted or not men-\ntioned in B. The event about “saw some seals” is omitted\nin B, indicating it was forgotten. The system should provide\nreminders.\nUnforgotten: The described event in A matches the user’s life\nexperiences in B.",
+          "number": 9
+        },
+        {
+          "bbox": [
+            48.96,
+            433.92,
+            300.02,
+            671.03
+          ],
+          "text": "To assist users in recalling experiences, [14]–[17] introduce\na new task to retrieve the corresponding visual lifelogs with\nthe given query. For example, if a user searches for a photo\nof eating ice cream at the beach, the system should retrieve\nrelevant first-person photos from wearable devices. Apart from\nvisual lifelogs retrieval, [18] categorize the information access\nservice into reactive mode and proactive mode. In reactive\nmode, the user actively initiates a memory recall request,\nusually by asking about specific details of a life event. [4] de-\nvelop a question-answering system that can reactively answer\npast life experiences based on the personal knowledge base\nwith the given question. In proactive mode, the system must\ndetect when the user needs memory recall assistance, such as\nwhen the user hesitates while recounting an experience [19],\nomits details, or provides incorrect event details. [5] propose\na Structured Event Enhancement Network (SEEN) to support\ninformation access service, combining the transformer frame-\nwork with a graph neural network. [10] develop an LLM-based\nsystem that detects when users are recalling their experiences\nduring online conversations.",
+          "number": 5
+        },
+        {
+          "bbox": [
+            311.98,
+            574.95,
+            563.05,
+            680.55
+          ],
+          "text": "We extend the setting designed by SEEN [5] that uses one\nstory as the reference story and compare event triples in the\nother story (the target story) with all sentences in the reference\nstory to identify the event type. In other words, given a pair\nof stories, our task is to examine each event triple in the\ntarget story and determine its event type by comparing it with\nall sentences in the reference story. To identify Consistent,\nInconsistent, and Additional events, A serves as the reference.\nConversely, to identify Forgotten and Unforgotten events, B",
+          "number": 10
+        },
+        {
+          "bbox": [
+            311.98,
+            700.13,
+            563.04,
+            718.37
+          ],
+          "text": "1We use only NIR due to the lack of related public datasets. NIR: https:\n//github.com/ntunlplab/SEEN/tree/main/data/scripts",
+          "number": 11
+        },
+        {
+          "bbox": [
+            48.96,
+            673.02,
+            300.02,
+            718.85
+          ],
+          "text": "After the rise of LLMs, many studies have focused on\nhow to leverage graph information within LLMs. [20] refine\nraw text using LLMs and extract a knowledge graph (KG)\nfrom the refined text via LLMs. [21] proposes three distinct",
+          "number": 6
+        }
+      ],
+      "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
+      "tables": []
+    },
+    {
+      "page": 3,
+      "text": "is used as the reference. Formally, we define the labels as\nfollows:\n(\ny =\nForgotten or Unforgotten\nif e ∈A,\nConsistent, Inconsistent, or Additional\nif e ∈B.\nThe identified event types correspond to the information access\nservice. Unforgotten and Consistent indicate no need for\ninformation access. Forgotten means the user has forgotten\nthe life event, so the system needs to provide the recalled\nevent to the user. Inconsistent indicates that the user has\nmixed up life events, causing the narrative to conflict with\nthe facts. The system should remind the user and provide\nthe corrected narrative. Additional represents that the narrative\ncontains extra information about the life event. Hence, the\nsystem must update the personal KG with the additional event.\nIV. GRAPH-EMPOWERED REFINEMENT FRAMEWORK\nOur framework comprises three primary components: the\nbase module, the support module, and the correction module.\nThe base module is responsible for generating the initial pre-\ndicted labels through an LLM. The support module leverages\nthe knowledge graph and an LLM to identify event triples\nrelevant to the “query”. The “query” refers to a sentence\ncomposed of event triple (subject, predicate, object) hereafter.\nFor example, a query could be “I go to my sitting room.”\nFinally, the correction module refines the labels based on the\npredictions from both the base and support modules, ultimately\ndetermining the final labels.\nTo sum up, the goal of the three modules is to examine if\nall the information in the event triples in the target story is\nrelevant to the reference story to determine the initial label.\nTo support the information access service, after the correction\nmodule predicts the final label, we construct a label mapper\nto convert the relevant or irrelevant labels back to the original\nevent types.\nmodule is composed of two components: a knowledge graph-\nbased event classifier and an LLM-based event classifier.\nBy using these two classifiers to predict support events, our\nmodule can leverage the structured information in the personal\nknowledge graph and analyze the textual information of each\nevent from the reference story. After obtaining the support\nevents predicted by the two classifiers, we determine the final\nsupport events by taking the intersection of the two sets. Since\neach classifier may identify many irrelevant events, we only\nconsider events identified by both. Finally, we determine the\nlabel based on whether support events are found. If support\nevents are identified, the label is Relevant; otherwise, it is\nIrrelevant.\nKnowledge Graph-based Classifier. In this work, we con-\nstruct the personal KG by leveraging subjects, predicates, and\nobjects as nodes, and connecting these nodes with edges based\non events. For instance, the event “me and my girlfriend\nwent to the zoo” from NIR is represented as (me and my\ngirlfriend, went to, the zoo) as the subject, predicate, and\nobject, respectively. Coreference resolution is then applied\nto link these nodes in the story. The role of a knowledge\ngraph-based classifier is to identify the support events from\nthe personal KG. First, we use the Sentence Transformer [24]\nto calculate the cosine similarity between the query and nodes\nin the knowledge graph, where nodes are subjects, predicates,\nand objects of all the events in KG. Nodes with scores above\na threshold are identified as key nodes. Next, we combine the\nrelated subject, predicate, and object into event triples. Finally,\nwe calculate the score for each triple by combining the scores\nof the three nodes and select those exceeding the threshold as\nsupport events.\nLLM-based Classifier. To predict support events by LLM, we\nprovide the reference story along with the event from the target\nstory. Next, we instruct the LLM to analyze the relationship\nbetween each event in the reference story and the query (i.e.,\nthe event in the target story).\nA. Base Module (Direct Prediction)\nC. Correction Module (Prediction Correction)\nThe base module is utilized to directly generate initial\npredictions. Given a reference story and a query (i.e., the event\ntriple in the target story), the base module predicts the label.\nIntuitively, it might seem sufficient to use the original labels\nfor classification tasks. However, we found that this approach\nresulted in poor prediction performance. Consequently, we\nmade adjustments to the labels.\nWe map Consistent, Inconsistent, and Unforgotten to Rel-\nevant because the events corresponding to these three types\nhave related descriptions in the reference story. In contrast,\nthe events corresponding to Additional and Forgotten contain\ninformation that is completely unrelated to the reference story.\nThus, we convert these two labels to Irrelevant.\nB. Support Module (Prediction with Support Event)\nThe primary objective of the support module is to identify\nevents in the reference story that are relevant to the query.\nWe refer to these events as “support events”. The support\nThe correction module refines the labels based on the\npredicted results from both the base module and the support\nmodule using three distinct approaches, each tailored to differ-\nent cases. (1) If both modules’ predictions are consistent, the\ninitial label is kept. (2) If the base module predicts Relevant\nbut the support module predicts Irrelevant, the base module\nmay have the issue of hallucination [25]. We apply a rethinking\nprompt to have LLMs reassess relevance and discard unrelated\ninformation. Unlike standard LLM reasoning, which performs\nan initial inference, the rethinking prompt specifically guides\nthe LLM to reconsider whether the identified relevant infor-\nmation is relevant, reducing hallucinations. (3) When the base\nmodule predicts Irrelevant but the support module predicts\nRelevant, we expect that relevant subgraphs in the KG can\ncapture and supplement details missed by the base module. An\nexploration prompt is used to guide the LLM in identifying\nrelevant parts based on support events.",
+      "blocks": [
+        {
+          "bbox": [
+            48.96,
+            51.35,
+            300.02,
+            73.27
+          ],
+          "text": "is used as the reference. Formally, we define the labels as\nfollows:",
+          "number": 0
+        },
+        {
+          "bbox": [
+            77.32,
+            78.93,
+            85.35,
+            88.89
+          ],
+          "text": "(",
+          "number": 2
+        },
+        {
+          "bbox": [
+            58.79,
+            88.8,
+            74.55,
+            98.76
+          ],
+          "text": "y =",
+          "number": 1
+        },
+        {
+          "bbox": [
+            85.34,
+            81.87,
+            289.01,
+            106.54
+          ],
+          "text": "Forgotten or Unforgotten\nif e ∈A,\nConsistent, Inconsistent, or Additional\nif e ∈B.",
+          "number": 3
+        },
+        {
+          "bbox": [
+            48.96,
+            116.42,
+            300.02,
+            233.98
+          ],
+          "text": "The identified event types correspond to the information access\nservice. Unforgotten and Consistent indicate no need for\ninformation access. Forgotten means the user has forgotten\nthe life event, so the system needs to provide the recalled\nevent to the user. Inconsistent indicates that the user has\nmixed up life events, causing the narrative to conflict with\nthe facts. The system should remind the user and provide\nthe corrected narrative. Additional represents that the narrative\ncontains extra information about the life event. Hence, the\nsystem must update the personal KG with the additional event.",
+          "number": 4
+        },
+        {
+          "bbox": [
+            61.11,
+            245.41,
+            287.89,
+            255.38
+          ],
+          "text": "IV. GRAPH-EMPOWERED REFINEMENT FRAMEWORK",
+          "number": 5
+        },
+        {
+          "bbox": [
+            48.96,
+            262.42,
+            300.02,
+            391.94
+          ],
+          "text": "Our framework comprises three primary components: the\nbase module, the support module, and the correction module.\nThe base module is responsible for generating the initial pre-\ndicted labels through an LLM. The support module leverages\nthe knowledge graph and an LLM to identify event triples\nrelevant to the “query”. The “query” refers to a sentence\ncomposed of event triple (subject, predicate, object) hereafter.\nFor example, a query could be “I go to my sitting room.”\nFinally, the correction module refines the labels based on the\npredictions from both the base and support modules, ultimately\ndetermining the final labels.",
+          "number": 6
+        },
+        {
+          "bbox": [
+            48.96,
+            394.25,
+            300.02,
+            475.94
+          ],
+          "text": "To sum up, the goal of the three modules is to examine if\nall the information in the event triples in the target story is\nrelevant to the reference story to determine the initial label.\nTo support the information access service, after the correction\nmodule predicts the final label, we construct a label mapper\nto convert the relevant or irrelevant labels back to the original\nevent types.",
+          "number": 7
+        },
+        {
+          "bbox": [
+            311.98,
+            51.36,
+            563.04,
+            481.75
+          ],
+          "text": "module is composed of two components: a knowledge graph-\nbased event classifier and an LLM-based event classifier.\nBy using these two classifiers to predict support events, our\nmodule can leverage the structured information in the personal\nknowledge graph and analyze the textual information of each\nevent from the reference story. After obtaining the support\nevents predicted by the two classifiers, we determine the final\nsupport events by taking the intersection of the two sets. Since\neach classifier may identify many irrelevant events, we only\nconsider events identified by both. Finally, we determine the\nlabel based on whether support events are found. If support\nevents are identified, the label is Relevant; otherwise, it is\nIrrelevant.\nKnowledge Graph-based Classifier. In this work, we con-\nstruct the personal KG by leveraging subjects, predicates, and\nobjects as nodes, and connecting these nodes with edges based\non events. For instance, the event “me and my girlfriend\nwent to the zoo” from NIR is represented as (me and my\ngirlfriend, went to, the zoo) as the subject, predicate, and\nobject, respectively. Coreference resolution is then applied\nto link these nodes in the story. The role of a knowledge\ngraph-based classifier is to identify the support events from\nthe personal KG. First, we use the Sentence Transformer [24]\nto calculate the cosine similarity between the query and nodes\nin the knowledge graph, where nodes are subjects, predicates,\nand objects of all the events in KG. Nodes with scores above\na threshold are identified as key nodes. Next, we combine the\nrelated subject, predicate, and object into event triples. Finally,\nwe calculate the score for each triple by combining the scores\nof the three nodes and select those exceeding the threshold as\nsupport events.\nLLM-based Classifier. To predict support events by LLM, we\nprovide the reference story along with the event from the target\nstory. Next, we instruct the LLM to analyze the relationship\nbetween each event in the reference story and the query (i.e.,\nthe event in the target story).",
+          "number": 13
+        },
+        {
+          "bbox": [
+            48.96,
+            487.2,
+            196.2,
+            497.16
+          ],
+          "text": "A. Base Module (Direct Prediction)",
+          "number": 8
+        },
+        {
+          "bbox": [
+            311.98,
+            498.82,
+            502.03,
+            508.79
+          ],
+          "text": "C. Correction Module (Prediction Correction)",
+          "number": 14
+        },
+        {
+          "bbox": [
+            48.96,
+            503.59,
+            300.02,
+            585.28
+          ],
+          "text": "The base module is utilized to directly generate initial\npredictions. Given a reference story and a query (i.e., the event\ntriple in the target story), the base module predicts the label.\nIntuitively, it might seem sufficient to use the original labels\nfor classification tasks. However, we found that this approach\nresulted in poor prediction performance. Consequently, we\nmade adjustments to the labels.",
+          "number": 9
+        },
+        {
+          "bbox": [
+            48.96,
+            587.42,
+            300.02,
+            657.33
+          ],
+          "text": "We map Consistent, Inconsistent, and Unforgotten to Rel-\nevant because the events corresponding to these three types\nhave related descriptions in the reference story. In contrast,\nthe events corresponding to Additional and Forgotten contain\ninformation that is completely unrelated to the reference story.\nThus, we convert these two labels to Irrelevant.",
+          "number": 10
+        },
+        {
+          "bbox": [
+            48.96,
+            668.59,
+            261.68,
+            678.55
+          ],
+          "text": "B. Support Module (Prediction with Support Event)",
+          "number": 11
+        },
+        {
+          "bbox": [
+            48.96,
+            684.98,
+            300.02,
+            718.85
+          ],
+          "text": "The primary objective of the support module is to identify\nevents in the reference story that are relevant to the query.\nWe refer to these events as “support events”. The support",
+          "number": 12
+        },
+        {
+          "bbox": [
+            311.98,
+            517.61,
+            563.04,
+            718.85
+          ],
+          "text": "The correction module refines the labels based on the\npredicted results from both the base module and the support\nmodule using three distinct approaches, each tailored to differ-\nent cases. (1) If both modules’ predictions are consistent, the\ninitial label is kept. (2) If the base module predicts Relevant\nbut the support module predicts Irrelevant, the base module\nmay have the issue of hallucination [25]. We apply a rethinking\nprompt to have LLMs reassess relevance and discard unrelated\ninformation. Unlike standard LLM reasoning, which performs\nan initial inference, the rethinking prompt specifically guides\nthe LLM to reconsider whether the identified relevant infor-\nmation is relevant, reducing hallucinations. (3) When the base\nmodule predicts Irrelevant but the support module predicts\nRelevant, we expect that relevant subgraphs in the KG can\ncapture and supplement details missed by the base module. An\nexploration prompt is used to guide the LLM in identifying\nrelevant parts based on support events.",
+          "number": 15
+        }
+      ],
+      "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
+      "tables": []
+    },
+    {
+      "page": 4,
+      "text": "Base Module\nCorrection Module\nPredicted\nExamples, Reference Story, Query\nDirect\nClassification\nLabel\nJudge\nPersonal Knowledge Graph, Query\nSupport module \npredicts \"Relevant\"\nBase module \npredicts \"Relevant\"\nSupport\nPredicted\nKnowledge Graph\nBased Classification\nEvents\nLabel\nClassify with\nExploration prompt\nClassify with \nRethinking prompt\nSame label predicted\nby both modules\nReference Story,\nEvents in Reference Story, Query\nEvent \nSelection\nLabel\nIdentification\nLabel Mapper\nSupport\nLLM-Based\nClassification\nEvents\nEvent Type\nSupport Module\nFig. 1. Overview of our graph-empowered refinement (GER) framework for personal information access support.\nD. Label Mapper\nutilizing prompt engineering. Therefore, we implement a few-\nshot prompt for ChatGPT in our experiments.\nLlama3 [28]: The architecture of Llama3 leverages advanced\ntransformer mechanisms, enabling it to handle complex lin-\nguistic patterns and deliver high-quality, contextually aware\noutputs. Llama3 is particularly noted for its robustness in gen-\nerating coherent, relevant, and human-like text. Considering\nthe model’s capabilities and the available resources for our\nwork, we have chosen to use the Llama3-70B as the baseline.\nSEEN [5]: SEEN is a structured event enhancement network\nthat combines structured information from graphs with textual\nrepresentations, enabling the model to leverage the strengths\nof both. The comparison with SEEN aims to explore the\ndifferences between LLM-based prompting methods and tra-\nditional deep learning model training approaches in detecting\ninformation access needs.\nB. Experiment Setup\nSince our framework initially predicts the relation between\nthe event from the target story and the reference as Relevant or\nIrrelevant, we must map the predicted label to the related event\ntype to provide the corresponding information access service.\nHence, a label mapper is constructed. If the query comes\nfrom A, we can directly convert Relevant to Unforgotten and\nIrrelevant to Forgotten. However, if the query comes from\nB, the labels (Consistent, Inconsistent, and Additional) are\ntreated as follows: If the predicted label is Irrelevant, it is\ndirectly mapped to Additional. When the predicted label is\nRelevant, it could be either Consistent or Inconsistent. In this\ncase, we build a label mapper to further distinguish between\nConsistent and Inconsistent. We employ training instances that\nare labeled as Consistent and Inconsistent to fine-tune an LLM\nto determine the final label. The input consists of a query\nand a reference story. The LLM is instructed to follow these\nsteps: First, identify the relevant parts in the reference story\nthat relate to the query. Second, if the relevant parts do not\nexplicitly contradict the query, label it as Consistent. Third,\nif the relevant parts explicitly contradict the query, label it as\nInconsistent.\nV. EXPERIMENTS\nA. Baseline Models\nGiven that our framework can achieve different enhance-\nment effects by substituting the models within each module,\nwe will introduce the models used in the base module, support\nmodule, and correction module. In the dataset, there are a total\nof 6,563 entries, comprising 1,268 Consistent, 24 Inconsistent,\n1,986 Additional, 1,897 Forgotten, and 1,388 Unforgotten\ncases, respectively.\nBase Module. In our experiments, we employed ChatGPT,\nLlama3, SEEN (Base), and SEEN (Large) as the base\nmodule. As SEEN predicts event types rather than rele-\nvant or irrelevant, the predicted “Consistent” and “Unforgot-\nten” are mapped to “Relevant”, while the remaining event\ntypes are considered “Irrelevant”. For ChatGPT, we utilized\ngpt-3.5-turbo-0125. As for Llama3, we employed the\nllama-v3-70b-instruct model. The LLM-based base-\nlines are using few-shot prompting.\nSupport Module. In the support module, we categorize our\napproach into graph-based and LLM-based methods. In the\nDue to the recent remarkable performance of LLMs in\nvarious domains of natural language processing tasks, and\ntheir enhanced semantic understanding facilitated by the chain-\nof-thought [26] approach, we primarily utilize LLMs as the\nbaselines for our task. We also compare our models with the\nstate-of-the-art model.\nChatGPT: ChatGPT is built upon the generative pre-trained\ntransformer architecture and leverages extensive pre-training\non diverse datasets to achieve superior language understanding\nand generation capabilities. A recent study [27] has em-\nphasized the effectiveness of LLMs in few-shot learning by",
+      "blocks": [
+        {
+          "bbox": [
+            203.56,
+            49.61,
+            250.25,
+            58.97
+          ],
+          "text": "Base Module",
+          "number": 13
+        },
+        {
+          "bbox": [
+            389.06,
+            49.61,
+            458.11,
+            58.97
+          ],
+          "text": "Correction Module",
+          "number": 17
+        },
+        {
+          "bbox": [
+            299.19,
+            68.79,
+            326.54,
+            76.81
+          ],
+          "text": "Predicted",
+          "number": 8
+        },
+        {
+          "bbox": [
+            116.73,
+            68.79,
+            276.67,
+            85.86
+          ],
+          "text": "Examples, Reference Story, Query\nDirect\nClassification",
+          "number": 0
+        },
+        {
+          "bbox": [
+            304.62,
+            77.84,
+            321.11,
+            85.86
+          ],
+          "text": "Label",
+          "number": 9
+        },
+        {
+          "bbox": [
+            417.55,
+            92.32,
+            434.44,
+            100.34
+          ],
+          "text": "Judge",
+          "number": 25
+        },
+        {
+          "bbox": [
+            114.49,
+            106.8,
+            216.23,
+            114.82
+          ],
+          "text": "Personal Knowledge Graph, Query",
+          "number": 1
+        },
+        {
+          "bbox": [
+            355.89,
+            101.91,
+            409.23,
+            117.7
+          ],
+          "text": "Support module \npredicts \"Relevant\"",
+          "number": 21
+        },
+        {
+          "bbox": [
+            446.39,
+            101.91,
+            499.73,
+            117.7
+          ],
+          "text": "Base module \npredicts \"Relevant\"",
+          "number": 22
+        },
+        {
+          "bbox": [
+            243.48,
+            135.16,
+            266.41,
+            143.17
+          ],
+          "text": "Support",
+          "number": 5
+        },
+        {
+          "bbox": [
+            297.99,
+            135.16,
+            325.33,
+            143.17
+          ],
+          "text": "Predicted",
+          "number": 11
+        },
+        {
+          "bbox": [
+            135.99,
+            134.55,
+            195.32,
+            151.62
+          ],
+          "text": "Knowledge Graph\nBased Classification",
+          "number": 3
+        },
+        {
+          "bbox": [
+            245.09,
+            144.21,
+            264.8,
+            152.22
+          ],
+          "text": "Events",
+          "number": 6
+        },
+        {
+          "bbox": [
+            303.42,
+            144.21,
+            319.9,
+            152.22
+          ],
+          "text": "Label",
+          "number": 12
+        },
+        {
+          "bbox": [
+            353.79,
+            137.57,
+            410.71,
+            154.64
+          ],
+          "text": "Classify with\nExploration prompt",
+          "number": 15
+        },
+        {
+          "bbox": [
+            443.79,
+            137.57,
+            498.7,
+            154.64
+          ],
+          "text": "Classify with \nRethinking prompt",
+          "number": 16
+        },
+        {
+          "bbox": [
+            398.77,
+            165.26,
+            454.43,
+            172.61
+          ],
+          "text": "Same label predicted",
+          "number": 23
+        },
+        {
+          "bbox": [
+            404.47,
+            173.7,
+            448.72,
+            181.05
+          ],
+          "text": "by both modules",
+          "number": 24
+        },
+        {
+          "bbox": [
+            117.13,
+            167.13,
+            214.17,
+            184.2
+          ],
+          "text": "Reference Story,\nEvents in Reference Story, Query",
+          "number": 2
+        },
+        {
+          "bbox": [
+            241.48,
+            169.55,
+            268.43,
+            186.61
+          ],
+          "text": "Event \nSelection",
+          "number": 7
+        },
+        {
+          "bbox": [
+            292.16,
+            169.55,
+            331.17,
+            186.61
+          ],
+          "text": "Label\nIdentification",
+          "number": 10
+        },
+        {
+          "bbox": [
+            405.89,
+            194.28,
+            446.7,
+            202.3
+          ],
+          "text": "Label Mapper",
+          "number": 20
+        },
+        {
+          "bbox": [
+            242.57,
+            204.54,
+            267.31,
+            212.56
+          ],
+          "text": "Support",
+          "number": 18
+        },
+        {
+          "bbox": [
+            145.75,
+            204.54,
+            185.57,
+            221.61
+          ],
+          "text": "LLM-Based\nClassification",
+          "number": 4
+        },
+        {
+          "bbox": [
+            245.09,
+            213.59,
+            264.8,
+            221.61
+          ],
+          "text": "Events",
+          "number": 19
+        },
+        {
+          "bbox": [
+            409.83,
+            216.61,
+            442.77,
+            224.62
+          ],
+          "text": "Event Type",
+          "number": 26
+        },
+        {
+          "bbox": [
+            197.21,
+            230.01,
+            256.58,
+            239.36
+          ],
+          "text": "Support Module",
+          "number": 14
+        },
+        {
+          "bbox": [
+            118.99,
+            251.28,
+            493.01,
+            259.25
+          ],
+          "text": "Fig. 1. Overview of our graph-empowered refinement (GER) framework for personal information access support.",
+          "number": 27
+        },
+        {
+          "bbox": [
+            48.96,
+            281.8,
+            121.35,
+            291.76
+          ],
+          "text": "D. Label Mapper",
+          "number": 28
+        },
+        {
+          "bbox": [
+            311.98,
+            281.98,
+            563.04,
+            472.59
+          ],
+          "text": "utilizing prompt engineering. Therefore, we implement a few-\nshot prompt for ChatGPT in our experiments.\nLlama3 [28]: The architecture of Llama3 leverages advanced\ntransformer mechanisms, enabling it to handle complex lin-\nguistic patterns and deliver high-quality, contextually aware\noutputs. Llama3 is particularly noted for its robustness in gen-\nerating coherent, relevant, and human-like text. Considering\nthe model’s capabilities and the available resources for our\nwork, we have chosen to use the Llama3-70B as the baseline.\nSEEN [5]: SEEN is a structured event enhancement network\nthat combines structured information from graphs with textual\nrepresentations, enabling the model to leverage the strengths\nof both. The comparison with SEEN aims to explore the\ndifferences between LLM-based prompting methods and tra-\nditional deep learning model training approaches in detecting\ninformation access needs.",
+          "number": 33
+        },
+        {
+          "bbox": [
+            311.98,
+            486.75,
+            397.09,
+            496.71
+          ],
+          "text": "B. Experiment Setup",
+          "number": 34
+        },
+        {
+          "bbox": [
+            48.96,
+            297.74,
+            300.03,
+            546.8
+          ],
+          "text": "Since our framework initially predicts the relation between\nthe event from the target story and the reference as Relevant or\nIrrelevant, we must map the predicted label to the related event\ntype to provide the corresponding information access service.\nHence, a label mapper is constructed. If the query comes\nfrom A, we can directly convert Relevant to Unforgotten and\nIrrelevant to Forgotten. However, if the query comes from\nB, the labels (Consistent, Inconsistent, and Additional) are\ntreated as follows: If the predicted label is Irrelevant, it is\ndirectly mapped to Additional. When the predicted label is\nRelevant, it could be either Consistent or Inconsistent. In this\ncase, we build a label mapper to further distinguish between\nConsistent and Inconsistent. We employ training instances that\nare labeled as Consistent and Inconsistent to fine-tune an LLM\nto determine the final label. The input consists of a query\nand a reference story. The LLM is instructed to follow these\nsteps: First, identify the relevant parts in the reference story\nthat relate to the query. Second, if the relevant parts do not\nexplicitly contradict the query, label it as Consistent. Third,\nif the relevant parts explicitly contradict the query, label it as\nInconsistent.",
+          "number": 29
+        },
+        {
+          "bbox": [
+            136.79,
+            557.15,
+            212.21,
+            567.11
+          ],
+          "text": "V. EXPERIMENTS",
+          "number": 30
+        },
+        {
+          "bbox": [
+            48.96,
+            573.21,
+            129.65,
+            583.17
+          ],
+          "text": "A. Baseline Models",
+          "number": 31
+        },
+        {
+          "bbox": [
+            311.98,
+            504.33,
+            563.04,
+            718.85
+          ],
+          "text": "Given that our framework can achieve different enhance-\nment effects by substituting the models within each module,\nwe will introduce the models used in the base module, support\nmodule, and correction module. In the dataset, there are a total\nof 6,563 entries, comprising 1,268 Consistent, 24 Inconsistent,\n1,986 Additional, 1,897 Forgotten, and 1,388 Unforgotten\ncases, respectively.\nBase Module. In our experiments, we employed ChatGPT,\nLlama3, SEEN (Base), and SEEN (Large) as the base\nmodule. As SEEN predicts event types rather than rele-\nvant or irrelevant, the predicted “Consistent” and “Unforgot-\nten” are mapped to “Relevant”, while the remaining event\ntypes are considered “Irrelevant”. For ChatGPT, we utilized\ngpt-3.5-turbo-0125. As for Llama3, we employed the\nllama-v3-70b-instruct model. The LLM-based base-\nlines are using few-shot prompting.\nSupport Module. In the support module, we categorize our\napproach into graph-based and LLM-based methods. In the",
+          "number": 35
+        },
+        {
+          "bbox": [
+            48.96,
+            589.15,
+            300.02,
+            718.85
+          ],
+          "text": "Due to the recent remarkable performance of LLMs in\nvarious domains of natural language processing tasks, and\ntheir enhanced semantic understanding facilitated by the chain-\nof-thought [26] approach, we primarily utilize LLMs as the\nbaselines for our task. We also compare our models with the\nstate-of-the-art model.\nChatGPT: ChatGPT is built upon the generative pre-trained\ntransformer architecture and leverages extensive pre-training\non diverse datasets to achieve superior language understanding\nand generation capabilities. A recent study [27] has em-\nphasized the effectiveness of LLMs in few-shot learning by",
+          "number": 32
+        }
+      ],
+      "images": 0,
+      "figure_captions": [
+        "Fig. 1. Overview of our graph-empowered refinement (GER) framework for personal information access support."
+      ],
+      "table_captions": [],
+      "tables": [
+        [
+          [
+            null,
+            "Judge\nSupport module Base module\npredicts \"Relevant\" predicts \"Relevant\"\nClassify with Classify with\nExploration prompt Rethinking prompt\nSame label predicted\nby both modules\nLabel Mapper\nEvent Type"
+          ],
+          [
+            "Personal Knowledge Graph, Query\nKnowledge Graph Support Predicted\nBased Classification Events Label\nReference Story, Event Label\nEvents in Reference Story, Query Selection Identification\nLLM-Based Support\nClassification Events",
+            null
+          ]
+        ],
+        [
+          [
+            "Same labe\nby both",
+            "l predicted\nmodules"
+          ]
+        ]
+      ]
+    },
+    {
+      "page": 5,
+      "text": "TABLE I\nRECALL SCORE OF EACH EVENT TYPE.\nModel\nCST\nINC\nADD\nFGT\nUFG\nGPT-3.5\n0.6834\n0.0000\n0.7772\n0.7733\n0.6961\nLlama3 70B\n0.7063\n0.0000\n0.7846\n0.7934\n0.7234\nSEEN (Base)\n0.7792\n0.0833\n0.7905\n0.8113\n0.7500\nSEEN (Large)\n0.7910\n0.1667\n0.8207\n0.8371\n0.7442\nGER (ours)\n0.7650\n0.0417\n0.8338\n0.8635\n0.7248\nmodule to effectively use filtered knowledge graph information\nto correct answers. Specifically, when life events are forgot-\nten, the support module detects missing relevant information,\nenabling the correction module to improve predictions and\nreduce missed reminders for users. Moreover, we also tested\ndifferent combinations, and the results show improvement in\nmost Additional and Forgotten instances compared to “SEEN\n(Large)”.\nTABLE II\nF-SCORE OF EACH EVENT TYPE.\nModel\nCST\nINC\nADD\nFGT\nUFG\nGPT-3.5\n0.6834\n0.0000\n0.7772\n0.7733\n0.6961\nLlama3 70B\n0.7063\n0.0000\n0.7846\n0.7934\n0.7234\nSEEN (Base)\n0.7395\n0.0952\n0.8173\n0.8136\n0.7470\nSEEN (Large)\n0.7625\n0.2500\n0.8374\n0.8271\n0.7568\nGER\n0.7543\n0.0741\n0.8370\n0.8364\n0.7584\nThe F-score of each method is presented in Table II.\nExperimental results show that although our framework may\nnot effectively enhance performance in certain event types,\nit remains comparable to the baselines, and even surpasses\nthem in other event types. This indicates that the information\nprovided by the support module from the knowledge graph\ndoes contribute to the correction of original answers, leading\nto better results. We will further describe how the informa-\ntion provided by the support module influences the overall\noutcomes in the following section. Furthermore, we find that\nif LLM is used directly for classification, such as the first\ntwo rows, the results are inferior compared to other baselines\nand our framework. This also demonstrates the limitations of\nLLMs in this task, which will be discussed in the following\nsection where we analyze the reasons behind the sub-optimal\nperformance of LLMs.\ngraph-based method, we initially employ the “all-MiniLM-L6-\nv2” [29] model for encoding the nodes (i.e., subject, predicate,\nand object) in KG to facilitate subsequent cosine similarity\ncalculations. In the LLM-based method, three distinct LLMs\nwere utilized: GPT-3.5, Llama3 70B, and GPT-4o.\nCorrection Module. In the correction module, we primarily\nutilize GPT-3.5 for correction. Considering resource con-\nstraints, we only attempt to further enhance our results by\nemploying GPT-4o in combinations where better outcomes are\nobserved.\nLabel Mapper. To map the predicted Relevant and Irrelevant\nlabels to the final event types, we fine-tune Vicuna-7B [30]\nusing the following hyperparameters: a learning rate of 2e-5,\na sequence length of 768, and one epoch.\nC. Experimental Results\n2) Comparison of Multi-Class and Binary Classification\nfor Event Type Detection: As previously mentioned, directly\ninstructing an LLM to predict event types yields suboptimal\nresults. To address this, we transform the task from multi-\nclass classification (i.e., classifying five event types directly)\nto binary classification (i.e., classifying whether the event is\nrelevant or irrelevant to the reference story). For the binary\nclassification, the label mapper converts the predicted binary\nlabels into the corresponding event types. In Table II, com-\npared to GPT-3.5 and Llama3 70B, which classify event types\ndirectly, the GRE method, which utilizes binary classification,\nis more suitable for LLM-based methods.\n1) Main Results: The results of the baselines and our\nframework are shown in Table I and Table II. “Consistent”,\n“Inconsistent”, “Additional”, “Forgotten”, and “Unforgotten”\nevents are abbreviated as CST, INC, ADD, FGT, and UFG,\nrespectively. “SEEN (Base)” and “SEEN (Large)” refer to\nthe models based on Longformer-base and Longformer-large,\nrespectively. The primary objective of our task is to detect\nthe need for information access. Due to users often forgetting\nor misremembering details, identifying this need is essential.\nThus, the event types Inconsistent, Additional, and Forgotten\nare considered particularly important for recall services. To\nthis end, Table I presents the recall scores of detecting five\nevent types. In Table I, our framework with “SEEN (Large)”\nas the base module, GPT-3.5 as the support module for event\nclassification with the graph-based method, and then using\nGPT-4o to correct the original answers, outperforms all the\nother baselines in the Additional and Forgotten event types.\nWe measure McNemar’s statistical significance test on the\nbaselines and our GRE framework. The performance of GER\nin Forgotten event type outperforms the baseline models at\np < 0.05. This means that our framework allows the correction\n3) Results with Different Base Module: We investigate\nwhether our framework enhances overall performance even\nwhen the base module is replaced. Table III shows the F-score\nof using “SEEN (Base)” as the base module under different\nsettings. Even though the original results of “SEEN (Base)” are\nsignificantly better than those obtained by directly using LLMs\nfor classification, our framework can still effectively improve\nperformance across all event types except for Inconsistent.\nThe overall performance varies across combinations in our\nframework, leading to improvements across different event\ntypes due to the diverse information from the support module.\nThis also demonstrates that our framework can not only\nenhance the results of LLMs but also be applied to other\nmodels, greatly increasing its flexibility of use. Furthermore,\nin the results shown in the last row, it can be observed that\neven when “SEEN (Base)” is used as the base module, our\nframework effectively corrects wrong predictions, leading to\nbetter performance in the Forgotten event type compared to\n“SEEN (Large)”.",
+      "blocks": [
+        {
+          "bbox": [
+            109.16,
+            52.87,
+            239.83,
+            69.8
+          ],
+          "text": "TABLE I\nRECALL SCORE OF EACH EVENT TYPE.",
+          "number": 0
+        },
+        {
+          "bbox": [
+            66.21,
+            82.32,
+            279.63,
+            142.3
+          ],
+          "text": "Model\nCST\nINC\nADD\nFGT\nUFG\nGPT-3.5\n0.6834\n0.0000\n0.7772\n0.7733\n0.6961\nLlama3 70B\n0.7063\n0.0000\n0.7846\n0.7934\n0.7234\nSEEN (Base)\n0.7792\n0.0833\n0.7905\n0.8113\n0.7500\nSEEN (Large)\n0.7910\n0.1667\n0.8207\n0.8371\n0.7442\nGER (ours)\n0.7650\n0.0417\n0.8338\n0.8635\n0.7248",
+          "number": 1
+        },
+        {
+          "bbox": [
+            311.98,
+            51.36,
+            563.04,
+            145.0
+          ],
+          "text": "module to effectively use filtered knowledge graph information\nto correct answers. Specifically, when life events are forgot-\nten, the support module detects missing relevant information,\nenabling the correction module to improve predictions and\nreduce missed reminders for users. Moreover, we also tested\ndifferent combinations, and the results show improvement in\nmost Additional and Forgotten instances compared to “SEEN\n(Large)”.",
+          "number": 7
+        },
+        {
+          "bbox": [
+            120.33,
+            162.2,
+            228.66,
+            179.14
+          ],
+          "text": "TABLE II\nF-SCORE OF EACH EVENT TYPE.",
+          "number": 2
+        },
+        {
+          "bbox": [
+            66.21,
+            191.66,
+            279.63,
+            251.63
+          ],
+          "text": "Model\nCST\nINC\nADD\nFGT\nUFG\nGPT-3.5\n0.6834\n0.0000\n0.7772\n0.7733\n0.6961\nLlama3 70B\n0.7063\n0.0000\n0.7846\n0.7934\n0.7234\nSEEN (Base)\n0.7395\n0.0952\n0.8173\n0.8136\n0.7470\nSEEN (Large)\n0.7625\n0.2500\n0.8374\n0.8271\n0.7568\nGER\n0.7543\n0.0741\n0.8370\n0.8364\n0.7584",
+          "number": 3
+        },
+        {
+          "bbox": [
+            311.98,
+            149.99,
+            563.04,
+            339.28
+          ],
+          "text": "The F-score of each method is presented in Table II.\nExperimental results show that although our framework may\nnot effectively enhance performance in certain event types,\nit remains comparable to the baselines, and even surpasses\nthem in other event types. This indicates that the information\nprovided by the support module from the knowledge graph\ndoes contribute to the correction of original answers, leading\nto better results. We will further describe how the informa-\ntion provided by the support module influences the overall\noutcomes in the following section. Furthermore, we find that\nif LLM is used directly for classification, such as the first\ntwo rows, the results are inferior compared to other baselines\nand our framework. This also demonstrates the limitations of\nLLMs in this task, which will be discussed in the following\nsection where we analyze the reasons behind the sub-optimal\nperformance of LLMs.",
+          "number": 8
+        },
+        {
+          "bbox": [
+            48.96,
+            278.39,
+            300.02,
+            444.09
+          ],
+          "text": "graph-based method, we initially employ the “all-MiniLM-L6-\nv2” [29] model for encoding the nodes (i.e., subject, predicate,\nand object) in KG to facilitate subsequent cosine similarity\ncalculations. In the LLM-based method, three distinct LLMs\nwere utilized: GPT-3.5, Llama3 70B, and GPT-4o.\nCorrection Module. In the correction module, we primarily\nutilize GPT-3.5 for correction. Considering resource con-\nstraints, we only attempt to further enhance our results by\nemploying GPT-4o in combinations where better outcomes are\nobserved.\nLabel Mapper. To map the predicted Relevant and Irrelevant\nlabels to the final event types, we fine-tune Vicuna-7B [30]\nusing the following hyperparameters: a learning rate of 2e-5,\na sequence length of 768, and one epoch.",
+          "number": 4
+        },
+        {
+          "bbox": [
+            48.96,
+            453.97,
+            149.03,
+            463.93
+          ],
+          "text": "C. Experimental Results",
+          "number": 5
+        },
+        {
+          "bbox": [
+            311.98,
+            345.57,
+            563.04,
+            487.22
+          ],
+          "text": "2) Comparison of Multi-Class and Binary Classification\nfor Event Type Detection: As previously mentioned, directly\ninstructing an LLM to predict event types yields suboptimal\nresults. To address this, we transform the task from multi-\nclass classification (i.e., classifying five event types directly)\nto binary classification (i.e., classifying whether the event is\nrelevant or irrelevant to the reference story). For the binary\nclassification, the label mapper converts the predicted binary\nlabels into the corresponding event types. In Table II, com-\npared to GPT-3.5 and Llama3 70B, which classify event types\ndirectly, the GRE method, which utilizes binary classification,\nis more suitable for LLM-based methods.",
+          "number": 9
+        },
+        {
+          "bbox": [
+            48.96,
+            469.61,
+            300.02,
+            718.85
+          ],
+          "text": "1) Main Results: The results of the baselines and our\nframework are shown in Table I and Table II. “Consistent”,\n“Inconsistent”, “Additional”, “Forgotten”, and “Unforgotten”\nevents are abbreviated as CST, INC, ADD, FGT, and UFG,\nrespectively. “SEEN (Base)” and “SEEN (Large)” refer to\nthe models based on Longformer-base and Longformer-large,\nrespectively. The primary objective of our task is to detect\nthe need for information access. Due to users often forgetting\nor misremembering details, identifying this need is essential.\nThus, the event types Inconsistent, Additional, and Forgotten\nare considered particularly important for recall services. To\nthis end, Table I presents the recall scores of detecting five\nevent types. In Table I, our framework with “SEEN (Large)”\nas the base module, GPT-3.5 as the support module for event\nclassification with the graph-based method, and then using\nGPT-4o to correct the original answers, outperforms all the\nother baselines in the Additional and Forgotten event types.\nWe measure McNemar’s statistical significance test on the\nbaselines and our GRE framework. The performance of GER\nin Forgotten event type outperforms the baseline models at\np < 0.05. This means that our framework allows the correction",
+          "number": 6
+        },
+        {
+          "bbox": [
+            311.98,
+            493.52,
+            563.04,
+            718.85
+          ],
+          "text": "3) Results with Different Base Module: We investigate\nwhether our framework enhances overall performance even\nwhen the base module is replaced. Table III shows the F-score\nof using “SEEN (Base)” as the base module under different\nsettings. Even though the original results of “SEEN (Base)” are\nsignificantly better than those obtained by directly using LLMs\nfor classification, our framework can still effectively improve\nperformance across all event types except for Inconsistent.\nThe overall performance varies across combinations in our\nframework, leading to improvements across different event\ntypes due to the diverse information from the support module.\nThis also demonstrates that our framework can not only\nenhance the results of LLMs but also be applied to other\nmodels, greatly increasing its flexibility of use. Furthermore,\nin the results shown in the last row, it can be observed that\neven when “SEEN (Base)” is used as the base module, our\nframework effectively corrects wrong predictions, leading to\nbetter performance in the Forgotten event type compared to\n“SEEN (Large)”.",
+          "number": 10
+        }
+      ],
+      "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
+      "tables": []
+    },
+    {
+      "page": 6,
+      "text": "TABLE III\nRESULTS WITH SEEN (BASE) AS THE BASE MODULE.\nBase Model\nSupport Model\nCorrection Model\nConsistent\nInconsistent\nAdditional\nForgotten\nUnforgotten\nSEEN (Base)\nN/A\nN/A\n0.7395\n0.0952\n0.8173\n0.8136\n0.7470\nSEEN (Base)\nLlama3 70B\nGPT-3.5\n0.7489\n0.0572\n0.8261\n0.8173\n0.7470\nSEEN (Base)\nGPT-3.5\nGPT-3.5\n0.7401\n0.0000\n0.8258\n0.8212\n0.7481\nSEEN (Base)\nLlama3 70B\nGPT-4o\n0.7516\n0.0000\n0.8321\n0.8243\n0.7516\nSEEN (Base)\nGPT-3.5\nGPT-4o\n0.7465\n0.0000\n0.8323\n0.8376\n0.7514\nTABLE VI\nTHE IMPORTANCE OF THE CORRECTION MODULE. THE FIRST ROW\nREPRESENTS THE MODEL OF THE BASE MODULE. ALL THE SUPPORT\nTABLE IV\nRESULTS OF EACH EVENT TYPE WITH DIFFERENT SUPPORT MODULES.\nTHE BASE MODULE IS SEEN (LARGE), AND THE CORRECTION MODULE IS\nMODULE USES GPT-3.5.\nGPT-3.5.\nModel\nCST\nINC\nADD\nFGT\nUFG\nBaseline\n0.7625\n0.2500\n0.8374\n0.8271\n0.7568\nLlama3 70B\n0.7576\n0.0715\n0.8364\n0.8237\n0.7486\nGPT-3.5\n0.7457\n0.1480\n0.8287\n0.8284\n0.7495\nGround Truth\n0.8546\n0.2759\n0.9028\n0.9014\n0.8684\nSEEN (Base)\nCST\nINC\nADD\nFGT\nUFG\nGPT-3.5\n0.7401\n0.0000\n0.8258\n0.8212\n0.7481\nGPT-4o\n0.7465\n0.0000\n0.8323\n0.8376\n0.7514\nSEEN (Large)\nCST\nINC\nADD\nFGT\nUFG\nGPT-3.5\n0.7457\n0.1480\n0.8287\n0.8284\n0.7495\nGPT-4o\n0.7543\n0.0741\n0.8370\n0.8364\n0.7584\nTABLE V\nTHE IMPORTANCE OF BASE MODULE. BOTH THE SUPPORT MODULE AND\nCORRECTION MODULE USE GPT-3.5. THE MODEL’S NAME INDICATES THE\nBASE MODULE USED.\nModel\nCST\nINC\nADD\nFGT\nUFG\nGPT-3.5\n0.7163\n0.0000\n0.7971\n0.7914\n0.7137\nLlama3 70B\n0.7204\n0.0000\n0.7988\n0.8004\n0.7240\nSEEN (Base)\n0.7401\n0.0000\n0.8258\n0.8212\n0.7481\nSEEN (Large)\n0.7457\n0.1480\n0.8287\n0.8284\n0.7495\nVI. ANALYSIS AND DISCUSSION\nA. The Impact of Support Module\nTo compare the impact of using different models as our base\nmodule, both the support module and the correction module\nutilize GPT-3.5 as the model. The results are shown in Table V.\n“SEEN (Base)” and “SEEN (Large)” denote “SEEN (Large)”\nand “SEEN (Base)”, respectively. We find that the performance\nof the framework is dominated by the capability of the base\nmodule. In the previous experimental results, the strengths of\nvarious baselines are in the following order: “SEEN (Large)”,\n“SEEN (Base)”, Llama3 70B, and GPT-3.5. Regardless of\nthe event type, the setting of using “SEEN (Large)” always\nachieves the best performance. Therefore, we consider the\ncapability of the base module to be the most critical among\nthe three modules. When the initial classification results of\nthe base module are suboptimal, even with interventions from\nthe support module and correction module, the overall perfor-\nmance cannot exceed that of a highly capable base module.\nOur framework, when utilizing “SEEN (Large)” as the base\nmodule, fails to effectively enhance the performance of certain\nevent types. Therefore, we analyze the support module’s im-\npact on overall performance. We replaced the support module\nwith ground truth, providing accurate information to the cor-\nrection module. This setup helps us determine if the correction\nmodule can rectify more initial classification errors. The results\nin Table IV show significant improvements across all labels\nwhen using ground truth as the support module’s output. This\nimprovement is greater than with other models, and improving\nthe support module’s prediction accuracy enhances overall\nframework performance.\nB. The Importance of Each Module\nTo measure the impact of the correction module, we com-\npare two different settings: one where the base module was\nset to “SEEN (Base)” and another where it was set to “SEEN\n(Large)”. The support module is GPT-3.5. The results are re-\nported in Table VI. The top two rows and the bottom two rows\ndenote the base module are “SEEN (Base)” “SEEN (Large)”,\nrespectively. The correction module in these two settings is\nGPT-3.5. Table VI shows that regardless of the strength of\nthe base module, when the correction module has a stronger\ncapability, it can further improve the overall performance\nacross most event types. The finding suggests that, in our\ntask, the correction module with better semantic understanding\ncapability can more effectively utilize the information provided\nby the support module.\nC. Error Analysis\nWe further investigate the contribution of the support mod-\nule in predicting event types. Table VII presents the prediction\nIn the previous subsection, we have discussed the im-\nportance and the characteristics of the support module. The\ncapability of the support module determines the upper and\nlower bounds of the entire framework. Hence, we consider\nthe capability of the support module to be the second most\nimportant. In this subsection, we measure the importance of\nbase and correction modules in this framework.",
+      "blocks": [
+        {
+          "bbox": [
+            215.43,
+            52.87,
+            396.56,
+            69.8
+          ],
+          "text": "TABLE III\nRESULTS WITH SEEN (BASE) AS THE BASE MODULE.",
+          "number": 0
+        },
+        {
+          "bbox": [
+            79.29,
+            83.64,
+            529.57,
+            143.21
+          ],
+          "text": "Base Model\nSupport Model\nCorrection Model\nConsistent\nInconsistent\nAdditional\nForgotten\nUnforgotten\nSEEN (Base)\nN/A\nN/A\n0.7395\n0.0952\n0.8173\n0.8136\n0.7470\nSEEN (Base)\nLlama3 70B\nGPT-3.5\n0.7489\n0.0572\n0.8261\n0.8173\n0.7470\nSEEN (Base)\nGPT-3.5\nGPT-3.5\n0.7401\n0.0000\n0.8258\n0.8212\n0.7481\nSEEN (Base)\nLlama3 70B\nGPT-4o\n0.7516\n0.0000\n0.8321\n0.8243\n0.7516\nSEEN (Base)\nGPT-3.5\nGPT-4o\n0.7465\n0.0000\n0.8323\n0.8376\n0.7514",
+          "number": 1
+        },
+        {
+          "bbox": [
+            322.59,
+            171.07,
+            552.44,
+            196.97
+          ],
+          "text": "TABLE VI\nTHE IMPORTANCE OF THE CORRECTION MODULE. THE FIRST ROW\nREPRESENTS THE MODEL OF THE BASE MODULE. ALL THE SUPPORT",
+          "number": 13
+        },
+        {
+          "bbox": [
+            49.16,
+            171.07,
+            299.83,
+            196.97
+          ],
+          "text": "TABLE IV\nRESULTS OF EACH EVENT TYPE WITH DIFFERENT SUPPORT MODULES.\nTHE BASE MODULE IS SEEN (LARGE), AND THE CORRECTION MODULE IS",
+          "number": 2
+        },
+        {
+          "bbox": [
+            396.26,
+            197.97,
+            478.76,
+            205.94
+          ],
+          "text": "MODULE USES GPT-3.5.",
+          "number": 14
+        },
+        {
+          "bbox": [
+            158.63,
+            197.97,
+            190.35,
+            205.94
+          ],
+          "text": "GPT-3.5.",
+          "number": 3
+        },
+        {
+          "bbox": [
+            67.85,
+            218.46,
+            281.13,
+            268.07
+          ],
+          "text": "Model\nCST\nINC\nADD\nFGT\nUFG\nBaseline\n0.7625\n0.2500\n0.8374\n0.8271\n0.7568\nLlama3 70B\n0.7576\n0.0715\n0.8364\n0.8237\n0.7486\nGPT-3.5\n0.7457\n0.1480\n0.8287\n0.8284\n0.7495\nGround Truth\n0.8546\n0.2759\n0.9028\n0.9014\n0.8684",
+          "number": 4
+        },
+        {
+          "bbox": [
+            330.8,
+            218.46,
+            544.22,
+            280.42
+          ],
+          "text": "SEEN (Base)\nCST\nINC\nADD\nFGT\nUFG\nGPT-3.5\n0.7401\n0.0000\n0.8258\n0.8212\n0.7481\nGPT-4o\n0.7465\n0.0000\n0.8323\n0.8376\n0.7514\nSEEN (Large)\nCST\nINC\nADD\nFGT\nUFG\nGPT-3.5\n0.7457\n0.1480\n0.8287\n0.8284\n0.7495\nGPT-4o\n0.7543\n0.0741\n0.8370\n0.8364\n0.7584",
+          "number": 15
+        },
+        {
+          "bbox": [
+            49.16,
+            295.44,
+            299.83,
+            321.35
+          ],
+          "text": "TABLE V\nTHE IMPORTANCE OF BASE MODULE. BOTH THE SUPPORT MODULE AND\nCORRECTION MODULE USE GPT-3.5. THE MODEL’S NAME INDICATES THE",
+          "number": 5
+        },
+        {
+          "bbox": [
+            138.75,
+            322.34,
+            210.23,
+            330.31
+          ],
+          "text": "BASE MODULE USED.",
+          "number": 6
+        },
+        {
+          "bbox": [
+            66.79,
+            342.83,
+            282.2,
+            392.05
+          ],
+          "text": "Model\nCST\nINC\nADD\nFGT\nUFG\nGPT-3.5\n0.7163\n0.0000\n0.7971\n0.7914\n0.7137\nLlama3 70B\n0.7204\n0.0000\n0.7988\n0.8004\n0.7240\nSEEN (Base)\n0.7401\n0.0000\n0.8258\n0.8212\n0.7481\nSEEN (Large)\n0.7457\n0.1480\n0.8287\n0.8284\n0.7495",
+          "number": 7
+        },
+        {
+          "bbox": [
+            104.64,
+            426.28,
+            244.35,
+            436.24
+          ],
+          "text": "VI. ANALYSIS AND DISCUSSION",
+          "number": 8
+        },
+        {
+          "bbox": [
+            48.96,
+            445.5,
+            188.82,
+            455.46
+          ],
+          "text": "A. The Impact of Support Module",
+          "number": 9
+        },
+        {
+          "bbox": [
+            311.98,
+            313.38,
+            563.04,
+            502.67
+          ],
+          "text": "To compare the impact of using different models as our base\nmodule, both the support module and the correction module\nutilize GPT-3.5 as the model. The results are shown in Table V.\n“SEEN (Base)” and “SEEN (Large)” denote “SEEN (Large)”\nand “SEEN (Base)”, respectively. We find that the performance\nof the framework is dominated by the capability of the base\nmodule. In the previous experimental results, the strengths of\nvarious baselines are in the following order: “SEEN (Large)”,\n“SEEN (Base)”, Llama3 70B, and GPT-3.5. Regardless of\nthe event type, the setting of using “SEEN (Large)” always\nachieves the best performance. Therefore, we consider the\ncapability of the base module to be the most critical among\nthe three modules. When the initial classification results of\nthe base module are suboptimal, even with interventions from\nthe support module and correction module, the overall perfor-\nmance cannot exceed that of a highly capable base module.",
+          "number": 16
+        },
+        {
+          "bbox": [
+            48.96,
+            463.28,
+            300.02,
+            604.75
+          ],
+          "text": "Our framework, when utilizing “SEEN (Large)” as the base\nmodule, fails to effectively enhance the performance of certain\nevent types. Therefore, we analyze the support module’s im-\npact on overall performance. We replaced the support module\nwith ground truth, providing accurate information to the cor-\nrection module. This setup helps us determine if the correction\nmodule can rectify more initial classification errors. The results\nin Table IV show significant improvements across all labels\nwhen using ground truth as the support module’s output. This\nimprovement is greater than with other models, and improving\nthe support module’s prediction accuracy enhances overall\nframework performance.",
+          "number": 10
+        },
+        {
+          "bbox": [
+            48.96,
+            619.38,
+            195.85,
+            629.34
+          ],
+          "text": "B. The Importance of Each Module",
+          "number": 11
+        },
+        {
+          "bbox": [
+            311.98,
+            504.9,
+            563.04,
+            670.28
+          ],
+          "text": "To measure the impact of the correction module, we com-\npare two different settings: one where the base module was\nset to “SEEN (Base)” and another where it was set to “SEEN\n(Large)”. The support module is GPT-3.5. The results are re-\nported in Table VI. The top two rows and the bottom two rows\ndenote the base module are “SEEN (Base)” “SEEN (Large)”,\nrespectively. The correction module in these two settings is\nGPT-3.5. Table VI shows that regardless of the strength of\nthe base module, when the correction module has a stronger\ncapability, it can further improve the overall performance\nacross most event types. The finding suggests that, in our\ntask, the correction module with better semantic understanding\ncapability can more effectively utilize the information provided\nby the support module.",
+          "number": 17
+        },
+        {
+          "bbox": [
+            311.98,
+            680.83,
+            385.59,
+            690.8
+          ],
+          "text": "C. Error Analysis",
+          "number": 18
+        },
+        {
+          "bbox": [
+            311.98,
+            696.93,
+            563.04,
+            718.85
+          ],
+          "text": "We further investigate the contribution of the support mod-\nule in predicting event types. Table VII presents the prediction",
+          "number": 19
+        },
+        {
+          "bbox": [
+            48.96,
+            637.16,
+            300.02,
+            718.85
+          ],
+          "text": "In the previous subsection, we have discussed the im-\nportance and the characteristics of the support module. The\ncapability of the support module determines the upper and\nlower bounds of the entire framework. Hence, we consider\nthe capability of the support module to be the second most\nimportant. In this subsection, we measure the importance of\nbase and correction modules in this framework.",
+          "number": 12
+        }
+      ],
+      "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
+      "tables": []
+    },
+    {
+      "page": 7,
+      "text": "TABLE VII\nPREDICTION ANALYSIS OF SUPPORT MODULE WITH THE SETTING OF\nSEEN (LARGE), GPT-3.5, GPT-4O.\nFail\nSuccess Alternative Insight Count\nConsistent\n16.17% 58.36%\n25.47%\n1,268\nInconsistent 45.83% 20.83%\n33.34%\n24\nAdditional\n7.50%\n74.87%\n17.63%\n1,986\nForgotten\n6.59%\n77.81%\n15.60%\n1,897\nUnforgotten 19.24% 52.16%\n28.60%\n1,388\nTable VIII shows the ratio of successfully corrected cases\nby the correction module. The “Fail” and “Success” columns\nrepresent the failure and success ratios in correcting wrong\npredictions by our correction module, respectively. The results\nindicate that the correction module performs better in correct-\ning Consistent, Inconsistent, and Unforgotten cases. This may\nbe because LLMs tend to reason based on the provided support\nevents, and as long as the support events are not too irrelevant,\nthere is a chance to correct the answers successfully. However,\nthe results are suboptimal in the Additional and Forgotten\ncases because LLMs sometimes overgeneralize, making it\ndifficult to correct the answers.\nTABLE VIII\nPREDICTION ANALYSIS OF CORRECTION MODULE WITH THE SETTING OF\nSEEN (LARGE), GPT-3.5, GPT-4O.\nVII. CONCLUSION\nFail\nSuccess\nCount\nConsistent\n28.48%\n71.52%\n323\nInconsistent\n25.00%\n75.00%\n8\nAdditional\n51.71%\n48.29%\n350\nForgotten\n45.27%\n54.73%\n296\nUnforgotten\n28.97%\n71.03%\n397\nanalysis of the support module using the settings of SEEN\n(Large), GPT-3.5, and GPT-4o. We decompose the operation\nof our framework into two parts and analyze the proportion of\ncases that are correctly or incorrectly predicted. This allows\nus to identify where the primary errors in prediction occur for\ndifferent event types.\nThis paper explores the use of LLMs for personal infor-\nmation access support. A pilot method, the graph-empowered\nrefinement (GER) framework, is proposed. GER enables\nLLMs to leverage the information contained within personal\nknowledge graphs and refine the generated responses based\non the provided information. The experimental results also\ndemonstrate that different models can be applied within our\nframework, leading to further improvements. This flexibility in\nour framework allows it to be utilized not only with specific\nmodels but also with advanced models in the future, thereby\nenhancing performance through our framework. Furthermore,\nunlike traditional models, our approach does not require train-\ning. This means our method can quickly and effectively adapt\nto users’ continuously accumulating life events over time,\nproviding support for information access services.\nTable VII presents the proportions of errors, successes,\nand alternative insights for each event type, along with their\ntotal counts. The “Fail” column represents that both the base\nmodule and support module predict incorrectly. The “Success”\ncolumn represents that the base module predicts correctly, and\nthe support module supports the base module’s predictions.\nThe “Alternative Insight” column shows instances where the\nsupport module disagrees with the base module, offering\nalternative suggestions for refining predictions. Specifically,\nif the base module predicts Relevant, the support module can\nsuggest that no relevant life events were found. Conversely, if\nthe base module predicts Irrelevant, the support module can\nsuggest the relevant life events that were found.\nAs indicated by our experiments, directly using LLMs for\nclassification leads to suboptimal performance. Through case\nstudies, we can observe that for the Additional and Forgotten\nevent types, LLMs often exhibit hallucinations, leading them\nto incorrectly perceive the query as relevant to the story.\nAdditionally, our definitions for Additional and Forgotten\nare relatively strict, but LLMs struggle to accurately discern\nwhether a sentence contains entirely new information. This\nalso causes them to incorrectly identify queries as matching\nprevious information or not being forgotten. For Consistent,\nInconsistent, and Unforgotten, LLMs may fail to extract rel-\nevant parts due to a change in the description of the same\nevent within the story, resulting in the inability to correctly\nidentify them. Another key limitation is the handling of user\nprivacy when building and using personal knowledge graphs.\nDeveloping a framework to ensure data security is left as\nfuture work. In the future, we will establish an end-to-end\nsystem to practically utilize in daily life for extracting life\nevents and provide enhanced information access support, such\nas correcting conflicting descriptions.\nACKNOWLEDGMENT\nWe find that our support module performs better in the\nAdditional and Forgotten event types, supporting the base\nmodule’s correct predictions in most cases. Only 7.5% of\nAdditional cases and 6.59% of Forgotten cases fail to provide\nalternative insights, indicating no relevant life events in the\nreference story. This suggests a higher performance ceiling\nfor our framework. However, for the Consistent event type,\nthe support module fails to provide new relevant life events\nto correct the original erroneous answers in 16.17% of cases.\nFor the Unforgotten event type, it fails to find support events\nin 19.24% of cases. As for the Inconsistent event type, there\nare 45.83% of error cases. Besides the smaller number of\ncases causing greater variability, the model may interpret\nmisplacement within inconsistent cases as new information,\nleading to an inability to identify support events.\nThis research was partially supported by Google gift toward\nthe work on Multimodal User Profiling for Personalized In-\nformation Access (Reference Id 00030586), National Science\nand Technology Council, Taiwan, under grants NSTC STC\n114-2221-E-002-070-MY3 and NSTC 113-2634-F-002-003-,",
+      "blocks": [
+        {
+          "bbox": [
+            58.97,
+            52.87,
+            290.02,
+            69.8
+          ],
+          "text": "TABLE VII\nPREDICTION ANALYSIS OF SUPPORT MODULE WITH THE SETTING OF",
+          "number": 0
+        },
+        {
+          "bbox": [
+            113.37,
+            70.8,
+            235.62,
+            78.77
+          ],
+          "text": "SEEN (LARGE), GPT-3.5, GPT-4O.",
+          "number": 1
+        },
+        {
+          "bbox": [
+            67.71,
+            92.6,
+            281.27,
+            151.78
+          ],
+          "text": "Fail\nSuccess Alternative Insight Count\nConsistent\n16.17% 58.36%\n25.47%\n1,268\nInconsistent 45.83% 20.83%\n33.34%\n24\nAdditional\n7.50%\n74.87%\n17.63%\n1,986\nForgotten\n6.59%\n77.81%\n15.60%\n1,897\nUnforgotten 19.24% 52.16%\n28.60%\n1,388",
+          "number": 2
+        },
+        {
+          "bbox": [
+            311.98,
+            51.36,
+            563.04,
+            192.82
+          ],
+          "text": "Table VIII shows the ratio of successfully corrected cases\nby the correction module. The “Fail” and “Success” columns\nrepresent the failure and success ratios in correcting wrong\npredictions by our correction module, respectively. The results\nindicate that the correction module performs better in correct-\ning Consistent, Inconsistent, and Unforgotten cases. This may\nbe because LLMs tend to reason based on the provided support\nevents, and as long as the support events are not too irrelevant,\nthere is a chance to correct the answers successfully. However,\nthe results are suboptimal in the Additional and Forgotten\ncases because LLMs sometimes overgeneralize, making it\ndifficult to correct the answers.",
+          "number": 9
+        },
+        {
+          "bbox": [
+            51.81,
+            179.39,
+            297.18,
+            196.32
+          ],
+          "text": "TABLE VIII\nPREDICTION ANALYSIS OF CORRECTION MODULE WITH THE SETTING OF",
+          "number": 3
+        },
+        {
+          "bbox": [
+            113.37,
+            197.32,
+            235.62,
+            205.29
+          ],
+          "text": "SEEN (LARGE), GPT-3.5, GPT-4O.",
+          "number": 4
+        },
+        {
+          "bbox": [
+            397.3,
+            202.73,
+            477.72,
+            212.69
+          ],
+          "text": "VII. CONCLUSION",
+          "number": 10
+        },
+        {
+          "bbox": [
+            95.75,
+            219.12,
+            253.24,
+            278.3
+          ],
+          "text": "Fail\nSuccess\nCount\nConsistent\n28.48%\n71.52%\n323\nInconsistent\n25.00%\n75.00%\n8\nAdditional\n51.71%\n48.29%\n350\nForgotten\n45.27%\n54.73%\n296\nUnforgotten\n28.97%\n71.03%\n397",
+          "number": 5
+        },
+        {
+          "bbox": [
+            48.96,
+            312.76,
+            300.02,
+            382.5
+          ],
+          "text": "analysis of the support module using the settings of SEEN\n(Large), GPT-3.5, and GPT-4o. We decompose the operation\nof our framework into two parts and analyze the proportion of\ncases that are correctly or incorrectly predicted. This allows\nus to identify where the primary errors in prediction occur for\ndifferent event types.",
+          "number": 6
+        },
+        {
+          "bbox": [
+            311.98,
+            218.66,
+            563.04,
+            395.99
+          ],
+          "text": "This paper explores the use of LLMs for personal infor-\nmation access support. A pilot method, the graph-empowered\nrefinement (GER) framework, is proposed. GER enables\nLLMs to leverage the information contained within personal\nknowledge graphs and refine the generated responses based\non the provided information. The experimental results also\ndemonstrate that different models can be applied within our\nframework, leading to further improvements. This flexibility in\nour framework allows it to be utilized not only with specific\nmodels but also with advanced models in the future, thereby\nenhancing performance through our framework. Furthermore,\nunlike traditional models, our approach does not require train-\ning. This means our method can quickly and effectively adapt\nto users’ continuously accumulating life events over time,\nproviding support for information access services.",
+          "number": 11
+        },
+        {
+          "bbox": [
+            48.96,
+            385.3,
+            300.02,
+            538.72
+          ],
+          "text": "Table VII presents the proportions of errors, successes,\nand alternative insights for each event type, along with their\ntotal counts. The “Fail” column represents that both the base\nmodule and support module predict incorrectly. The “Success”\ncolumn represents that the base module predicts correctly, and\nthe support module supports the base module’s predictions.\nThe “Alternative Insight” column shows instances where the\nsupport module disagrees with the base module, offering\nalternative suggestions for refining predictions. Specifically,\nif the base module predicts Relevant, the support module can\nsuggest that no relevant life events were found. Conversely, if\nthe base module predicts Irrelevant, the support module can\nsuggest the relevant life events that were found.",
+          "number": 7
+        },
+        {
+          "bbox": [
+            311.98,
+            398.12,
+            563.04,
+            635.24
+          ],
+          "text": "As indicated by our experiments, directly using LLMs for\nclassification leads to suboptimal performance. Through case\nstudies, we can observe that for the Additional and Forgotten\nevent types, LLMs often exhibit hallucinations, leading them\nto incorrectly perceive the query as relevant to the story.\nAdditionally, our definitions for Additional and Forgotten\nare relatively strict, but LLMs struggle to accurately discern\nwhether a sentence contains entirely new information. This\nalso causes them to incorrectly identify queries as matching\nprevious information or not being forgotten. For Consistent,\nInconsistent, and Unforgotten, LLMs may fail to extract rel-\nevant parts due to a change in the description of the same\nevent within the story, resulting in the inability to correctly\nidentify them. Another key limitation is the handling of user\nprivacy when building and using personal knowledge graphs.\nDeveloping a framework to ensure data security is left as\nfuture work. In the future, we will establish an end-to-end\nsystem to practically utilize in daily life for extracting life\nevents and provide enhanced information access support, such\nas correcting conflicting descriptions.",
+          "number": 12
+        },
+        {
+          "bbox": [
+            394.06,
+            645.14,
+            480.96,
+            655.1
+          ],
+          "text": "ACKNOWLEDGMENT",
+          "number": 13
+        },
+        {
+          "bbox": [
+            48.96,
+            541.52,
+            300.02,
+            718.85
+          ],
+          "text": "We find that our support module performs better in the\nAdditional and Forgotten event types, supporting the base\nmodule’s correct predictions in most cases. Only 7.5% of\nAdditional cases and 6.59% of Forgotten cases fail to provide\nalternative insights, indicating no relevant life events in the\nreference story. This suggests a higher performance ceiling\nfor our framework. However, for the Consistent event type,\nthe support module fails to provide new relevant life events\nto correct the original erroneous answers in 16.17% of cases.\nFor the Unforgotten event type, it fails to find support events\nin 19.24% of cases. As for the Inconsistent event type, there\nare 45.83% of error cases. Besides the smaller number of\ncases causing greater variability, the model may interpret\nmisplacement within inconsistent cases as new information,\nleading to an inability to identify support events.",
+          "number": 8
+        },
+        {
+          "bbox": [
+            311.98,
+            661.07,
+            563.04,
+            718.85
+          ],
+          "text": "This research was partially supported by Google gift toward\nthe work on Multimodal User Profiling for Personalized In-\nformation Access (Reference Id 00030586), National Science\nand Technology Council, Taiwan, under grants NSTC STC\n114-2221-E-002-070-MY3 and NSTC 113-2634-F-002-003-,",
+          "number": 14
+        }
+      ],
+      "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
+      "tables": []
+    },
+    {
+      "page": 8,
+      "text": "and Ministry of Education (MOE) in Taiwan, under grants\nNTU-114L900901.\nNY, USA: Association for Computing Machinery, 2016, p. 705–708.\n[Online]. Available: https://doi.org/10.1145/2911451.2914680\n[15] C. Gurrin, H. Joho, F. Hopfgartner, L. Zhou, D. Dang-Nguyen,\nREFERENCES\n[1] A. R. Doherty, N. Caprani, C. ´O. Conaire, V. Kalnikaite, C. Gurrin,\nR. Gupta, and R. Albatal, “Overview of NTCIR-13 lifelog-2 task,”\nin The 13th NTCIR Conference, Evaluation of Information Access\nTechnologies, National Center of Sciences, Tokyo, Japan, December 5-8,\n2017.\nNational Institute of Informatics (NII), 2017. [Online]. Avail-\nable: https://research.nii.ac.jp/ntcir/workshop/OnlineProceedings13/pdf/\nntcir/01-NTCIR13-OV-LIFELOG-GurrinC.pdf\n[16] C. Gurrin, H. Joho, F. Hopfgartner, L. Zhou, V.-T. Ninh, T.-K. Le,\nA. F. Smeaton, and N. E. O’Connor, “Passively recognising human\nactivities\nthrough\nlifelogging,”\nComputers\nin\nHuman\nBehavior,\nvol. 27, no. 5, pp. 1948–1958, 2011, 2009 Fifth International\nConference\non\nIntelligent\nComputing.\n[Online].\nAvailable:\nhttps:\n//www.sciencedirect.com/science/article/pii/S0747563211000963\n[2] M. R. Elara, L. Hyowon, K. S. Jaichandar, and C. A. A. Calderon, “Life-\nR. Albatal, D.-T. Dang-Nguyen, and G. Healy, “Overview of the ntcir-\n14 lifelog-3 task,” in Proceedings of the 14th NTCIR conference.\nNII,\n2019, pp. 14–26.\n[17] C. Gurrin, T.-K. Le, V.-T. Ninh, D.-T. Dang-Nguyen, B. T. J´onsson,\nvision: integrating heart rate sensing in lifelogging camera for accurate\nrisk diagnosis for the elderly,” in Proceedings of the 6th International\nConference on Rehabilitation Engineering & Assistive Technology, ser.\ni-CREATe ’12.\nMidview City, SGP: Singapore Therapeutic, Assistive\n& Rehabilitative Technologies (START) Centre, 2012.\n[3] T. Maekawa, “A sensor device for automatic food lifelogging that is\nJ. Lokoˇc, W. H¨urst, M.-T. Tran, and K. Sch¨offmann, “Introduction to\nthe third annual lifelog search challenge (lsc’20),” in Proceedings of the\n2020 International Conference on Multimedia Retrieval, ser. ICMR ’20.\nNew York, NY, USA: Association for Computing Machinery, 2020, p.\n584–585. [Online]. Available: https://doi.org/10.1145/3372278.3388043\n[18] A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Ten questions in lifelog\nembedded in home ceiling light: A preliminary investigation,” in 2013\n7th International Conference on Pervasive Computing Technologies for\nHealthcare and Workshops, 2013, pp. 405–407.\n[4] A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Unanswerable question\nmining and information recall,” in Proceedings of the 2021 International\nConference on Multimedia Retrieval, ser. ICMR ’21.\nNew York,\nNY, USA: Association for Computing Machinery, 2021, p. 511–518.\n[Online]. Available: https://doi.org/10.1145/3460426.3463607\n[19] Y.-W. Wang, H.-H. Huang, K.-Y. Chen, and H.-H. Chen, “Discourse\ncorrection in question answering over personal knowledge base,”\nProceedings\nof\nthe\nAAAI\nConference\non\nArtificial\nIntelligence,\nvol. 35, no. 16, pp. 14 266–14 275, May 2021. [Online]. Available:\nhttps://ojs.aaai.org/index.php/AAAI/article/view/17678\n[5] Y.-E. Lin, A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “SEEN:\nmarker detection for hesitation events on mandarin conversation,” in\nInterspeech, 2018.\n[20] Y. Shi, H. Ma, W. Zhong, Q. Tan, G. Mai, X. Li, T. Liu, and\nJ. Huang, “Chatgraph: Interpretable text classification by converting\nchatgpt knowledge to graphs,” in 2023 IEEE International Conference\non Data Mining Workshops (ICDMW).\nLos Alamitos, CA, USA:\nIEEE Computer Society, dec 2023, pp. 515–520. [Online]. Available:\nhttps://doi.ieeecomputersociety.org/10.1109/ICDMW60847.2023.00073\n[21] S. Pan, L. Luo, Y. Wang, C. Chen, J. Wang, and X. Wu, “Unifying\nStructured event enhancement network for explainable need detection\nof information recall assistance,” in Proceedings of the 2022 Conference\non Empirical Methods in Natural Language Processing, Y. Goldberg,\nZ. Kozareva, and Y. Zhang, Eds.\nAbu Dhabi, United Arab Emirates:\nAssociation for Computational Linguistics, Dec. 2022, pp. 5438–5451.\n[Online]. Available: https://aclanthology.org/2022.emnlp-main.365\n[6] T.-T. Chu, C.-C. Chang, A.-Z. Yen, H.-H. Huang, and H.-H. Chen,\nlarge language models and knowledge graphs: A roadmap,” IEEE\nTransactions on Knowledge and Data Engineering, vol. 36, no. 7, pp.\n3580–3599, 2024.\n[22] Y. Wen, Z. Wang, and J. Sun, “Mindmap: Knowledge graph prompting\n“Multimodal retrieval through relations between subjects and objects in\nlifelog images,” in Proceedings of the third annual workshop on lifelog\nsearch challenge, 2020, pp. 51–55.\n[7] R. Bommasani, D. A. Hudson, E. Adeli, R. Altman, S. Arora, S. von\nsparks graph of thoughts in large language models,” 2024.\n[23] J. Tang, Y. Yang, W. Wei, L. Shi, L. Su, S. Cheng, D. Yin, and C. Huang,\n“Graphgpt: Graph instruction tuning for large language models,” 2024.\n[24] N. Reimers and I. Gurevych, “Sentence-BERT: Sentence embeddings\nArx, M. S. Bernstein, J. Bohg, A. Bosselut, E. Brunskill et al.,\n“On the opportunities and risks of foundation models,” arXiv preprint\narXiv:2108.07258, 2021.\n[8] J. Wei, M. Bosma, V. Y. Zhao, K. Guu, A. W. Yu, B. Lester, N. Du,\nA. M. Dai, and Q. V. Le, “Finetuned language models are zero-shot\nlearners,” arXiv preprint arXiv:2109.01652, 2021.\n[9] L. Ouyang, J. Wu, X. Jiang, D. Almeida, C. Wainwright, P. Mishkin,\nusing Siamese BERT-networks,” in Proceedings of the 2019 Conference\non Empirical Methods in Natural Language Processing and the 9th\nInternational\nJoint\nConference\non\nNatural\nLanguage\nProcessing\n(EMNLP-IJCNLP), K. Inui, J. Jiang, V. Ng, and X. Wan, Eds.\nHong\nKong, China: Association for Computational Linguistics, Nov. 2019,\npp. 3982–3992. [Online]. Available: https://aclanthology.org/D19-1410\n[25] L. Huang, W. Yu, W. Ma, W. Zhong, Z. Feng, H. Wang, Q. Chen,\nC. Zhang, S. Agarwal, K. Slama, A. Ray et al., “Training language\nmodels to follow instructions with human feedback,” Advances in neural\ninformation processing systems, vol. 35, pp. 27 730–27 744, 2022.\n[10] Y.-C. Lee, A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Convlogrecaller:\nW. Peng, X. Feng, B. Qin, and T. Liu, “A survey on hallucination in large\nlanguage models: Principles, taxonomy, challenges, and open questions,”\n2023.\n[26] J. Wei, X. Wang, D. Schuurmans, M. Bosma, E. H. hsin Chi, F. Xia,\nReal-time conversational lifelog recaller,” in Proceedings of the 47th\nInternational ACM SIGIR Conference on Research and Development in\nInformation Retrieval, 2024, pp. 2724–2728.\n[11] J. Li, A. Ritter, C. Cardie, and E. Hovy, “Major life event extraction\nQ. Le, and D. Zhou, “Chain of thought prompting elicits reasoning\nin large language models,” ArXiv, vol. abs/2201.11903, 2022. [Online].\nAvailable: https://api.semanticscholar.org/CorpusID:246411621\n[27] T. Brown, B. Mann, N. Ryder, M. Subbiah, J. D. Kaplan, P. Dhariwal,\nfrom Twitter based on congratulations/condolences speech acts,”\nin Proceedings of the 2014 Conference on Empirical Methods in\nNatural Language Processing (EMNLP), A. Moschitti, B. Pang, and\nW. Daelemans, Eds.\nDoha, Qatar: Association for Computational\nLinguistics, Oct. 2014, pp. 1997–2007. [Online]. Available: https:\n//aclanthology.org/D14-1214\n[12] A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Personal knowledge base\nA.\nNeelakantan,\nP.\nShyam,\nG.\nSastry,\nA.\nAskell,\nS.\nAgarwal,\nA. Herbert-Voss, G. Krueger, T. Henighan, R. Child, A. Ramesh,\nD. Ziegler, J. Wu, C. Winter, C. Hesse, M. Chen, E. Sigler,\nM. Litwin, S. Gray, B. Chess, J. Clark, C. Berner, S. McCandlish,\nA. Radford, I. Sutskever, and D. Amodei, “Language models are\nfew-shot learners,” in Advances in Neural Information Processing\nSystems, H. Larochelle, M. Ranzato, R. Hadsell, M. Balcan, and\nH. Lin, Eds., vol. 33.\nCurran Associates, Inc., 2020, pp. 1877–\n1901. [Online]. Available: https://proceedings.neurips.cc/paper files/\npaper/2020/file/1457c0d6bfcb4967418bfb8ac142f64a-Paper.pdf\n[28] AI@Meta,\n“Llama\n3\nmodel\ncard,”\n2024.\n[Online].\nAvailable:\nhttps://github.com/meta-llama/llama3/blob/main/MODEL CARD.md\n[29] N. Reimers and I. Gurevych, “Sentence-bert: Sentence embeddings\nconstruction from text-based lifelogs,” in Proceedings of the 42nd\nInternational ACM SIGIR Conference on Research and Development\nin Information Retrieval, ser. SIGIR’19.\nNew York, NY, USA:\nAssociation for Computing Machinery, 2019, p. 185–194. [Online].\nAvailable: https://doi.org/10.1145/3331184.3331209\n[13] ——,\n“Multimodal\njoint\nlearning\nfor\npersonal\nknowledge\nbase\nconstruction from twitter-based lifelogs,” Information Processing &\nManagement, vol. 57, no. 6, p. 102148, 2020. [Online]. Available:\nhttps://www.sciencedirect.com/science/article/pii/S0306457319303401\n[14] C. Gurrin, H. Joho, F. Hopfgartner, L. Zhou, and R. Albatal, “Ntcir\nlifelog: The first test collection for lifelog research,” in Proceedings\nof the 39th International ACM SIGIR Conference on Research and\nDevelopment in Information Retrieval, ser. SIGIR ’16.\nNew York,\nusing siamese bert-networks,” in Proceedings of the 2019 Conference\non Empirical Methods in Natural Language Processing.\nAssociation\nfor Computational Linguistics, 11 2019. [Online]. Available: https:\n//arxiv.org/abs/1908.10084",
+      "blocks": [
+        {
+          "bbox": [
+            48.96,
+            51.35,
+            300.02,
+            73.27
+          ],
+          "text": "and Ministry of Education (MOE) in Taiwan, under grants\nNTU-114L900901.",
+          "number": 0
+        },
+        {
+          "bbox": [
+            311.98,
+            52.87,
+            563.04,
+            78.97
+          ],
+          "text": "NY, USA: Association for Computing Machinery, 2016, p. 705–708.\n[Online]. Available: https://doi.org/10.1145/2911451.2914680\n[15] C. Gurrin, H. Joho, F. Hopfgartner, L. Zhou, D. Dang-Nguyen,",
+          "number": 16
+        },
+        {
+          "bbox": [
+            146.6,
+            86.43,
+            202.39,
+            96.4
+          ],
+          "text": "REFERENCES",
+          "number": 1
+        },
+        {
+          "bbox": [
+            52.95,
+            104.03,
+            300.02,
+            113.85
+          ],
+          "text": "[1] A. R. Doherty, N. Caprani, C. ´O. Conaire, V. Kalnikaite, C. Gurrin,",
+          "number": 2
+        },
+        {
+          "bbox": [
+            311.98,
+            79.96,
+            563.04,
+            141.93
+          ],
+          "text": "R. Gupta, and R. Albatal, “Overview of NTCIR-13 lifelog-2 task,”\nin The 13th NTCIR Conference, Evaluation of Information Access\nTechnologies, National Center of Sciences, Tokyo, Japan, December 5-8,\n2017.\nNational Institute of Informatics (NII), 2017. [Online]. Avail-\nable: https://research.nii.ac.jp/ntcir/workshop/OnlineProceedings13/pdf/\nntcir/01-NTCIR13-OV-LIFELOG-GurrinC.pdf\n[16] C. Gurrin, H. Joho, F. Hopfgartner, L. Zhou, V.-T. Ninh, T.-K. Le,",
+          "number": 17
+        },
+        {
+          "bbox": [
+            52.95,
+            114.84,
+            300.02,
+            167.94
+          ],
+          "text": "A. F. Smeaton, and N. E. O’Connor, “Passively recognising human\nactivities\nthrough\nlifelogging,”\nComputers\nin\nHuman\nBehavior,\nvol. 27, no. 5, pp. 1948–1958, 2011, 2009 Fifth International\nConference\non\nIntelligent\nComputing.\n[Online].\nAvailable:\nhttps:\n//www.sciencedirect.com/science/article/pii/S0747563211000963\n[2] M. R. Elara, L. Hyowon, K. S. Jaichandar, and C. A. A. Calderon, “Life-",
+          "number": 3
+        },
+        {
+          "bbox": [
+            311.98,
+            142.93,
+            563.04,
+            178.0
+          ],
+          "text": "R. Albatal, D.-T. Dang-Nguyen, and G. Healy, “Overview of the ntcir-\n14 lifelog-3 task,” in Proceedings of the 14th NTCIR conference.\nNII,\n2019, pp. 14–26.\n[17] C. Gurrin, T.-K. Le, V.-T. Ninh, D.-T. Dang-Nguyen, B. T. J´onsson,",
+          "number": 18
+        },
+        {
+          "bbox": [
+            52.95,
+            168.93,
+            300.02,
+            222.02
+          ],
+          "text": "vision: integrating heart rate sensing in lifelogging camera for accurate\nrisk diagnosis for the elderly,” in Proceedings of the 6th International\nConference on Rehabilitation Engineering & Assistive Technology, ser.\ni-CREATe ’12.\nMidview City, SGP: Singapore Therapeutic, Assistive\n& Rehabilitative Technologies (START) Centre, 2012.\n[3] T. Maekawa, “A sensor device for automatic food lifelogging that is",
+          "number": 4
+        },
+        {
+          "bbox": [
+            311.98,
+            178.95,
+            563.04,
+            231.99
+          ],
+          "text": "J. Lokoˇc, W. H¨urst, M.-T. Tran, and K. Sch¨offmann, “Introduction to\nthe third annual lifelog search challenge (lsc’20),” in Proceedings of the\n2020 International Conference on Multimedia Retrieval, ser. ICMR ’20.\nNew York, NY, USA: Association for Computing Machinery, 2020, p.\n584–585. [Online]. Available: https://doi.org/10.1145/3372278.3388043\n[18] A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Ten questions in lifelog",
+          "number": 19
+        },
+        {
+          "bbox": [
+            52.95,
+            222.88,
+            300.02,
+            258.18
+          ],
+          "text": "embedded in home ceiling light: A preliminary investigation,” in 2013\n7th International Conference on Pervasive Computing Technologies for\nHealthcare and Workshops, 2013, pp. 405–407.\n[4] A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Unanswerable question",
+          "number": 5
+        },
+        {
+          "bbox": [
+            311.98,
+            232.85,
+            563.04,
+            277.02
+          ],
+          "text": "mining and information recall,” in Proceedings of the 2021 International\nConference on Multimedia Retrieval, ser. ICMR ’21.\nNew York,\nNY, USA: Association for Computing Machinery, 2021, p. 511–518.\n[Online]. Available: https://doi.org/10.1145/3460426.3463607\n[19] Y.-W. Wang, H.-H. Huang, K.-Y. Chen, and H.-H. Chen, “Discourse",
+          "number": 20
+        },
+        {
+          "bbox": [
+            52.95,
+            259.18,
+            300.02,
+            303.3
+          ],
+          "text": "correction in question answering over personal knowledge base,”\nProceedings\nof\nthe\nAAAI\nConference\non\nArtificial\nIntelligence,\nvol. 35, no. 16, pp. 14 266–14 275, May 2021. [Online]. Available:\nhttps://ojs.aaai.org/index.php/AAAI/article/view/17678\n[5] Y.-E. Lin, A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “SEEN:",
+          "number": 6
+        },
+        {
+          "bbox": [
+            311.98,
+            278.02,
+            563.04,
+            304.12
+          ],
+          "text": "marker detection for hesitation events on mandarin conversation,” in\nInterspeech, 2018.\n[20] Y. Shi, H. Ma, W. Zhong, Q. Tan, G. Mai, X. Li, T. Liu, and",
+          "number": 21
+        },
+        {
+          "bbox": [
+            311.98,
+            305.12,
+            563.04,
+            358.12
+          ],
+          "text": "J. Huang, “Chatgraph: Interpretable text classification by converting\nchatgpt knowledge to graphs,” in 2023 IEEE International Conference\non Data Mining Workshops (ICDMW).\nLos Alamitos, CA, USA:\nIEEE Computer Society, dec 2023, pp. 515–520. [Online]. Available:\nhttps://doi.ieeecomputersociety.org/10.1109/ICDMW60847.2023.00073\n[21] S. Pan, L. Luo, Y. Wang, C. Chen, J. Wang, and X. Wu, “Unifying",
+          "number": 22
+        },
+        {
+          "bbox": [
+            52.95,
+            304.3,
+            300.02,
+            366.36
+          ],
+          "text": "Structured event enhancement network for explainable need detection\nof information recall assistance,” in Proceedings of the 2022 Conference\non Empirical Methods in Natural Language Processing, Y. Goldberg,\nZ. Kozareva, and Y. Zhang, Eds.\nAbu Dhabi, United Arab Emirates:\nAssociation for Computational Linguistics, Dec. 2022, pp. 5438–5451.\n[Online]. Available: https://aclanthology.org/2022.emnlp-main.365\n[6] T.-T. Chu, C.-C. Chang, A.-Z. Yen, H.-H. Huang, and H.-H. Chen,",
+          "number": 7
+        },
+        {
+          "bbox": [
+            311.98,
+            358.98,
+            563.04,
+            394.19
+          ],
+          "text": "large language models and knowledge graphs: A roadmap,” IEEE\nTransactions on Knowledge and Data Engineering, vol. 36, no. 7, pp.\n3580–3599, 2024.\n[22] Y. Wen, Z. Wang, and J. Sun, “Mindmap: Knowledge graph prompting",
+          "number": 23
+        },
+        {
+          "bbox": [
+            52.95,
+            367.35,
+            300.02,
+            402.51
+          ],
+          "text": "“Multimodal retrieval through relations between subjects and objects in\nlifelog images,” in Proceedings of the third annual workshop on lifelog\nsearch challenge, 2020, pp. 51–55.\n[7] R. Bommasani, D. A. Hudson, E. Adeli, R. Altman, S. Arora, S. von",
+          "number": 8
+        },
+        {
+          "bbox": [
+            311.98,
+            395.18,
+            563.04,
+            412.32
+          ],
+          "text": "sparks graph of thoughts in large language models,” 2024.\n[23] J. Tang, Y. Yang, W. Wei, L. Shi, L. Su, S. Cheng, D. Yin, and C. Huang,",
+          "number": 24
+        },
+        {
+          "bbox": [
+            311.98,
+            413.31,
+            563.04,
+            430.45
+          ],
+          "text": "“Graphgpt: Graph instruction tuning for large language models,” 2024.\n[24] N. Reimers and I. Gurevych, “Sentence-BERT: Sentence embeddings",
+          "number": 25
+        },
+        {
+          "bbox": [
+            52.95,
+            403.37,
+            300.02,
+            438.67
+          ],
+          "text": "Arx, M. S. Bernstein, J. Bohg, A. Bosselut, E. Brunskill et al.,\n“On the opportunities and risks of foundation models,” arXiv preprint\narXiv:2108.07258, 2021.\n[8] J. Wei, M. Bosma, V. Y. Zhao, K. Guu, A. W. Yu, B. Lester, N. Du,",
+          "number": 9
+        },
+        {
+          "bbox": [
+            52.95,
+            439.67,
+            300.02,
+            465.86
+          ],
+          "text": "A. M. Dai, and Q. V. Le, “Finetuned language models are zero-shot\nlearners,” arXiv preprint arXiv:2109.01652, 2021.\n[9] L. Ouyang, J. Wu, X. Jiang, D. Almeida, C. Wainwright, P. Mishkin,",
+          "number": 10
+        },
+        {
+          "bbox": [
+            311.98,
+            431.3,
+            563.04,
+            493.41
+          ],
+          "text": "using Siamese BERT-networks,” in Proceedings of the 2019 Conference\non Empirical Methods in Natural Language Processing and the 9th\nInternational\nJoint\nConference\non\nNatural\nLanguage\nProcessing\n(EMNLP-IJCNLP), K. Inui, J. Jiang, V. Ng, and X. Wan, Eds.\nHong\nKong, China: Association for Computational Linguistics, Nov. 2019,\npp. 3982–3992. [Online]. Available: https://aclanthology.org/D19-1410\n[25] L. Huang, W. Yu, W. Ma, W. Zhong, Z. Feng, H. Wang, Q. Chen,",
+          "number": 26
+        },
+        {
+          "bbox": [
+            48.96,
+            466.71,
+            300.02,
+            502.02
+          ],
+          "text": "C. Zhang, S. Agarwal, K. Slama, A. Ray et al., “Training language\nmodels to follow instructions with human feedback,” Advances in neural\ninformation processing systems, vol. 35, pp. 27 730–27 744, 2022.\n[10] Y.-C. Lee, A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Convlogrecaller:",
+          "number": 11
+        },
+        {
+          "bbox": [
+            311.98,
+            494.41,
+            563.04,
+            529.48
+          ],
+          "text": "W. Peng, X. Feng, B. Qin, and T. Liu, “A survey on hallucination in large\nlanguage models: Principles, taxonomy, challenges, and open questions,”\n2023.\n[26] J. Wei, X. Wang, D. Schuurmans, M. Bosma, E. H. hsin Chi, F. Xia,",
+          "number": 27
+        },
+        {
+          "bbox": [
+            48.96,
+            502.87,
+            300.02,
+            538.17
+          ],
+          "text": "Real-time conversational lifelog recaller,” in Proceedings of the 47th\nInternational ACM SIGIR Conference on Research and Development in\nInformation Retrieval, 2024, pp. 2724–2728.\n[11] J. Li, A. Ritter, C. Cardie, and E. Hovy, “Major life event extraction",
+          "number": 12
+        },
+        {
+          "bbox": [
+            311.98,
+            530.47,
+            563.04,
+            565.54
+          ],
+          "text": "Q. Le, and D. Zhou, “Chain of thought prompting elicits reasoning\nin large language models,” ArXiv, vol. abs/2201.11903, 2022. [Online].\nAvailable: https://api.semanticscholar.org/CorpusID:246411621\n[27] T. Brown, B. Mann, N. Ryder, M. Subbiah, J. D. Kaplan, P. Dhariwal,",
+          "number": 28
+        },
+        {
+          "bbox": [
+            48.96,
+            539.17,
+            300.02,
+            601.23
+          ],
+          "text": "from Twitter based on congratulations/condolences speech acts,”\nin Proceedings of the 2014 Conference on Empirical Methods in\nNatural Language Processing (EMNLP), A. Moschitti, B. Pang, and\nW. Daelemans, Eds.\nDoha, Qatar: Association for Computational\nLinguistics, Oct. 2014, pp. 1997–2007. [Online]. Available: https:\n//aclanthology.org/D14-1214\n[12] A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Personal knowledge base",
+          "number": 13
+        },
+        {
+          "bbox": [
+            311.98,
+            566.54,
+            563.04,
+            682.5
+          ],
+          "text": "A.\nNeelakantan,\nP.\nShyam,\nG.\nSastry,\nA.\nAskell,\nS.\nAgarwal,\nA. Herbert-Voss, G. Krueger, T. Henighan, R. Child, A. Ramesh,\nD. Ziegler, J. Wu, C. Winter, C. Hesse, M. Chen, E. Sigler,\nM. Litwin, S. Gray, B. Chess, J. Clark, C. Berner, S. McCandlish,\nA. Radford, I. Sutskever, and D. Amodei, “Language models are\nfew-shot learners,” in Advances in Neural Information Processing\nSystems, H. Larochelle, M. Ranzato, R. Hadsell, M. Balcan, and\nH. Lin, Eds., vol. 33.\nCurran Associates, Inc., 2020, pp. 1877–\n1901. [Online]. Available: https://proceedings.neurips.cc/paper files/\npaper/2020/file/1457c0d6bfcb4967418bfb8ac142f64a-Paper.pdf\n[28] AI@Meta,\n“Llama\n3\nmodel\ncard,”\n2024.\n[Online].\nAvailable:\nhttps://github.com/meta-llama/llama3/blob/main/MODEL CARD.md\n[29] N. Reimers and I. Gurevych, “Sentence-bert: Sentence embeddings",
+          "number": 29
+        },
+        {
+          "bbox": [
+            48.96,
+            602.08,
+            300.02,
+            691.47
+          ],
+          "text": "construction from text-based lifelogs,” in Proceedings of the 42nd\nInternational ACM SIGIR Conference on Research and Development\nin Information Retrieval, ser. SIGIR’19.\nNew York, NY, USA:\nAssociation for Computing Machinery, 2019, p. 185–194. [Online].\nAvailable: https://doi.org/10.1145/3331184.3331209\n[13] ——,\n“Multimodal\njoint\nlearning\nfor\npersonal\nknowledge\nbase\nconstruction from twitter-based lifelogs,” Information Processing &\nManagement, vol. 57, no. 6, p. 102148, 2020. [Online]. Available:\nhttps://www.sciencedirect.com/science/article/pii/S0306457319303401\n[14] C. Gurrin, H. Joho, F. Hopfgartner, L. Zhou, and R. Albatal, “Ntcir",
+          "number": 14
+        },
+        {
+          "bbox": [
+            67.22,
+            692.33,
+            300.02,
+            718.37
+          ],
+          "text": "lifelog: The first test collection for lifelog research,” in Proceedings\nof the 39th International ACM SIGIR Conference on Research and\nDevelopment in Information Retrieval, ser. SIGIR ’16.\nNew York,",
+          "number": 15
+        },
+        {
+          "bbox": [
+            330.24,
+            683.36,
+            563.04,
+            718.37
+          ],
+          "text": "using siamese bert-networks,” in Proceedings of the 2019 Conference\non Empirical Methods in Natural Language Processing.\nAssociation\nfor Computational Linguistics, 11 2019. [Online]. Available: https:\n//arxiv.org/abs/1908.10084",
+          "number": 30
+        }
+      ],
+      "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
+      "tables": []
+    },
+    {
+      "page": 9,
+      "text": "[30] W.-L.\nChiang,\nZ.\nLi,\nZ.\nLin,\nY.\nSheng,\nZ.\nWu,\nH.\nZhang,\nL.\nZheng,\nS.\nZhuang,\nY.\nZhuang,\nJ.\nE.\nGonzalez,\nI.\nStoica,\nand E. P. Xing, “Vicuna: An open-source chatbot impressing gpt-\n4 with 90%* chatgpt quality,” March 2023. [Online]. Available:\nhttps://lmsys.org/blog/2023-03-30-vicuna/",
+      "blocks": [
+        {
+          "bbox": [
+            48.96,
+            52.87,
+            300.02,
+            96.7
+          ],
+          "text": "[30] W.-L.\nChiang,\nZ.\nLi,\nZ.\nLin,\nY.\nSheng,\nZ.\nWu,\nH.\nZhang,\nL.\nZheng,\nS.\nZhuang,\nY.\nZhuang,\nJ.\nE.\nGonzalez,\nI.\nStoica,\nand E. P. Xing, “Vicuna: An open-source chatbot impressing gpt-\n4 with 90%* chatgpt quality,” March 2023. [Online]. Available:\nhttps://lmsys.org/blog/2023-03-30-vicuna/",
+          "number": 0
+        }
+      ],
+      "images": 0,
+      "figure_captions": [],
+      "table_captions": [],
+      "tables": []
+    }
+  ],
+  "figures": [
+    {
+      "page": 4,
+      "caption": "Fig. 1. Overview of our graph-empowered refinement (GER) framework for personal information access support."
+    }
+  ],
+  "tables": [
+    {
+      "page": 4,
+      "index": 1,
+      "caption": null,
+      "rows": [
+        [
+          null,
+          "Judge\nSupport module Base module\npredicts \"Relevant\" predicts \"Relevant\"\nClassify with Classify with\nExploration prompt Rethinking prompt\nSame label predicted\nby both modules\nLabel Mapper\nEvent Type"
+        ],
+        [
+          "Personal Knowledge Graph, Query\nKnowledge Graph Support Predicted\nBased Classification Events Label\nReference Story, Event Label\nEvents in Reference Story, Query Selection Identification\nLLM-Based Support\nClassification Events",
+          null
+        ]
+      ]
+    },
+    {
+      "page": 4,
+      "index": 2,
+      "caption": null,
+      "rows": [
+        [
+          "Same labe\nby both",
+          "l predicted\nmodules"
+        ]
+      ]
+    }
+  ],
+  "references": [
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        104.03,
+        300.02,
+        113.85
+      ],
+      "text": "[1] A. R. Doherty, N. Caprani, C. ´O. Conaire, V. Kalnikaite, C. Gurrin,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        79.96,
+        563.04,
+        141.93
+      ],
+      "text": "R. Gupta, and R. Albatal, “Overview of NTCIR-13 lifelog-2 task,”"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        79.96,
+        563.04,
+        141.93
+      ],
+      "text": "in The 13th NTCIR Conference, Evaluation of Information Access"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        79.96,
+        563.04,
+        141.93
+      ],
+      "text": "Technologies, National Center of Sciences, Tokyo, Japan, December 5-8,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        79.96,
+        563.04,
+        141.93
+      ],
+      "text": "2017."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        79.96,
+        563.04,
+        141.93
+      ],
+      "text": "National Institute of Informatics (NII), 2017. [Online]. Avail-"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        79.96,
+        563.04,
+        141.93
+      ],
+      "text": "able: https://research.nii.ac.jp/ntcir/workshop/OnlineProceedings13/pdf/"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        79.96,
+        563.04,
+        141.93
+      ],
+      "text": "ntcir/01-NTCIR13-OV-LIFELOG-GurrinC.pdf"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        79.96,
+        563.04,
+        141.93
+      ],
+      "text": "[16] C. Gurrin, H. Joho, F. Hopfgartner, L. Zhou, V.-T. Ninh, T.-K. Le,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "A. F. Smeaton, and N. E. O’Connor, “Passively recognising human"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "activities"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "through"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "lifelogging,”"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "Computers"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "in"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "Human"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "Behavior,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "vol. 27, no. 5, pp. 1948–1958, 2011, 2009 Fifth International"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "Conference"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "on"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "Intelligent"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "Computing."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "[Online]."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "Available:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "https:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "//www.sciencedirect.com/science/article/pii/S0747563211000963"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        114.84,
+        300.02,
+        167.94
+      ],
+      "text": "[2] M. R. Elara, L. Hyowon, K. S. Jaichandar, and C. A. A. Calderon, “Life-"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        142.93,
+        563.04,
+        178.0
+      ],
+      "text": "R. Albatal, D.-T. Dang-Nguyen, and G. Healy, “Overview of the ntcir-"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        142.93,
+        563.04,
+        178.0
+      ],
+      "text": "14 lifelog-3 task,” in Proceedings of the 14th NTCIR conference."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        142.93,
+        563.04,
+        178.0
+      ],
+      "text": "NII,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        142.93,
+        563.04,
+        178.0
+      ],
+      "text": "2019, pp. 14–26."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        142.93,
+        563.04,
+        178.0
+      ],
+      "text": "[17] C. Gurrin, T.-K. Le, V.-T. Ninh, D.-T. Dang-Nguyen, B. T. J´onsson,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        168.93,
+        300.02,
+        222.02
+      ],
+      "text": "vision: integrating heart rate sensing in lifelogging camera for accurate"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        168.93,
+        300.02,
+        222.02
+      ],
+      "text": "risk diagnosis for the elderly,” in Proceedings of the 6th International"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        168.93,
+        300.02,
+        222.02
+      ],
+      "text": "Conference on Rehabilitation Engineering & Assistive Technology, ser."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        168.93,
+        300.02,
+        222.02
+      ],
+      "text": "i-CREATe ’12."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        168.93,
+        300.02,
+        222.02
+      ],
+      "text": "Midview City, SGP: Singapore Therapeutic, Assistive"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        168.93,
+        300.02,
+        222.02
+      ],
+      "text": "& Rehabilitative Technologies (START) Centre, 2012."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        168.93,
+        300.02,
+        222.02
+      ],
+      "text": "[3] T. Maekawa, “A sensor device for automatic food lifelogging that is"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        178.95,
+        563.04,
+        231.99
+      ],
+      "text": "J. Lokoˇc, W. H¨urst, M.-T. Tran, and K. Sch¨offmann, “Introduction to"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        178.95,
+        563.04,
+        231.99
+      ],
+      "text": "the third annual lifelog search challenge (lsc’20),” in Proceedings of the"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        178.95,
+        563.04,
+        231.99
+      ],
+      "text": "2020 International Conference on Multimedia Retrieval, ser. ICMR ’20."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        178.95,
+        563.04,
+        231.99
+      ],
+      "text": "New York, NY, USA: Association for Computing Machinery, 2020, p."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        178.95,
+        563.04,
+        231.99
+      ],
+      "text": "584–585. [Online]. Available: https://doi.org/10.1145/3372278.3388043"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        178.95,
+        563.04,
+        231.99
+      ],
+      "text": "[18] A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Ten questions in lifelog"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        222.88,
+        300.02,
+        258.18
+      ],
+      "text": "embedded in home ceiling light: A preliminary investigation,” in 2013"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        222.88,
+        300.02,
+        258.18
+      ],
+      "text": "7th International Conference on Pervasive Computing Technologies for"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        222.88,
+        300.02,
+        258.18
+      ],
+      "text": "Healthcare and Workshops, 2013, pp. 405–407."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        222.88,
+        300.02,
+        258.18
+      ],
+      "text": "[4] A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Unanswerable question"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        232.85,
+        563.04,
+        277.02
+      ],
+      "text": "mining and information recall,” in Proceedings of the 2021 International"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        232.85,
+        563.04,
+        277.02
+      ],
+      "text": "Conference on Multimedia Retrieval, ser. ICMR ’21."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        232.85,
+        563.04,
+        277.02
+      ],
+      "text": "New York,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        232.85,
+        563.04,
+        277.02
+      ],
+      "text": "NY, USA: Association for Computing Machinery, 2021, p. 511–518."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        232.85,
+        563.04,
+        277.02
+      ],
+      "text": "[Online]. Available: https://doi.org/10.1145/3460426.3463607"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        232.85,
+        563.04,
+        277.02
+      ],
+      "text": "[19] Y.-W. Wang, H.-H. Huang, K.-Y. Chen, and H.-H. Chen, “Discourse"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        259.18,
+        300.02,
+        303.3
+      ],
+      "text": "correction in question answering over personal knowledge base,”"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        259.18,
+        300.02,
+        303.3
+      ],
+      "text": "Proceedings"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        259.18,
+        300.02,
+        303.3
+      ],
+      "text": "of"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        259.18,
+        300.02,
+        303.3
+      ],
+      "text": "the"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        259.18,
+        300.02,
+        303.3
+      ],
+      "text": "AAAI"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        259.18,
+        300.02,
+        303.3
+      ],
+      "text": "Conference"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        259.18,
+        300.02,
+        303.3
+      ],
+      "text": "on"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        259.18,
+        300.02,
+        303.3
+      ],
+      "text": "Artificial"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        259.18,
+        300.02,
+        303.3
+      ],
+      "text": "Intelligence,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        259.18,
+        300.02,
+        303.3
+      ],
+      "text": "vol. 35, no. 16, pp. 14 266–14 275, May 2021. [Online]. Available:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        259.18,
+        300.02,
+        303.3
+      ],
+      "text": "https://ojs.aaai.org/index.php/AAAI/article/view/17678"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        259.18,
+        300.02,
+        303.3
+      ],
+      "text": "[5] Y.-E. Lin, A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “SEEN:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        278.02,
+        563.04,
+        304.12
+      ],
+      "text": "marker detection for hesitation events on mandarin conversation,” in"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        278.02,
+        563.04,
+        304.12
+      ],
+      "text": "Interspeech, 2018."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        278.02,
+        563.04,
+        304.12
+      ],
+      "text": "[20] Y. Shi, H. Ma, W. Zhong, Q. Tan, G. Mai, X. Li, T. Liu, and"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        305.12,
+        563.04,
+        358.12
+      ],
+      "text": "J. Huang, “Chatgraph: Interpretable text classification by converting"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        305.12,
+        563.04,
+        358.12
+      ],
+      "text": "chatgpt knowledge to graphs,” in 2023 IEEE International Conference"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        305.12,
+        563.04,
+        358.12
+      ],
+      "text": "on Data Mining Workshops (ICDMW)."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        305.12,
+        563.04,
+        358.12
+      ],
+      "text": "Los Alamitos, CA, USA:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        305.12,
+        563.04,
+        358.12
+      ],
+      "text": "IEEE Computer Society, dec 2023, pp. 515–520. [Online]. Available:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        305.12,
+        563.04,
+        358.12
+      ],
+      "text": "https://doi.ieeecomputersociety.org/10.1109/ICDMW60847.2023.00073"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        305.12,
+        563.04,
+        358.12
+      ],
+      "text": "[21] S. Pan, L. Luo, Y. Wang, C. Chen, J. Wang, and X. Wu, “Unifying"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        304.3,
+        300.02,
+        366.36
+      ],
+      "text": "Structured event enhancement network for explainable need detection"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        304.3,
+        300.02,
+        366.36
+      ],
+      "text": "of information recall assistance,” in Proceedings of the 2022 Conference"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        304.3,
+        300.02,
+        366.36
+      ],
+      "text": "on Empirical Methods in Natural Language Processing, Y. Goldberg,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        304.3,
+        300.02,
+        366.36
+      ],
+      "text": "Z. Kozareva, and Y. Zhang, Eds."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        304.3,
+        300.02,
+        366.36
+      ],
+      "text": "Abu Dhabi, United Arab Emirates:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        304.3,
+        300.02,
+        366.36
+      ],
+      "text": "Association for Computational Linguistics, Dec. 2022, pp. 5438–5451."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        304.3,
+        300.02,
+        366.36
+      ],
+      "text": "[Online]. Available: https://aclanthology.org/2022.emnlp-main.365"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        304.3,
+        300.02,
+        366.36
+      ],
+      "text": "[6] T.-T. Chu, C.-C. Chang, A.-Z. Yen, H.-H. Huang, and H.-H. Chen,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        358.98,
+        563.04,
+        394.19
+      ],
+      "text": "large language models and knowledge graphs: A roadmap,” IEEE"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        358.98,
+        563.04,
+        394.19
+      ],
+      "text": "Transactions on Knowledge and Data Engineering, vol. 36, no. 7, pp."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        358.98,
+        563.04,
+        394.19
+      ],
+      "text": "3580–3599, 2024."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        358.98,
+        563.04,
+        394.19
+      ],
+      "text": "[22] Y. Wen, Z. Wang, and J. Sun, “Mindmap: Knowledge graph prompting"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        367.35,
+        300.02,
+        402.51
+      ],
+      "text": "“Multimodal retrieval through relations between subjects and objects in"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        367.35,
+        300.02,
+        402.51
+      ],
+      "text": "lifelog images,” in Proceedings of the third annual workshop on lifelog"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        367.35,
+        300.02,
+        402.51
+      ],
+      "text": "search challenge, 2020, pp. 51–55."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        367.35,
+        300.02,
+        402.51
+      ],
+      "text": "[7] R. Bommasani, D. A. Hudson, E. Adeli, R. Altman, S. Arora, S. von"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        395.18,
+        563.04,
+        412.32
+      ],
+      "text": "sparks graph of thoughts in large language models,” 2024."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        395.18,
+        563.04,
+        412.32
+      ],
+      "text": "[23] J. Tang, Y. Yang, W. Wei, L. Shi, L. Su, S. Cheng, D. Yin, and C. Huang,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        413.31,
+        563.04,
+        430.45
+      ],
+      "text": "“Graphgpt: Graph instruction tuning for large language models,” 2024."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        413.31,
+        563.04,
+        430.45
+      ],
+      "text": "[24] N. Reimers and I. Gurevych, “Sentence-BERT: Sentence embeddings"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        403.37,
+        300.02,
+        438.67
+      ],
+      "text": "Arx, M. S. Bernstein, J. Bohg, A. Bosselut, E. Brunskill et al.,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        403.37,
+        300.02,
+        438.67
+      ],
+      "text": "“On the opportunities and risks of foundation models,” arXiv preprint"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        403.37,
+        300.02,
+        438.67
+      ],
+      "text": "arXiv:2108.07258, 2021."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        403.37,
+        300.02,
+        438.67
+      ],
+      "text": "[8] J. Wei, M. Bosma, V. Y. Zhao, K. Guu, A. W. Yu, B. Lester, N. Du,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        439.67,
+        300.02,
+        465.86
+      ],
+      "text": "A. M. Dai, and Q. V. Le, “Finetuned language models are zero-shot"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        439.67,
+        300.02,
+        465.86
+      ],
+      "text": "learners,” arXiv preprint arXiv:2109.01652, 2021."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        52.95,
+        439.67,
+        300.02,
+        465.86
+      ],
+      "text": "[9] L. Ouyang, J. Wu, X. Jiang, D. Almeida, C. Wainwright, P. Mishkin,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "using Siamese BERT-networks,” in Proceedings of the 2019 Conference"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "on Empirical Methods in Natural Language Processing and the 9th"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "International"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "Joint"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "Conference"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "on"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "Natural"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "Language"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "Processing"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "(EMNLP-IJCNLP), K. Inui, J. Jiang, V. Ng, and X. Wan, Eds."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "Hong"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "Kong, China: Association for Computational Linguistics, Nov. 2019,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "pp. 3982–3992. [Online]. Available: https://aclanthology.org/D19-1410"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        431.3,
+        563.04,
+        493.41
+      ],
+      "text": "[25] L. Huang, W. Yu, W. Ma, W. Zhong, Z. Feng, H. Wang, Q. Chen,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        466.71,
+        300.02,
+        502.02
+      ],
+      "text": "C. Zhang, S. Agarwal, K. Slama, A. Ray et al., “Training language"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        466.71,
+        300.02,
+        502.02
+      ],
+      "text": "models to follow instructions with human feedback,” Advances in neural"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        466.71,
+        300.02,
+        502.02
+      ],
+      "text": "information processing systems, vol. 35, pp. 27 730–27 744, 2022."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        466.71,
+        300.02,
+        502.02
+      ],
+      "text": "[10] Y.-C. Lee, A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Convlogrecaller:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        494.41,
+        563.04,
+        529.48
+      ],
+      "text": "W. Peng, X. Feng, B. Qin, and T. Liu, “A survey on hallucination in large"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        494.41,
+        563.04,
+        529.48
+      ],
+      "text": "language models: Principles, taxonomy, challenges, and open questions,”"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        494.41,
+        563.04,
+        529.48
+      ],
+      "text": "2023."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        494.41,
+        563.04,
+        529.48
+      ],
+      "text": "[26] J. Wei, X. Wang, D. Schuurmans, M. Bosma, E. H. hsin Chi, F. Xia,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        502.87,
+        300.02,
+        538.17
+      ],
+      "text": "Real-time conversational lifelog recaller,” in Proceedings of the 47th"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        502.87,
+        300.02,
+        538.17
+      ],
+      "text": "International ACM SIGIR Conference on Research and Development in"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        502.87,
+        300.02,
+        538.17
+      ],
+      "text": "Information Retrieval, 2024, pp. 2724–2728."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        502.87,
+        300.02,
+        538.17
+      ],
+      "text": "[11] J. Li, A. Ritter, C. Cardie, and E. Hovy, “Major life event extraction"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        530.47,
+        563.04,
+        565.54
+      ],
+      "text": "Q. Le, and D. Zhou, “Chain of thought prompting elicits reasoning"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        530.47,
+        563.04,
+        565.54
+      ],
+      "text": "in large language models,” ArXiv, vol. abs/2201.11903, 2022. [Online]."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        530.47,
+        563.04,
+        565.54
+      ],
+      "text": "Available: https://api.semanticscholar.org/CorpusID:246411621"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        530.47,
+        563.04,
+        565.54
+      ],
+      "text": "[27] T. Brown, B. Mann, N. Ryder, M. Subbiah, J. D. Kaplan, P. Dhariwal,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        539.17,
+        300.02,
+        601.23
+      ],
+      "text": "from Twitter based on congratulations/condolences speech acts,”"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        539.17,
+        300.02,
+        601.23
+      ],
+      "text": "in Proceedings of the 2014 Conference on Empirical Methods in"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        539.17,
+        300.02,
+        601.23
+      ],
+      "text": "Natural Language Processing (EMNLP), A. Moschitti, B. Pang, and"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        539.17,
+        300.02,
+        601.23
+      ],
+      "text": "W. Daelemans, Eds."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        539.17,
+        300.02,
+        601.23
+      ],
+      "text": "Doha, Qatar: Association for Computational"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        539.17,
+        300.02,
+        601.23
+      ],
+      "text": "Linguistics, Oct. 2014, pp. 1997–2007. [Online]. Available: https:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        539.17,
+        300.02,
+        601.23
+      ],
+      "text": "//aclanthology.org/D14-1214"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        539.17,
+        300.02,
+        601.23
+      ],
+      "text": "[12] A.-Z. Yen, H.-H. Huang, and H.-H. Chen, “Personal knowledge base"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "A."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "Neelakantan,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "P."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "Shyam,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "G."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "Sastry,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "A."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "Askell,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "S."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "Agarwal,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "A. Herbert-Voss, G. Krueger, T. Henighan, R. Child, A. Ramesh,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "D. Ziegler, J. Wu, C. Winter, C. Hesse, M. Chen, E. Sigler,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "M. Litwin, S. Gray, B. Chess, J. Clark, C. Berner, S. McCandlish,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "A. Radford, I. Sutskever, and D. Amodei, “Language models are"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "few-shot learners,” in Advances in Neural Information Processing"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "Systems, H. Larochelle, M. Ranzato, R. Hadsell, M. Balcan, and"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "H. Lin, Eds., vol. 33."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "Curran Associates, Inc., 2020, pp. 1877–"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "1901. [Online]. Available: https://proceedings.neurips.cc/paper files/"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "paper/2020/file/1457c0d6bfcb4967418bfb8ac142f64a-Paper.pdf"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "[28] AI@Meta,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "“Llama"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "3"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "model"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "card,”"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "2024."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "[Online]."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "Available:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "https://github.com/meta-llama/llama3/blob/main/MODEL CARD.md"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        311.98,
+        566.54,
+        563.04,
+        682.5
+      ],
+      "text": "[29] N. Reimers and I. Gurevych, “Sentence-bert: Sentence embeddings"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "construction from text-based lifelogs,” in Proceedings of the 42nd"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "International ACM SIGIR Conference on Research and Development"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "in Information Retrieval, ser. SIGIR’19."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "New York, NY, USA:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "Association for Computing Machinery, 2019, p. 185–194. [Online]."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "Available: https://doi.org/10.1145/3331184.3331209"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "[13] ——,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "“Multimodal"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "joint"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "learning"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "for"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "personal"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "knowledge"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "base"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "construction from twitter-based lifelogs,” Information Processing &"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "Management, vol. 57, no. 6, p. 102148, 2020. [Online]. Available:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "https://www.sciencedirect.com/science/article/pii/S0306457319303401"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        48.96,
+        602.08,
+        300.02,
+        691.47
+      ],
+      "text": "[14] C. Gurrin, H. Joho, F. Hopfgartner, L. Zhou, and R. Albatal, “Ntcir"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        67.22,
+        692.33,
+        300.02,
+        718.37
+      ],
+      "text": "lifelog: The first test collection for lifelog research,” in Proceedings"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        67.22,
+        692.33,
+        300.02,
+        718.37
+      ],
+      "text": "of the 39th International ACM SIGIR Conference on Research and"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        67.22,
+        692.33,
+        300.02,
+        718.37
+      ],
+      "text": "Development in Information Retrieval, ser. SIGIR ’16."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        67.22,
+        692.33,
+        300.02,
+        718.37
+      ],
+      "text": "New York,"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        330.24,
+        683.36,
+        563.04,
+        718.37
+      ],
+      "text": "using siamese bert-networks,” in Proceedings of the 2019 Conference"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        330.24,
+        683.36,
+        563.04,
+        718.37
+      ],
+      "text": "on Empirical Methods in Natural Language Processing."
+    },
+    {
+      "page": 8,
+      "bbox": [
+        330.24,
+        683.36,
+        563.04,
+        718.37
+      ],
+      "text": "Association"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        330.24,
+        683.36,
+        563.04,
+        718.37
+      ],
+      "text": "for Computational Linguistics, 11 2019. [Online]. Available: https:"
+    },
+    {
+      "page": 8,
+      "bbox": [
+        330.24,
+        683.36,
+        563.04,
+        718.37
+      ],
+      "text": "//arxiv.org/abs/1908.10084"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "[30] W.-L."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Chiang,"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Z."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Li,"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Z."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Lin,"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Y."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Sheng,"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Z."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Wu,"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "H."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Zhang,"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "L."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Zheng,"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "S."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Zhuang,"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Y."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Zhuang,"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "J."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "E."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Gonzalez,"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "I."
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "Stoica,"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "and E. P. Xing, “Vicuna: An open-source chatbot impressing gpt-"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "4 with 90%* chatgpt quality,” March 2023. [Online]. Available:"
+    },
+    {
+      "page": 9,
+      "bbox": [
+        48.96,
+        52.87,
+        300.02,
+        96.7
+      ],
+      "text": "https://lmsys.org/blog/2023-03-30-vicuna/"
+    }
+  ],
+  "sections": [
+    {
+      "heading": "Abstract—Since individuals may struggle to recall all life",
+      "page": 1
+    },
+    {
+      "heading": "approach into graph-based and LLM-based methods. In the",
+      "page": 4
+    },
+    {
+      "heading": "results. To address this, we transform the task from multi-",
+      "page": 5
+    },
+    {
+      "heading": "RESULTS WITH SEEN (BASE) AS THE BASE MODULE.",
+      "page": 6
+    },
+    {
+      "heading": "RESULTS OF EACH EVENT TYPE WITH DIFFERENT SUPPORT MODULES.",
+      "page": 6
+    },
+    {
+      "heading": "REFERENCES",
+      "page": 8
+    }
+  ]
+}

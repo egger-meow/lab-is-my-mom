@@ -9,7 +9,8 @@ import sys
 import tomllib
 from pathlib import Path
 
-from .core import Publication, Store, fetch_url, parse_publications, relevant_same_site_links, sha256_bytes
+from .core import Link, Publication, Store, fetch_url, normalize_title, parse_publications, relevant_same_site_links, sha256_bytes, utc_now
+from .discovery import Candidate, DiscoveryFilters, Federation, rank_candidates, deduplicate
 from .providers import AclAnthologyProvider, ArxivProvider, CrossrefProvider, OpenAlexProvider, SemanticScholarProvider
 from .translation import BabelDocTranslator, TranslationUnavailable
 
@@ -390,28 +391,137 @@ def report(args: argparse.Namespace) -> int:
     return 0
 
 
+def _discovery_filters(args: argparse.Namespace) -> DiscoveryFilters:
+    return DiscoveryFilters(args.year_from, args.year_to, args.author, args.venue, args.topic,
+                            args.open_access, args.citation_min, tuple(args.provider or ()))
+
+
+def _professor_topics(root: Path, professor_id: str) -> list[str]:
+    path = root / "research" / "professor" / professor_id / "research-directions.md"
+    return path.read_text(encoding="utf-8", errors="replace").splitlines() if path.exists() else []
+
+
+def discover(args: argparse.Namespace) -> int:
+    root=Path(args.root).resolve(); store=Store(root); filters=_discovery_filters(args)
+    candidates,failures=Federation(root).discover(args.query,filters,args.limit)
+    candidates=rank_candidates(candidates,args.query,_professor_topics(root,args.professor_id),store.papers())
+    store.record_discovery(args.query,filters.__dict__,candidates,failures)
+    output={"kind":"live-discovery-candidates","query":args.query,"count":len(candidates),"failures":failures,"results":[c.payload() for c in candidates]}
+    print(json.dumps(output,ensure_ascii=False,indent=2)); store.close()
+    return 0 if candidates else 1
+
+
+def _candidate_from_payload(item: dict) -> Candidate:
+    fields={name:item.get(name) for name in Candidate.__dataclass_fields__}
+    return Candidate(**fields)
+
+
+def expand(args: argparse.Namespace) -> int:
+    root=Path(args.root).resolve(); store=Store(root); source=store.discovery_candidate(args.paper_id); corpus=store.paper(args.paper_id)
+    if not source and not corpus: raise SystemExit(f"unknown corpus paper or candidate: {args.paper_id}")
+    relations={x for x in ("references","citations","similar") if getattr(args,x)}
+    if not relations: raise SystemExit("select at least one of --references, --citations, or --similar")
+    federation=Federation(root); discovered=[]; failures={}
+    for adapter in federation.adapters:
+        if not hasattr(adapter,"expand"): continue
+        if source and adapter.name=="openalex": identifier=source.get("openalex_id")
+        elif source and adapter.name=="semantic-scholar": identifier=source.get("semantic_scholar_id") or ("DOI:"+source["doi"] if source.get("doi") else None) or ("ARXIV:"+source["arxiv_id"] if source.get("arxiv_id") else None)
+        elif corpus is not None and adapter.name=="semantic-scholar": identifier=("DOI:"+corpus["doi"] if corpus["doi"] else None) or ("ARXIV:"+corpus["arxiv_id"] if corpus["arxiv_id"] else None)
+        else: identifier=None
+        if not identifier: continue
+        try: discovered.extend(adapter.expand(identifier,relations,args.limit))
+        except Exception as error: failures[adapter.name]=str(error)
+    candidates=rank_candidates(deduplicate(discovered),source["title"] if source else corpus["title"],_professor_topics(root,args.professor_id),store.papers())
+    store.record_discovery(f"expand:{args.paper_id}",{"relations":sorted(relations)},candidates,failures)
+    if source:
+        for item in candidates: store.record_candidate_relation(args.paper_id,item.id,item.relation,item.providers)
+    print(json.dumps({"kind":"expansion-candidates","source":args.paper_id,"count":len(candidates),"failures":failures,"results":[x.payload() for x in candidates]},ensure_ascii=False,indent=2)); store.close()
+    return 0 if candidates else 1
+
+
+def import_candidate(args: argparse.Namespace) -> int:
+    root=Path(args.root).resolve(); store=Store(root); item=store.discovery_candidate(args.candidate_id)
+    if not item: raise SystemExit(f"unknown discovery candidate: {args.candidate_id}")
+    if item.get("imported_paper_id"):
+        print(json.dumps({"candidate":args.candidate_id,"state":"imported","paper_id":item["imported_paper_id"]})); store.close(); return 0
+    evidence="discovery candidate " + args.candidate_id
+    if item.get("doi"): evidence += "; doi: " + item["doi"]
+    links=[]
+    for url,label in ((item.get("landing_url"),"candidate landing page"),(item.get("oa_url"),"open-access location (metadata only)")):
+        if url: links.append(Link(url,label))
+    publication=Publication(item["title"],", ".join(item.get("authors") or []),item.get("year"),item.get("venue"),"discovery-import",item.get("landing_url") or (item.get("provenance") or [{}])[0].get("url",f"candidate:{args.candidate_id}"),evidence,tuple(links))
+    store.upsert_papers([publication]); row=store.db.execute("SELECT id FROM papers WHERE normalized_title=?",(normalize_title(publication.title),)).fetchone(); imported_id=row["id"]
+    store.db.execute("UPDATE papers SET doi=COALESCE(doi,?),arxiv_id=COALESCE(arxiv_id,?),updated_at=? WHERE id=?",(item.get("doi"),item.get("arxiv_id"),utc_now(),imported_id))
+    for provenance in item.get("provenance") or []:
+        store.db.execute("INSERT OR IGNORE INTO paper_links(paper_id,url,label,kind) VALUES(?,?,?,?)",(imported_id,provenance["url"],"discovery provenance: "+provenance["provider"],"external"))
+    store.db.commit(); store.mark_candidate_imported(args.candidate_id,imported_id); store.close()
+    # Pipeline stages remain opt-in: importing metadata never implies full text.
+    status={"candidate":args.candidate_id,"state":"imported","paper_id":imported_id,"fulltext":"not-fetched"}
+    if args.resolve:
+        ns=argparse.Namespace(root=str(root),professor_id=args.professor_id,limit=None,fulltext=True,semantic_scholar=False); resolve(ns)
+    if args.fetch:
+        fetch_paper(argparse.Namespace(root=str(root),paper_id=imported_id))
+    if args.process:
+        process_paper(argparse.Namespace(root=str(root),paper_id=imported_id))
+    print(json.dumps(status,ensure_ascii=False)); return 0
+
+
+def save_discovery_candidate(args: argparse.Namespace) -> int:
+    store=Store(Path(args.root).resolve()); saved=store.save_candidate(args.candidate_id); store.close()
+    print(json.dumps({"candidate":args.candidate_id,"state":"saved" if saved else "not-found"})); return 0 if saved else 1
+
+
 def dashboard_payload(root: Path, professor_id: str) -> dict:
     """Produce a portable, read-only view model for the static research dashboard."""
     store = Store(root)
     try:
         config = load_config(root, professor_id)
         papers = []
+        def artifact(path: Path) -> dict | None:
+            if not path.exists():
+                return None
+            return {"path": str(path.relative_to(root)), "content": path.read_text(encoding="utf-8", errors="replace")}
         for row in store.papers():
             paper_dir = Path("research") / "papers" / row["id"]
             links = [{"url": link["url"], "label": link["label"], "kind": link["kind"]}
                      for link in store.db.execute("SELECT url,label,kind FROM paper_links WHERE paper_id=? ORDER BY kind,url", (row["id"],))]
+            documents = {}
+            for name in ("README.md", "reading-guide-zh.md", "method.md", "experiments-and-results.md", "limitations-and-critique.md", "prerequisites.md", "seminar-questions.md"):
+                item = artifact(root / paper_dir / name)
+                if item: documents[name.removesuffix(".md")] = item
+            diagrams = [item for path in sorted((root / paper_dir / "diagrams").glob("*.mmd")) if (item := artifact(path))]
+            extraction_path = root / paper_dir / "extraction.json"
+            sections = []
+            if extraction_path.exists():
+                try: sections = json.loads(extraction_path.read_text(encoding="utf-8")) .get("sections", [])
+                except (json.JSONDecodeError, UnicodeDecodeError): pass
             papers.append({
                 "id": row["id"], "title": row["title"], "authors": row["authors"],
                 "year": row["year"], "venue": row["venue"], "status": row["fulltext_status"],
                 "doi": row["doi"], "arxiv_id": row["arxiv_id"], "source_url": row["source_url"],
                 "pdf_path": row["pdf_path"], "links": links,
-                "notes": [str(paper_dir / name) for name in ("README.md", "method.md", "experiments-and-results.md", "limitations-and-critique.md", "seminar-questions.md") if (root / paper_dir / name).exists()],
+                "notes": [item["path"] for item in documents.values()], "documents": documents,
+                "diagrams": diagrams, "sections": sections,
             })
+        professor_dir = root / "research" / "professor" / config["id"]
+        professor_artifacts = {}
+        for path in sorted(professor_dir.glob("*.md")):
+            if item := artifact(path): professor_artifacts[path.stem] = item
+        seed_path = root / "research" / "seeds" / "NYCU NLP Lab Intro.pdf"
         return {
             "generated_at": __import__("datetime").datetime.now(__import__("datetime").UTC).isoformat(),
             "professor": {"id": config["id"], "name": config["name"], "affiliation": config["affiliation"], "url": config["professor_url"]},
             "summary": {"total": len(papers), "fetched": sum(p["status"] == "fetched" for p in papers), "unresolved": sum(p["status"] != "fetched" for p in papers)},
+            "artifacts": professor_artifacts,
+            "seeds": [{"label": "NYCU NLP Lab Intro", "path": str(seed_path.relative_to(root))}] if seed_path.exists() else [],
             "papers": papers,
+            "discovery": {
+                "candidates": store.discovery_candidates(),
+                "runs": [{"query": row["query"], "filters": json.loads(row["filters_json"]),
+                          "candidate_ids": json.loads(row["candidate_ids_json"]), "failures": json.loads(row["failures_json"]),
+                          "created_at": row["created_at"]}
+                         for row in store.db.execute("SELECT * FROM discovery_runs ORDER BY id DESC LIMIT 20")],
+            },
         }
     finally:
         store.close()
@@ -441,6 +551,15 @@ def main() -> int:
     process = commands.add_parser("process"); process.add_argument("paper_id"); process.set_defaults(func=process_paper)
     translate = commands.add_parser("translate"); translate.add_argument("paper_id"); translate.add_argument("--config", required=True, help="local BabelDOC TOML; not copied into the corpus"); translate.add_argument("--executable", default="babeldoc"); translate.add_argument("--timeout", type=int, default=3600); translate.set_defaults(func=translate_paper)
     query = commands.add_parser("search"); query.add_argument("query"); query.set_defaults(func=search)
+    discovery = commands.add_parser("discover", help="query live scholarly metadata providers; results remain candidates")
+    discovery.add_argument("query"); discovery.add_argument("--professor-id", default="an-zi-yen"); discovery.add_argument("--limit", type=int, default=20)
+    discovery.add_argument("--year-from",type=int); discovery.add_argument("--year-to",type=int); discovery.add_argument("--author"); discovery.add_argument("--venue"); discovery.add_argument("--topic")
+    discovery.add_argument("--open-access",action="store_true"); discovery.add_argument("--citation-min",type=int); discovery.add_argument("--provider",action="append",choices=["openalex","semantic-scholar","crossref","arxiv","acl-anthology"]); discovery.set_defaults(func=discover)
+    expansion=commands.add_parser("expand",help="find candidate references, citations, or similar papers")
+    expansion.add_argument("paper_id"); expansion.add_argument("--references",action="store_true"); expansion.add_argument("--citations",action="store_true"); expansion.add_argument("--similar",action="store_true"); expansion.add_argument("--limit",type=int,default=20); expansion.add_argument("--professor-id",default="an-zi-yen"); expansion.set_defaults(func=expand)
+    importer=commands.add_parser("import",help="promote one candidate into the permanent corpus")
+    importer.add_argument("candidate_id"); importer.add_argument("--professor-id",default="an-zi-yen"); importer.add_argument("--resolve",action="store_true"); importer.add_argument("--fetch",action="store_true"); importer.add_argument("--process",action="store_true"); importer.set_defaults(func=import_candidate)
+    saver=commands.add_parser("save-candidate"); saver.add_argument("candidate_id"); saver.set_defaults(func=save_discovery_candidate)
     report_parser = commands.add_parser("report"); report_parser.add_argument("professor_id"); report_parser.set_defaults(func=report)
     dashboard = commands.add_parser("dashboard", help="export the corpus data consumed by web/index.html")
     dashboard.add_argument("professor_id", nargs="?", default="an-zi-yen")

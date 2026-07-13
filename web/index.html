@@ -1,96 +1,37 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Explore a locally curated, source-backed research corpus.">
-    <title>Research OS — Paper library</title>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <a class="skip-link" href="#paper-list">Skip to papers</a>
-    <header class="hero">
-      <nav class="topbar" aria-label="Primary navigation">
-        <a class="brand" href="index.html"><span class="brand__mark" aria-hidden="true">R</span> Research OS</a>
-        <a id="lab-link" class="lab-link" target="_blank" rel="noreferrer">Lab profile <span aria-hidden="true">↗</span></a>
-      </nav>
-      <div class="hero__content">
-        <p class="eyebrow">Local paper library <span aria-hidden="true">•</span> source-backed</p>
-        <h1>Find the thread<br>worth following.</h1>
-        <p id="affiliation" class="affiliation"></p>
-        <p class="lede">A focused research workspace for reading papers, tracing evidence, and returning to the ideas that matter.</p>
-      </div>
-      <div class="metrics" aria-label="Corpus summary">
-        <div><strong id="total-count">0</strong><span>indexed works</span></div>
-        <div><strong id="fetched-count">0</strong><span>ready to read</span></div>
-        <div><strong id="unresolved-count">0</strong><span>source gaps</span></div>
-      </div>
-    </header>
-    <main>
-      <section class="library-head" aria-labelledby="library-title">
-        <div>
-          <p class="eyebrow">Explore the collection</p>
-          <h2 id="library-title">Paper library</h2>
-        </div>
-        <button id="saved-toggle" class="saved-toggle" type="button" aria-pressed="false">
-          <span aria-hidden="true">⌑</span> Saved <span id="saved-count">0</span>
-        </button>
-      </section>
-      <section class="controls" aria-label="Paper filters">
-        <label class="search">
-          <span class="search__icon" aria-hidden="true">⌕</span>
-          <span class="sr-only">Search papers</span>
-          <input id="search" type="search" placeholder="Search title, author, topic, venue…" autocomplete="off">
-          <kbd>⌘ K</kbd>
-        </label>
-        <div class="filter-row">
-          <div id="status-filters" class="filter-group" role="group" aria-label="Reading availability">
-            <button class="filter active" data-status="all" type="button">All papers</button>
-            <button class="filter" data-status="fetched" type="button">Ready to read</button>
-            <button class="filter" data-status="unresolved" type="button">Source gaps</button>
-          </div>
-          <label class="select-wrap">Sort
-            <select id="sort" aria-label="Sort papers">
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-              <option value="title">Title A–Z</option>
-            </select>
-          </label>
-        </div>
-        <div id="year-filters" class="year-filters" aria-label="Filter by year"></div>
-        <p id="results-count" class="results-count" aria-live="polite"></p>
-      </section>
-      <section id="paper-list" class="paper-list" aria-live="polite"></section>
-    </main>
-    <dialog id="paper-dialog" class="paper-dialog" aria-labelledby="dialog-title">
-      <article class="dialog-card">
-        <button id="dialog-close" class="icon-button dialog-close" type="button" aria-label="Close paper details">×</button>
-        <p id="dialog-meta" class="eyebrow"></p>
-        <h2 id="dialog-title"></h2>
-        <p id="dialog-authors" class="dialog-authors"></p>
-        <p id="dialog-venue" class="dialog-venue"></p>
-        <div id="dialog-actions" class="dialog-actions"></div>
-        <section class="reading-notes">
-          <h3>Reading workspace</h3>
-          <p id="dialog-note-copy">Open the source and evidence that are committed with this record.</p>
-          <div id="dialog-notes" class="note-links"></div>
-        </section>
-      </article>
-    </dialog>
-    <template id="paper-template">
-      <article class="paper-card">
-        <div class="paper-card__top"><span class="year"></span><span class="status"></span></div>
-        <h3></h3><p class="authors"></p><p class="venue"></p>
-        <div class="paper-card__bottom">
-          <div class="identifiers"></div>
-          <div class="card-actions">
-            <button class="text-button open-paper" type="button">View paper <span aria-hidden="true">→</span></button>
-            <button class="icon-button save-paper" type="button" aria-label="Save paper">⌑</button>
-          </div>
-        </div>
-      </article>
-    </template>
-    <script src="data.js"></script>
-    <script src="app.js"></script>
-  </body>
-</html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="以證據為核心的研究導航、閱讀路徑與論文工作台。">
+  <title>Research OS｜研究工作台</title><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">跳至主要內容</a>
+<aside class="sidebar">
+  <a class="brand" href="#overview"><span class="brand-mark">R</span><span>Research OS<small>研究工作台</small></span></a>
+  <nav aria-label="主要導覽">
+    <button class="nav-item active" data-view="overview">總覽</button>
+    <button class="nav-item" data-view="map">研究地圖</button>
+    <button class="nav-item" data-view="path">閱讀路徑</button>
+    <button class="nav-item" data-view="workspace">論文工作台</button>
+    <button class="nav-item" data-view="opportunities">研究機會</button>
+    <button class="nav-item" data-view="library">論文庫</button>
+    <button class="nav-item" data-view="discovery">學術探索</button>
+  </nav>
+  <div class="corpus-mini"><span class="status-dot"></span><span>Corpus 已連線<small id="generated-at"></small></span></div>
+</aside>
+<div class="shell">
+  <header class="topbar"><button id="menu" aria-label="開啟導覽">選單</button><div id="breadcrumb">總覽</div><label class="global-search"><span>搜尋</span><input id="search" type="search" placeholder="論文、方法、資料集…"></label></header>
+  <main id="main" tabindex="-1">
+    <section id="view-overview" class="view active"></section>
+    <section id="view-map" class="view"></section>
+    <section id="view-path" class="view"></section>
+    <section id="view-workspace" class="view"></section>
+    <section id="view-opportunities" class="view"></section>
+    <section id="view-library" class="view"></section>
+    <section id="view-discovery" class="view"></section>
+  </main>
+</div>
+<dialog id="evidence-dialog"><button class="dialog-close" aria-label="關閉">關閉</button><div id="evidence-content"></div></dialog>
+<script src="data.js"></script><script src="app.js"></script>
+</body></html>

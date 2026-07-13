@@ -4,10 +4,10 @@ Only entries whose author string matches a configured alias are included.
 
 | Year | Title | Status | IDs | Source evidence |
 |---:|---|---|---|---|
-| 2026 | Confidence-Driven Multi-Scale Model Selection for Cost-Effective NLU | unresolved | doi:10.18653/v1/2026.findings-eacl.90 | https://azyen0522.github.io/ |
+| 2026 | Confidence-Driven Multi-Scale Model Selection for Cost-Effective NLU | fetched | doi:10.18653/v1/2026.findings-eacl.90 | https://azyen0522.github.io/ |
 | 2026 | MathEDU: Feedback Generation on Problem-Solving Processes for Mathematical Learning Support | fetched | doi:10.18653/v1/2026.eacl-long.132 | https://azyen0522.github.io/ |
 | 2025 | Follow-up Question Modeling for Open-Retrieval Conversations with Wh-Questions | unresolved | — | https://azyen0522.github.io/ |
-| 2025 | Personalized Graph-Empowered Large Language Model for Proactive Information Access | unresolved | — | https://azyen0522.github.io/ |
+| 2025 | Personalized Graph-Empowered Large Language Model for Proactive Information Access | fetched | arXiv:2602.21862 | https://azyen0522.github.io/ |
 | 2025 | RAG-Enhanced Evidence Recommendation in Financial Legal Resolutions | unresolved | doi:10.1145/3701716.3715520 | https://azyen0522.github.io/ |
 | 2025 | Template-Based Financial Report Generation in Agentic and Decomposed Information Retrieval | unresolved | doi:10.1145/3726302.3730253 | https://azyen0522.github.io/ |
 | 2024 | ConvLogRecaller: Real-Time Conversational Lifelog Recaller | unresolved | doi:10.1145/3626772.3657659 | https://azyen0522.github.io/ |
