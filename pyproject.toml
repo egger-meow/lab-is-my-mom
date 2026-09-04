@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "A deterministic local research repository for professor and lab pages"
 requires-python = ">=3.11"
 dependencies = [
+    "fastapi>=0.141.1",
     "pymupdf>=1.28.0",
+    "uvicorn>=0.52.4",
 ]
 
 [project.scripts]
