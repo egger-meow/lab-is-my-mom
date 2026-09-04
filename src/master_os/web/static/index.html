@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Master OS · NYCU NLP Lab</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-bright: #f0f6fc;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-glow: rgba(88, 166, 255, 0.15);
+      --success: #2ea043;
+      --warning: #d29922;
+      --danger: #f85149;
+      --purple: #bc8cff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 1rem;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+    .brand { font-size: 1.25rem; font-weight: 700; color: var(--text-bright); display: flex; align-items: center; gap: 0.5rem; }
+    .brand span { color: var(--accent); font-size: 0.85rem; background: var(--accent-glow); padding: 0.2rem 0.6rem; border-radius: 999px; }
+    .header-actions { display: flex; gap: 0.75rem; align-items: center; }
+    button {
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: var(--text-bright);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    button:hover { background: #30363d; border-color: var(--text-muted); }
+    button.primary { background: #238636; border-color: rgba(240, 246, 252, 0.1); color: #fff; }
+    button.primary:hover { background: #2ea043; }
+    button.danger { background: #da3633; border-color: var(--border); color: #fff; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem; }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      position: relative;
+    }
+    .card-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .hero-action {
+      background: linear-gradient(135deg, rgba(88, 166, 255, 0.08) 0%, rgba(188, 140, 255, 0.08) 100%);
+      border: 1px solid var(--accent);
+    }
+    .hero-title { font-size: 1.35rem; color: var(--text-bright); font-weight: 700; margin-bottom: 0.5rem; }
+    .hero-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-critical { background: rgba(248, 81, 73, 0.2); color: var(--danger); border: 1px solid rgba(248, 81, 73, 0.4); }
+    .badge-high { background: rgba(210, 153, 34, 0.2); color: var(--warning); border: 1px solid rgba(210, 153, 34, 0.4); }
+    .badge-success { background: rgba(46, 160, 67, 0.2); color: var(--success); border: 1px solid rgba(46, 160, 67, 0.4); }
+
+    .item-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
+    .item-row {
+      padding: 0.6rem;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    .alert-box {
+      background: rgba(210, 153, 34, 0.15);
+      border: 1px solid var(--warning);
+      color: #f0f6fc;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      margin-bottom: 1.25rem;
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    textarea {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: var(--text-bright);
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      resize: vertical;
+    }
+    pre {
+      background: #0d1117;
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        lab-is-my-mom <span>Master OS v0.2</span>
+      </div>
+      <div class="header-actions">
+        <button onclick="refreshData()">重新整頓</button>
+        <button onclick="openModal('ingest-modal')">匯入會議紀錄</button>
+        <button class="primary" onclick="triggerMeetingPack()">產出 Meeting Pack</button>
+      </div>
+    </header>
+
+    <div id="critic-alert" class="alert-box"></div>
+
+    <!-- 1. 當前最重要 (What matters now?) -->
+    <div class="card hero-action" style="margin-bottom: 1.5rem;">
+      <div class="card-title">
+        <span>1. 當前最重要 · 焦點行動 (What Matters Now)</span>
+        <span id="hero-est" class="badge badge-high">預估 ~8 分鐘</span>
+      </div>
+      <div id="hero-title" class="hero-title">載入中...</div>
+      <div id="hero-why" class="hero-meta">正在計算 Master Planner 關鍵路徑...</div>
+      <div style="display: flex; gap: 0.75rem;">
+        <button id="dispatch-btn" class="primary" onclick="dispatchFocusTask()">自主派工 Codex 執行</button>
+        <button onclick="openModal('ingest-modal')">上傳實驗與會議回饋</button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- 2. 未來義務與死線 (What is coming?) -->
+      <div class="card">
+        <div class="card-title">
+          <span>2. 未來義務與死線 (What is coming?)</span>
+          <span class="badge badge-critical">生存紅線</span>
+        </div>
+        <ul id="obligations-list" class="item-list">
+          <li class="item-row">讀取義務中...</li>
+        </ul>
+      </div>
+
+      <!-- 5. 等待你裁量與審批 (What needs me?) -->
+      <div class="card">
+        <div class="card-title">
+          <span>5. 等待你裁量與審批 (What needs me?)</span>
+          <span id="approval-count-badge" class="badge badge-warning">0 項待審</span>
+        </div>
+        <div id="approvals-container" class="item-list">
+          <div class="item-row" style="color: var(--text-muted);">目前無待審批項目，AI 可自主推進。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- 3. 近期變化與實驗突破 (What changed?) -->
+      <div class="card">
+        <div class="card-title">
+          <span>3. 近期變化與實驗突破 (What changed?)</span>
+          <span class="badge badge-success">實證資產</span>
+        </div>
+        <ul id="findings-list" class="item-list">
+          <li class="item-row">讀取 Findings 中...</li>
+        </ul>
+      </div>
+
+      <!-- 4. Agent 執行動態 (What are agents doing?) -->
+      <div class="card">
+        <div class="card-title">
+          <span>4. Agent 執行動態 (What are agents doing?)</span>
+          <span class="badge">沙盒運行</span>
+        </div>
+        <ul id="agents-list" class="item-list">
+          <li class="item-row">讀取 Agent 狀態中...</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Ingesting Transcript -->
+  <div id="ingest-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center;">
+    <div class="card" style="width: 500px; max-width: 90%;">
+      <h3 style="color: var(--text-bright); margin-bottom: 0.5rem;">匯入 Advisor Meeting 逐字稿 / 筆記</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Meeting Agent 將自動萃取 Commitments、Obligations、Tasks 並生成待審批 Slack 回報草稿。</p>
+      <input id="modal-mid" type="text" placeholder="會議 ID (例：M-20260910)" style="width: 100%; padding: 0.4rem; background: #0d1117; border: 1px solid var(--border); color: #fff; border-radius: 4px; margin-bottom: 0.5rem;">
+      <textarea id="modal-transcript" rows="6" placeholder="貼上會議逐字稿或筆記重點..."></textarea>
+      <div style="margin-top: 0.75rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button onclick="closeModal('ingest-modal')">取消</button>
+        <button class="primary" onclick="submitTranscript()">匯入並分析</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentFocusTaskId = null;
+
+    async function refreshData() {
+      try {
+        const res = await fetch('/api/cockpit');
+        const data = await res.json();
+
+        // 1. What matters now
+        const now = data.what_matters_now;
+        const fa = now.focus_action;
+        currentFocusTaskId = fa.task_id;
+        document.getElementById('hero-title').textContent = fa.title || '無待辦任務';
+        document.getElementById('hero-why').textContent = `${fa.why} · 建議代理: ${fa.suggested_agent.toUpperCase()}`;
+        document.getElementById('hero-est').textContent = `預估 ~${fa.estimated_minutes} 分鐘`;
+        document.getElementById('dispatch-btn').style.display = fa.task_id ? 'inline-block' : 'none';
+
+        // Fake progress warning
+        const alertBox = document.getElementById('critic-alert');
+        if (now.fake_progress_warning) {
+          alertBox.style.display = 'block';
+          alertBox.textContent = now.warning_message;
+        } else {
+          alertBox.style.display = 'none';
+        }
+
+        // 2. What is coming (Obligations)
+        const obList = document.getElementById('obligations-list');
+        obList.innerHTML = '';
+        if (now.critical_obligations.length === 0) {
+          obList.innerHTML = '<li class="item-row" style="color: var(--text-muted);">目前無待滿足之緊急 Obligation</li>';
+        } else {
+          now.critical_obligations.forEach(ob => {
+            const li = document.createElement('li');
+            li.className = 'item-row';
+            const badgeClass = ob.severity === 'critical' ? 'badge-critical' : 'badge-high';
+            li.innerHTML = `<span class="badge ${badgeClass}">${ob.severity.toUpperCase()}</span> <strong>${ob.title}</strong> (${ob.status})`;
+            obList.appendChild(li);
+          });
+        }
+
+        // 5. What needs me (Approvals)
+        const appContainer = document.getElementById('approvals-container');
+        const pending = data.what_needs_me.pending_approvals;
+        document.getElementById('approval-count-badge').textContent = `${pending.length} 項待審`;
+        appContainer.innerHTML = '';
+        if (pending.length === 0) {
+          appContainer.innerHTML = '<div class="item-row" style="color: var(--text-muted);">目前無待審批項目，AI 可自主推進。</div>';
+        } else {
+          pending.forEach(ap => {
+            const div = document.createElement('div');
+            div.className = 'item-row';
+            div.innerHTML = `
+              <div style="font-weight: 600; color: var(--text-bright); margin-bottom: 0.3rem;">[${ap.action_type.toUpperCase()}] ${ap.reason}</div>
+              <pre style="margin-bottom: 0.5rem;">${ap.action_payload.text || JSON.stringify(ap.action_payload, null, 2)}</pre>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="primary" onclick="decideApproval('${ap.id}', 'approved')">核准傳送</button>
+                <button class="danger" onclick="decideApproval('${ap.id}', 'rejected')">駁回</button>
+              </div>
+            `;
+            appContainer.appendChild(div);
+          });
+        }
+
+        // 3. What changed (Findings)
+        const findList = document.getElementById('findings-list');
+        findList.innerHTML = '';
+        const findings = data.what_changed.recent_findings;
+        if (findings.length === 0) {
+          findList.innerHTML = '<li class="item-row" style="color: var(--text-muted);">尚未沉澱出最新 Findings</li>';
+        } else {
+          findings.forEach(f => {
+            const li = document.createElement('li');
+            li.className = 'item-row';
+            li.innerHTML = `<span class="badge badge-success">${f.status.toUpperCase()}</span> <strong>${f.statement}</strong> (信賴度: ${f.confidence})`;
+            findList.appendChild(li);
+          });
+        }
+
+        // 4. What are agents doing
+        const agentList = document.getElementById('agents-list');
+        agentList.innerHTML = '';
+        const runs = data.what_are_agents_doing.recent_runs;
+        if (runs.length === 0) {
+          agentList.innerHTML = '<li class="item-row" style="color: var(--text-muted);">所有 Agent 處於 Idle 待命狀態。</li>';
+        } else {
+          runs.forEach(r => {
+            const li = document.createElement('li');
+            li.className = 'item-row';
+            li.innerHTML = `<strong>${r.agent_type.toUpperCase()}</strong> (${r.job_type}) · 狀態: <code>${r.status}</code> · 分支: <code>${r.branch || 'none'}</code>`;
+            agentList.appendChild(li);
+          });
+        }
+
+      } catch (e) {
+        console.error('Error refreshing data:', e);
+      }
+    }
+
+    async function dispatchFocusTask() {
+      if (!currentFocusTaskId) return;
+      try {
+        const res = await fetch(`/api/tasks/${currentFocusTaskId}/dispatch`, { method: 'POST' });
+        const result = await res.json();
+        alert(`Codex 在 Worktree 中執行完成！\nRun ID: ${result.run_id}\n狀態: ${result.status}\n產出 Artifacts: ${result.artifacts.join(', ')}`);
+        refreshData();
+      } catch (e) {
+        alert('派工失敗：' + e.message);
+      }
+    }
+
+    async function triggerMeetingPack() {
+      const mid = prompt('請輸入欲產出 Pack 的會議 ID (例：M-20260917)：', 'M-20260917');
+      if (!mid) return;
+      try {
+        const res = await fetch(`/api/meetings/${mid}/pack`, { method: 'POST' });
+        const data = await res.json();
+        alert(`Meeting Pack 已成功產出並存證至 Artifact Registry！\n\n大綱預覽：\n` + data.meeting_pack.substring(0, 300) + '...');
+        refreshData();
+      } catch (e) {
+        alert('產出失敗：' + e.message);
+      }
+    }
+
+    async function decideApproval(apId, decision) {
+      try {
+        await fetch(`/api/approvals/${apId}/decide`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: decision }),
+        });
+        refreshData();
+      } catch (e) {
+        alert('操作失敗：' + e.message);
+      }
+    }
+
+    function openModal(id) {
+      document.getElementById(id).style.display = 'flex';
+    }
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    async function submitTranscript() {
+      const mid = document.getElementById('modal-mid').value.trim();
+      const text = document.getElementById('modal-transcript').value.trim();
+      if (!mid || !text) {
+        alert('請填寫會議 ID 與逐字稿內容');
+        return;
+      }
+      try {
+        await fetch('/api/meetings/ingest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ meeting_id: mid, transcript_text: text }),
+        });
+        closeModal('ingest-modal');
+        alert('逐字稿已成功匯入！已萃取 Commitments、Obligations、Tasks 並產出 Slack 回報草稿。');
+        refreshData();
+      } catch (e) {
+        alert('匯入失敗：' + e.message);
+      }
+    }
+
+    // Initial load
+    closeModal('ingest-modal');
+    refreshData();
+    setInterval(refreshData, 10000);
+  </script>
+</body>
+</html>

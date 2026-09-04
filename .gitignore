@@ -6,3 +6,6 @@ __pycache__/
 .venv/
 .pytest-tmp*/
 *.py[cod]
+.master-os/
+
+

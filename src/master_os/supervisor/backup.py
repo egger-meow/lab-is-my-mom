@@ -59,7 +59,7 @@ class BackupManager:
         self.db.close()
         shutil.copy2(snapshot_path, self.db.db_path)
         # Re-open database
-        self.db.conn = sqlite3.connect(str(self.db.db_path), autocommit=True)
+        self.db.conn = sqlite3.connect(str(self.db.db_path), autocommit=True, check_same_thread=False)
         self.db.conn.row_factory = sqlite3.Row
         self.db.conn.execute("PRAGMA journal_mode = WAL")
         self.db.conn.execute("PRAGMA foreign_keys = ON")

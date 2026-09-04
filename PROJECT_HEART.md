@@ -1,24 +1,24 @@
-# Professor Research OS
+# lab-is-my-mom = Master OS
 
 ## Mission
 
-Build a scalable local research repository that accepts a professor or lab webpage and produces a verified, readable research corpus.
+Build a local-first autonomous operating system for my entire 2-year master's degree and NYCU NLP Lab life under Prof. An-Zi Yen.
+
+The ultimate goal is not a todo app or paper reader. It acts as a master's-student agent:
+observe the lab, remember research history, track obligations vs tasks, prepare meetings, coordinate local coding/research agents (Codex / Antigravity), execute authorized work in isolated worktrees, preserve evidence, prevent repeated mistakes (Failure Memory), and minimize manual operating labor.
+
+The student mainly provides judgment and approvals while the system handles the operating work.
+
+> **Note on evolution**: The previous build-time statement that this is "not a runtime AI-agent product" is now officially superseded. The existing Research OS remains intact as one specialized organ (Literature Engine) of Master OS.
 
 ```text
-professor URL
-→ crawl profile/lab/publication pages
-→ identify professor-authored papers
-→ resolve metadata and fetch legal full text
-→ extract/translate papers
-→ generate compact reading docs and diagrams
-→ maintain a searchable research map
+MASTER OS RUNTIME
+├── Master Cockpit (Traditional Chinese Web UI, 5 Core Questions)
+├── Intelligence Layer (Meeting Agent, Master Planner, Critic, Scheduler)
+├── Master Core (Append-only Events, Assertions, Relational State, Relations Graph)
+├── Agent Runtime (Sandboxed Git Worktrees, Failure Memory Injection, Acceptance Checks)
+└── Adapter Layer (Research OS Paper Corpus, Lab Protocol, Compute & Supervisor)
 ```
-
-This is **not a runtime AI-agent product for now**. The shipped system should be deterministic crawling, storage, parsing, search, and viewing infrastructure.
-
-Codex/Claude Code should use its own reasoning **during the build** to digest the currently fetchable papers and commit the initial study material for future reading.
-
-## Generic product, customized first run
 
 The architecture must support almost any professor webpage:
 
