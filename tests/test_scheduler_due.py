@@ -154,7 +154,10 @@ def test_event_schedule_fires_once_for_new_matching_event(tmp_path: Path):
     try:
         events = EventStore(db)
         name = "Advisor Post-Meeting Digest to Slack"
-        before = datetime(2026, 9, 5, 5, 0, tzinfo=timezone.utc)
+        schedule = next(item for item in scheduler.list_schedules() if item["name"] == name)
+        created_at = datetime.fromisoformat(schedule["created_at"])
+        before = created_at + timedelta(seconds=30)
+        event_at = created_at + timedelta(minutes=1)
         assert _named_due(scheduler.due_schedules(before), name) == []
 
         source = events.register_source("test", "test", "meeting-event")
@@ -162,16 +165,15 @@ def test_event_schedule_fires_once_for_new_matching_event(tmp_path: Path):
             "meeting.completed",
             source.id,
             {"id": "M-DONE"},
-            occurred_at="2026-09-05T05:01:00+00:00",
+            occurred_at=event_at.isoformat(),
         )
-        due_at = datetime(2026, 9, 5, 5, 1, tzinfo=timezone.utc)
-        due = _named_due(scheduler.due_schedules(due_at), name)
+        due = _named_due(scheduler.due_schedules(event_at), name)
         assert len(due) == 1
         assert due[0]["context"]["event_id"] == completed.id
         assert due[0]["context"]["event_type"] == "meeting.completed"
 
-        _mark_triggered(db, events, due[0]["id"], due_at)
-        assert _named_due(scheduler.due_schedules(due_at + timedelta(minutes=1)), name) == []
+        _mark_triggered(db, events, due[0]["id"], event_at)
+        assert _named_due(scheduler.due_schedules(event_at + timedelta(minutes=1)), name) == []
     finally:
         db.close()
 
