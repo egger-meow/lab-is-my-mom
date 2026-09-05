@@ -1,7 +1,6 @@
 """Cross-platform boot/login autostart for the local Master OS mothership."""
 from __future__ import annotations
 
-import os
 import shlex
 import subprocess
 import sys
@@ -28,9 +27,13 @@ class AutostartManager:
         runner: CommandRunner = subprocess.run,
         port: int = 8000,
     ) -> None:
-        self.repo_root = repo_root.resolve()
-        self.executable = Path(executable or sys.argv[0]).resolve() if executable else Path(sys.argv[0])
         self.platform_name = (platform_name or sys.platform).lower()
+        self.repo_root = repo_root.resolve()
+        raw_executable = Path(executable) if executable is not None else Path(sys.argv[0])
+        # Do not resolve a Windows path while generating a plan on a Linux CI host.
+        # Target-platform path semantics belong to the target OS, not the machine that
+        # happens to render/test the plan.
+        self.executable = raw_executable if self.platform_name.startswith("win") else raw_executable.resolve()
         self.home = (home or Path.home()).resolve()
         self.runner = runner
         self.port = int(port)
@@ -38,10 +41,7 @@ class AutostartManager:
             raise ValueError("port must be between 1 and 65535")
 
     def _service_command(self) -> str:
-        exe = str(self.executable)
-        if self.platform_name.startswith("win"):
-            return f'"{exe}" start --host 127.0.0.1 --port {self.port}'
-        return f'"{exe}" start --host 127.0.0.1 --port {self.port}'
+        return f'"{self.executable}" start --host 127.0.0.1 --port {self.port}'
 
     def plan(self) -> dict[str, Any]:
         if self.platform_name.startswith("win"):
