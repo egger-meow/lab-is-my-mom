@@ -137,7 +137,7 @@ class MeetingAgent:
                     ),
                 )
                 apply_event(self.db, event)
-                approval_ids.append(approval_id)
+                approval_ids.append(event.payload["id"])
 
         return approval_ids
 
@@ -299,10 +299,86 @@ class MeetingAgent:
         discussion_points: list[str],
         next_commitments: list[str],
     ) -> str:
-        """Generate a Slack draft and gate the external send behind approval."""
-        source = self.events.register_source("system", "Meeting Follow-up", "meeting-followup")
+        """Generate a caller-supplied Slack draft and gate external send behind approval."""
         draft = generate_post_meeting_slack_draft(meeting_title, date_str, discussion_points, next_commitments)
+        return self._create_slack_approval(meeting_id, draft)
 
+    def create_post_meeting_slack_approval_from_evidence(self, meeting_id: str) -> str:
+        """Create one post-meeting Slack draft from preserved transcript evidence.
+
+        Candidate semantic approvals are useful here as an index into exact source
+        lines, but their meaning is not treated as confirmed research truth. The
+        draft quotes preserved evidence and still requires explicit approval before
+        any external Slack send.
+        """
+        meeting = self.db.fetchone("SELECT * FROM meetings WHERE id = ?", (meeting_id,))
+        if not meeting:
+            raise ValueError(f"Meeting not found: {meeting_id}")
+        transcript_artifact_id = meeting["transcript_artifact_id"]
+        if not transcript_artifact_id:
+            raise ValueError(f"Meeting {meeting_id} has no transcript evidence")
+
+        rows = self.db.fetchall(
+            """SELECT * FROM approvals
+               WHERE action_type = 'confirm_semantic_change'
+               ORDER BY requested_at ASC, rowid ASC"""
+        )
+        discussion_points: list[str] = []
+        next_commitments: list[str] = []
+        seen_discussion: set[str] = set()
+        seen_commitments: set[str] = set()
+        for row in rows:
+            payload = json.loads(row["action_payload_json"])
+            if payload.get("meeting_id") != meeting_id:
+                continue
+            candidate = payload.get("candidate") or {}
+            evidence = str(candidate.get("evidence") or "").strip()
+            if not evidence:
+                continue
+            if payload.get("change_type") == "task":
+                point = self._strip_speaker(evidence)
+                if point and point not in seen_commitments:
+                    seen_commitments.add(point)
+                    next_commitments.append(point)
+            else:
+                point = self._strip_speaker(evidence)
+                if point and point not in seen_discussion:
+                    seen_discussion.add(point)
+                    discussion_points.append(point)
+
+        # If the conservative semantic index found nothing, preserve source truth by
+        # using non-empty transcript lines verbatim instead of manufacturing a
+        # summary. This makes the draft useful while keeping interpretation out.
+        if not discussion_points and not next_commitments:
+            transcript = self._read_transcript_artifact(transcript_artifact_id)
+            for line in (part.strip() for part in transcript.splitlines()):
+                if not line:
+                    continue
+                point = self._strip_speaker(line)
+                if point and point not in seen_discussion:
+                    seen_discussion.add(point)
+                    discussion_points.append(point)
+
+        if not discussion_points:
+            discussion_points.append("逐字稿未擷取出明確的老師討論重點，請送出前人工確認。")
+        if not next_commitments:
+            next_commitments.append("逐字稿未擷取出明確的學生承諾事項，請送出前人工確認。")
+
+        title = meeting["title"] or f"Advisor Meeting {meeting_id}"
+        date_source = meeting["actual_ended_at"] or meeting["scheduled_at"] or utc_now()
+        date_str = str(date_source)[:10]
+        draft = generate_post_meeting_slack_draft(title, date_str, discussion_points, next_commitments)
+        dedup_key = f"meeting-slack-draft:{meeting_id}:{transcript_artifact_id}"
+        return self._create_slack_approval(meeting_id, draft, dedup_key=dedup_key)
+
+    def _create_slack_approval(
+        self,
+        meeting_id: str,
+        draft: str,
+        *,
+        dedup_key: Optional[str] = None,
+    ) -> str:
+        source = self.events.register_source("system", "Meeting Follow-up", "meeting-followup")
         approval_id = generate_id("AP-")
         event = self.events.record_event(
             event_type="approval.requested",
@@ -315,9 +391,27 @@ class MeetingAgent:
                 "risk_level": "medium",
                 "estimated_cost": 0.0,
             },
+            dedup_key=dedup_key,
         )
         apply_event(self.db, event)
-        return approval_id
+        return str(event.payload["id"])
+
+    def _read_transcript_artifact(self, artifact_id: str) -> str:
+        artifact = self.db.fetchone("SELECT * FROM artifacts WHERE id = ?", (artifact_id,))
+        if not artifact:
+            raise ValueError(f"Transcript artifact not found: {artifact_id}")
+        path = (self.repo_root / artifact["path"]).resolve()
+        try:
+            path.relative_to(self.repo_root)
+        except ValueError as exc:
+            raise ValueError(f"Transcript artifact escapes repository root: {artifact_id}") from exc
+        if not path.exists() or not path.is_file():
+            raise FileNotFoundError(f"Transcript artifact file missing: {path}")
+        return path.read_text(encoding="utf-8")
+
+    @staticmethod
+    def _strip_speaker(line: str) -> str:
+        return re.sub(r"^[^:：]+[:：]\s*", "", line).strip()
 
     def _extract_semantics(self, text: str) -> dict[str, Any]:
         """Conservatively identify *candidates* from explicit transcript language.
