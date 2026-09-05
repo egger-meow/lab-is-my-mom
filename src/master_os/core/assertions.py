@@ -4,10 +4,10 @@ from __future__ import annotations
 import json
 from typing import Any, Optional
 
+from master_os.core.commands import DomainCommandBus
 from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
 from master_os.core.models import Assertion, AuthorityLevel, generate_id, utc_now
-from master_os.core.reducer import apply_event
 
 
 class AssertionResolver:
@@ -21,6 +21,7 @@ class AssertionResolver:
     def __init__(self, db: MasterDatabase, events: Optional[EventStore] = None) -> None:
         self.db = db
         self.events = events or EventStore(db)
+        self.commands = DomainCommandBus(db, self.events)
 
     def assert_field(
         self,
@@ -37,7 +38,7 @@ class AssertionResolver:
         as_id = generate_id("AS-")
         now = utc_now()
         source = self.events.register_source("assertion_resolver", "Assertion Resolver", "master-os-assertions")
-        event = self.events.record_event(
+        event = self.commands.emit(
             event_type="assertion.recorded",
             source_id=source.id,
             payload={
@@ -54,7 +55,6 @@ class AssertionResolver:
                 "created_at": now,
             },
         )
-        apply_event(self.db, event)
 
         resolved = self.db.fetchone("SELECT * FROM assertions WHERE id = ?", (as_id,))
         if not resolved:
@@ -77,8 +77,8 @@ class AssertionResolver:
     def materialize_field(self, subject_type: str, subject_id: str, field: str) -> None:
         """Re-materialize a resolved field without creating new history.
 
-        Normal writes already materialize inside ``apply_event``. This helper is
-        retained for repair/administrative use.
+        Normal writes already materialize inside the reducer. This helper is retained
+        for repair/administrative use and intentionally creates no new history.
         """
         resolved = self.resolve_field(subject_type, subject_id, field)
         if not resolved:
