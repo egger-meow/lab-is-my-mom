@@ -11,6 +11,7 @@ from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
 from master_os.core.models import generate_id, utc_now
 from master_os.core.reducer import apply_event
+from master_os.lab.cadence import occurrence_id, next_weekly_occurrence, resolved_weekly_spec
 from master_os.lab.protocol import create_default_lab_schedules
 
 
@@ -48,15 +49,7 @@ class SchedulerEngine:
         }
 
     def _ensure_event_backed_schedules(self) -> None:
-        """Seed defaults, backfill legacy rows, and apply narrow built-in migrations.
-
-        Older Master OS builds inserted schedules directly. On first startup after
-        this migration, each existing row is captured once as ``schedule.created``
-        so ``rebuild-state`` cannot erase user-visible scheduler configuration.
-
-        Built-in migrations are intentionally narrow. We only rewrite an exact
-        historical default shape, never an arbitrary user-customized schedule.
-        """
+        """Seed defaults, backfill legacy rows, and apply narrow built-in migrations."""
         source = self.events.register_source("scheduler", "Master Scheduler", "master-os-scheduler")
         existing = self.db.fetchall("SELECT * FROM schedules ORDER BY created_at ASC")
 
@@ -110,10 +103,7 @@ class SchedulerEngine:
         ):
             return
 
-        new_default = next(
-            spec for spec in create_default_lab_schedules()
-            if spec["name"] == _ADVISOR_PREP_NAME
-        )
+        new_default = next(spec for spec in create_default_lab_schedules() if spec["name"] == _ADVISOR_PREP_NAME)
         payload = self._schedule_payload_from_row(row)
         payload["trigger_type"] = new_default["trigger_type"]
         payload["trigger_spec"] = new_default["trigger_spec"]
@@ -156,36 +146,54 @@ class SchedulerEngine:
         return due
 
     def _relative_meeting_due(self, row: Any, current: datetime) -> Optional[dict[str, Any]]:
+        """Resolve the next real meeting from weekly cadence plus rare explicit meetings."""
         spec = json.loads(row["trigger_spec_json"])
         meeting_kind = str(spec.get("meeting_kind") or "").strip()
         if not meeting_kind:
             return None
 
-        meeting = self.db.fetchone(
+        candidates: list[tuple[datetime, dict[str, Any]]] = []
+
+        # One-off / legacy explicit meetings remain supported.  The normal advisor
+        # meeting no longer needs a materialized row every week.
+        explicit = self.db.fetchone(
             """SELECT * FROM meetings
-               WHERE kind = ? AND status = 'scheduled' AND scheduled_at > ?
+               WHERE kind IN (?, ?) AND status = 'scheduled' AND scheduled_at > ?
                ORDER BY scheduled_at ASC LIMIT 1""",
-            (meeting_kind, current.isoformat()),
+            (meeting_kind, f"{meeting_kind}_adhoc", current.isoformat()),
         )
-        if not meeting:
+        if explicit:
+            explicit_at = self._parse_time(explicit["scheduled_at"])
+            candidates.append((explicit_at, {
+                "meeting_id": explicit["id"],
+                "meeting_kind": explicit["kind"],
+                "meeting_title": explicit["title"],
+                "scheduled_at": explicit["scheduled_at"],
+                "recurring": False,
+            }))
+
+        if meeting_kind == "advisor":
+            weekly = resolved_weekly_spec(self.db, "advisor")
+            if weekly:
+                occurrence = next_weekly_occurrence(weekly, current)
+                candidates.append((occurrence, {
+                    "meeting_id": occurrence_id("advisor", occurrence, weekly),
+                    "meeting_kind": "advisor",
+                    "meeting_title": "Weekly Advisor Meeting",
+                    "scheduled_at": occurrence.isoformat(),
+                    "recurring": True,
+                    "weekly_spec": weekly,
+                }))
+
+        if not candidates:
             return None
 
-        meeting_at = self._parse_time(meeting["scheduled_at"])
+        meeting_at, context = min(candidates, key=lambda item: item[0])
         offset_minutes = int(spec.get("offset_minutes", 0))
         trigger_at = meeting_at + timedelta(minutes=offset_minutes)
         if current < trigger_at or self._already_ran(row, trigger_at):
             return None
-
-        return self._due_item(
-            row,
-            trigger_at,
-            {
-                "meeting_id": meeting["id"],
-                "meeting_kind": meeting["kind"],
-                "meeting_title": meeting["title"],
-                "scheduled_at": meeting["scheduled_at"],
-            },
-        )
+        return self._due_item(row, trigger_at, context)
 
     def _interval_due(self, row: Any, current: datetime) -> Optional[dict[str, Any]]:
         spec = json.loads(row["trigger_spec_json"])
