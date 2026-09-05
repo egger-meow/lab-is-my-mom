@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import threading
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,7 @@ from master_os.core.artifacts import ArtifactRegistry
 from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
 from master_os.core.reducer import apply_event
+from master_os.supervisor.bootstrap import build_supervisor
 
 
 def _create_task(db: MasterDatabase, task_id: str = "T-LEASE") -> None:
@@ -171,3 +173,68 @@ def test_active_agent_run_renews_heartbeat_while_executor_is_running(tmp_path: P
 
     assert not thread.is_alive()
     assert errors == []
+
+
+def test_supervisor_marks_stale_agent_run_interrupted_without_deleting_workspace(tmp_path: Path):
+    """Restart recovery frees stale leases but preserves worktree evidence for inspection."""
+    db = MasterDatabase(tmp_path / "master.db")
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    workspace = repo_root / ".master-os" / "worktrees" / "stale-run"
+    workspace.mkdir(parents=True)
+    sentinel = workspace / "KEEP_ME.txt"
+    sentinel.write_text("unfinished experiment evidence", encoding="utf-8")
+
+    try:
+        _create_task(db, "T-STALE")
+        events = EventStore(db)
+        source = events.register_source("agent_runner", "codex_runner", "runner-codex")
+        started = events.record_event(
+            "agent_run.started",
+            source.id,
+            {
+                "id": "RUN-STALE",
+                "agent_type": "codex",
+                "job_type": "implementation",
+                "task_id": "T-STALE",
+                "workspace": str(workspace),
+                "branch": "agent/t-stale",
+                "base_git_sha": "deadbeef",
+                "packet_artifact_id": None,
+            },
+            occurred_at="2026-09-05T00:00:00+00:00",
+        )
+        apply_event(db, started)
+        db.execute(
+            "UPDATE agent_runs SET heartbeat_at = ? WHERE id = ?",
+            ("2026-09-05T00:00:30+00:00", "RUN-STALE"),
+        )
+        db.commit()
+
+        supervisor = build_supervisor(
+            db,
+            repo_root,
+            env={"MASTER_OS_AGENT_STALE_SECONDS": "60"},
+        )
+        now = datetime(2026, 9, 5, 1, 0, 0, tzinfo=timezone.utc)
+        first = supervisor.run_once(now=now)
+
+        run = db.fetchone("SELECT * FROM agent_runs WHERE id = 'RUN-STALE'")
+        task = db.fetchone("SELECT * FROM tasks WHERE id = 'T-STALE'")
+        assert run["status"] == "interrupted"
+        assert run["finished_at"] is not None
+        assert task["status"] == "blocked"
+        assert sentinel.read_text(encoding="utf-8") == "unfinished experiment evidence"
+        assert any(r.get("run_id") == "RUN-STALE" for r in first.get("recoveries", []))
+        assert db.fetchone(
+            "SELECT COUNT(*) AS n FROM events WHERE event_type = 'agent_run.interrupted'"
+        )["n"] == 1
+
+        # Recovery is replay-safe. Another supervisor tick must not invent another interruption.
+        second = supervisor.run_once(now=now)
+        assert second.get("recoveries", []) == []
+        assert db.fetchone(
+            "SELECT COUNT(*) AS n FROM events WHERE event_type = 'agent_run.interrupted'"
+        )["n"] == 1
+    finally:
+        db.close()
