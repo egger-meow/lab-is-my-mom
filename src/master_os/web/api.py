@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -42,20 +41,17 @@ def create_app(
     repo_root: Path,
     agent_executors: Optional[dict[str, AgentExecutor]] = None,
 ) -> FastAPI:
-    """Create the local cockpit API.
+    """Create the same-origin local cockpit API.
+
+    Master OS intentionally does not enable permissive CORS. The UI is served by
+    the same process, and remote access should use Tailscale Serve to proxy the
+    loopback service rather than exposing a cross-origin mutation API.
 
     Production does not contain a demo executor. Real agent adapters are injected
     explicitly. Tests may inject deterministic executors without contaminating
     production behavior with fabricated metrics/findings.
     """
     app = FastAPI(title="Master OS Cockpit", version="0.2.0")
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
 
     executors = agent_executors or {}
     events = EventStore(db)
@@ -189,11 +185,7 @@ def create_app(
             )
 
         ws_path = repo_root / ".master-os" / "worktrees" / f"auto-{task_id.lower()}"
-        packet = packet_builder.build_packet(
-            task_id,
-            workspace_path=str(ws_path),
-            repo_name=repo_root.name,
-        )
+        packet = packet_builder.build_packet(task_id, workspace_path=str(ws_path), repo_name=repo_root.name)
         return runtime.dispatch_autonomous_job(packet, agent_type=agent_type, executor_func=executor)
 
     static_dir = Path(__file__).parent / "static"
