@@ -99,6 +99,20 @@
       border-radius: 6px;
       font-size: 0.85rem;
     }
+    .subsection-title {
+      margin: 1rem 0 0.6rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-bright);
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .recovery-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.55rem; }
+    .recovery-meta { color: var(--text-muted); font-size: 0.78rem; margin-top: 0.25rem; word-break: break-all; }
     .alert-box {
       background: rgba(210, 153, 34, 0.15);
       border: 1px solid var(--warning);
@@ -137,7 +151,7 @@
   <div class="container">
     <header>
       <div class="brand">
-        lab-is-my-mom <span>Master OS v0.2</span>
+        lab-is-my-mom <span>Master OS v0.3</span>
       </div>
       <div class="header-actions">
         <button onclick="refreshData()">重新整頓</button>
@@ -182,6 +196,13 @@
         </div>
         <div id="approvals-container" class="item-list">
           <div class="item-row" style="color: var(--text-muted);">目前無待審批項目，AI 可自主推進。</div>
+        </div>
+        <div class="subsection-title">
+          <span>中斷 Agent · 保留現場</span>
+          <span id="interrupted-count-badge" class="badge badge-high">0 個待處理</span>
+        </div>
+        <div id="interrupted-runs-container" class="item-list">
+          <div class="item-row" style="color: var(--text-muted);">目前沒有中斷中的 Agent Run。</div>
         </div>
       </div>
     </div>
@@ -228,10 +249,19 @@
   <script>
     let currentFocusTaskId = null;
 
+    async function readJsonResponse(res) {
+      let body = {};
+      try { body = await res.json(); } catch (_) {}
+      if (!res.ok) {
+        throw new Error(body.detail || `HTTP ${res.status}`);
+      }
+      return body;
+    }
+
     async function refreshData() {
       try {
         const res = await fetch('/api/cockpit');
-        const data = await res.json();
+        const data = await readJsonResponse(res);
 
         // 1. What matters now
         const now = data.what_matters_now;
@@ -289,6 +319,8 @@
           });
         }
 
+        renderInterruptedRuns(data.what_needs_me.interrupted_runs || []);
+
         // 3. What changed (Findings)
         const findList = document.getElementById('findings-list');
         findList.innerHTML = '';
@@ -324,12 +356,96 @@
       }
     }
 
+    function renderInterruptedRuns(runs) {
+      const container = document.getElementById('interrupted-runs-container');
+      const badge = document.getElementById('interrupted-count-badge');
+      badge.textContent = `${runs.length} 個待處理`;
+      container.innerHTML = '';
+
+      if (runs.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'item-row';
+        empty.style.color = 'var(--text-muted)';
+        empty.textContent = '目前沒有中斷中的 Agent Run。';
+        container.appendChild(empty);
+        return;
+      }
+
+      runs.forEach(run => {
+        const div = document.createElement('div');
+        div.className = 'item-row';
+
+        const title = document.createElement('div');
+        title.style.fontWeight = '700';
+        title.style.color = 'var(--text-bright)';
+        title.textContent = `${run.id} · ${run.task_title || run.task_id || '未知 Task'}`;
+        div.appendChild(title);
+
+        const meta = document.createElement('div');
+        meta.className = 'recovery-meta';
+        meta.textContent = `建議: ${run.recommended_action === 'resume' ? '續跑原現場' : '乾淨重跑'} · Worktree: ${run.workspace_exists ? '仍在' : '遺失'} · ${run.workspace || ''}`;
+        div.appendChild(meta);
+
+        const actions = document.createElement('div');
+        actions.className = 'recovery-actions';
+        actions.appendChild(recoveryButton('查看現場', () => inspectInterruptedRun(run.id)));
+        actions.appendChild(recoveryButton('繼續原 Worktree', () => recoverInterruptedRun(run.id, 'resume'), 'primary'));
+        actions.appendChild(recoveryButton('乾淨重跑', () => recoverInterruptedRun(run.id, 'retry_fresh')));
+        actions.appendChild(recoveryButton('放棄這次 Run', () => recoverInterruptedRun(run.id, 'abandon'), 'danger'));
+        div.appendChild(actions);
+        container.appendChild(div);
+      });
+    }
+
+    function recoveryButton(label, handler, className = '') {
+      const button = document.createElement('button');
+      button.textContent = label;
+      if (className) button.className = className;
+      button.addEventListener('click', handler);
+      return button;
+    }
+
+    async function inspectInterruptedRun(runId) {
+      try {
+        const res = await fetch(`/api/agent-runs/${runId}/inspect`);
+        const data = await readJsonResponse(res);
+        const files = (data.workspace_files || []).slice(0, 80);
+        const fileText = files.length ? files.join('\n') : '(沒有可列出的檔案)';
+        alert(`Run: ${runId}\nWorktree: ${data.run.workspace || '(none)'}\n建議: ${data.recommended_action}\n\n現場檔案:\n${fileText}`);
+      } catch (e) {
+        alert('讀取中斷現場失敗：' + e.message);
+      }
+    }
+
+    async function recoverInterruptedRun(runId, action) {
+      const labels = {
+        resume: '繼續原 Worktree',
+        retry_fresh: '乾淨重跑',
+        abandon: '放棄這次 Run',
+      };
+      if (!confirm(`${labels[action] || action}：${runId}？\n原本的 Worktree 不會被系統自動刪除。`)) return;
+
+      try {
+        const res = await fetch(`/api/agent-runs/${runId}/recover`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action }),
+        });
+        const result = await readJsonResponse(res);
+        const newRun = result.new_run_id ? `\n新 Run: ${result.new_run_id}` : '';
+        alert(`${labels[action] || action} 已受理。\n狀態: ${result.status}${newRun}`);
+        refreshData();
+      } catch (e) {
+        alert('Recovery 失敗：' + e.message);
+      }
+    }
+
     async function dispatchFocusTask() {
       if (!currentFocusTaskId) return;
       try {
         const res = await fetch(`/api/tasks/${currentFocusTaskId}/dispatch`, { method: 'POST' });
-        const result = await res.json();
-        alert(`Codex 在 Worktree 中執行完成！\nRun ID: ${result.run_id}\n狀態: ${result.status}\n產出 Artifacts: ${result.artifacts.join(', ')}`);
+        const result = await readJsonResponse(res);
+        alert(`Codex 在 Worktree 中執行完成！\nRun ID: ${result.run_id}\n狀態: ${result.status}\n產出 Artifacts: ${(result.artifacts || []).join(', ')}`);
         refreshData();
       } catch (e) {
         alert('派工失敗：' + e.message);
@@ -341,7 +457,7 @@
       if (!mid) return;
       try {
         const res = await fetch(`/api/meetings/${mid}/pack`, { method: 'POST' });
-        const data = await res.json();
+        const data = await readJsonResponse(res);
         alert(`Meeting Pack 已成功產出並存證至 Artifact Registry！\n\n大綱預覽：\n` + data.meeting_pack.substring(0, 300) + '...');
         refreshData();
       } catch (e) {
@@ -351,11 +467,12 @@
 
     async function decideApproval(apId, decision) {
       try {
-        await fetch(`/api/approvals/${apId}/decide`, {
+        const res = await fetch(`/api/approvals/${apId}/decide`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: decision }),
         });
+        await readJsonResponse(res);
         refreshData();
       } catch (e) {
         alert('操作失敗：' + e.message);
@@ -377,13 +494,14 @@
         return;
       }
       try {
-        await fetch('/api/meetings/ingest', {
+        const res = await fetch('/api/meetings/ingest', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ meeting_id: mid, transcript_text: text }),
         });
+        await readJsonResponse(res);
         closeModal('ingest-modal');
-        alert('逐字稿已成功匯入！已萃取 Commitments、Obligations、Tasks 並產出 Slack 回報草稿。');
+        alert('逐字稿已成功匯入；高影響語意會進 Needs You，而不是被 Agent 自動寫成研究真相。');
         refreshData();
       } catch (e) {
         alert('匯入失敗：' + e.message);
