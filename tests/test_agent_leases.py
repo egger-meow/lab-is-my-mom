@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -98,3 +99,75 @@ def test_second_dispatch_for_same_task_is_rejected_while_first_run_is_active(tmp
         release.set()
         db2.close()
         db1.close()
+
+
+def test_active_agent_run_renews_heartbeat_while_executor_is_running(tmp_path: Path):
+    """A live long-running executor must keep proving liveness in SQLite."""
+    db_path = tmp_path / "master.db"
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+
+    writer_db = MasterDatabase(db_path)
+    _create_task(writer_db, "T-HEARTBEAT")
+    observer_db = MasterDatabase(db_path)
+    runtime = _runtime(writer_db, repo_root)
+    # Production defaults can be conservative. The test accelerates the same loop.
+    runtime.heartbeat_interval_seconds = 0.03
+
+    packet = WorkPacketBuilder(writer_db).build_packet(
+        "T-HEARTBEAT",
+        workspace_path=str(repo_root / ".master-os" / "worktrees" / "heartbeat"),
+        branch="agent/t-heartbeat",
+    )
+    entered = threading.Event()
+    release = threading.Event()
+    errors: list[BaseException] = []
+
+    def slow_executor(_workspace: Path, _packet):
+        entered.set()
+        assert release.wait(timeout=5), "test did not release heartbeat executor"
+        return {"exit_code": 0, "artifacts": [], "findings": []}
+
+    def run_agent() -> None:
+        try:
+            runtime.dispatch_autonomous_job(packet, executor_func=slow_executor)
+        except BaseException as exc:
+            errors.append(exc)
+
+    thread = threading.Thread(target=run_agent, daemon=True)
+    thread.start()
+
+    try:
+        assert entered.wait(timeout=5), "agent never entered executor"
+
+        deadline = time.monotonic() + 1.0
+        first_heartbeat = None
+        while time.monotonic() < deadline:
+            row = observer_db.fetchone(
+                "SELECT heartbeat_at FROM agent_runs WHERE task_id = 'T-HEARTBEAT' AND status = 'running'"
+            )
+            if row and row["heartbeat_at"]:
+                first_heartbeat = row["heartbeat_at"]
+                break
+            time.sleep(0.01)
+        assert first_heartbeat is not None, "running agent never published an initial heartbeat"
+
+        deadline = time.monotonic() + 1.0
+        renewed = None
+        while time.monotonic() < deadline:
+            row = observer_db.fetchone(
+                "SELECT heartbeat_at FROM agent_runs WHERE task_id = 'T-HEARTBEAT' AND status = 'running'"
+            )
+            if row and row["heartbeat_at"] and row["heartbeat_at"] != first_heartbeat:
+                renewed = row["heartbeat_at"]
+                break
+            time.sleep(0.01)
+        assert renewed is not None, "heartbeat timestamp never advanced while executor was still running"
+    finally:
+        release.set()
+        thread.join(timeout=5)
+        observer_db.close()
+        writer_db.close()
+
+    assert not thread.is_alive()
+    assert errors == []
