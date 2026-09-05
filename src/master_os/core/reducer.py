@@ -8,6 +8,50 @@ from master_os.core.database import MasterDatabase
 from master_os.core.models import Event, utc_now
 
 
+_ASSERTION_TABLES = {
+    "meeting": "meetings",
+    "task": "tasks",
+    "obligation": "obligations",
+    "experiment": "experiments",
+    "decision": "decisions",
+    "finding": "findings",
+}
+
+
+def _materialize_assertion_field(db: MasterDatabase, subject_type: str, subject_id: str, field: str, now: str) -> None:
+    """Materialize the highest-authority active assertion onto relational current state."""
+    table = _ASSERTION_TABLES.get(subject_type)
+    if not table:
+        return
+
+    columns = [r["name"] for r in db.fetchall(f"PRAGMA table_info({table})")]
+    if field not in columns:
+        return
+
+    row = db.fetchone(
+        """SELECT value_json FROM assertions
+           WHERE subject_type = ? AND subject_id = ? AND field = ? AND status = 'active'
+           ORDER BY authority DESC, confidence DESC, valid_from DESC, rowid DESC
+           LIMIT 1""",
+        (subject_type, subject_id, field),
+    )
+    if not row:
+        return
+
+    value = json.loads(row["value_json"])
+    if isinstance(value, (dict, list)):
+        value = json.dumps(value, ensure_ascii=False)
+
+    sql = f"UPDATE {table} SET {field} = ?"
+    params: list[Any] = [value]
+    if "updated_at" in columns:
+        sql += ", updated_at = ?"
+        params.append(now)
+    sql += " WHERE id = ?"
+    params.append(subject_id)
+    db.execute(sql, tuple(params))
+
+
 def apply_event(db: MasterDatabase, event: Event) -> None:
     """Apply a single canonical domain event to update materialized state."""
     etype = event.event_type
@@ -48,7 +92,7 @@ def apply_event(db: MasterDatabase, event: Event) -> None:
                severity=excluded.severity, due_at=excluded.due_at, updated_at=excluded.updated_at""",
             (oid, p["title"], p.get("description", ""), p.get("status", "pending"), p.get("severity", "normal"),
              p.get("due_at"), p.get("starts_at"), p.get("owner", "student"), p.get("meeting_id"),
-             event.id, rules_json, now, now)
+             p.get("source_event_id") or event.id, rules_json, now, now)
         )
 
     elif etype == "obligation.satisfied":
@@ -102,7 +146,7 @@ def apply_event(db: MasterDatabase, event: Event) -> None:
                                        validity_status, created_by_task_id, created_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(id) DO UPDATE SET status=excluded.status, validity_status=excluded.validity_status""",
-            (eid, p["title"], p.get("research_repo", "routing-research"), p.get("status", "planned"),
+            (eid, p["title"], p.get("research_repo", ""), p.get("status", "planned"),
              p.get("git_sha"), p.get("dataset_ref"), p.get("config_artifact_id"), p.get("compute_backend", "local"),
              p.get("remote_job_ref"), p.get("started_at"), p.get("validity_status", "under_review"),
              p.get("created_by_task_id"), now)
@@ -110,21 +154,36 @@ def apply_event(db: MasterDatabase, event: Event) -> None:
 
     elif etype == "experiment.finished":
         eid = p["id"]
-        db.execute(
-            """UPDATE experiments SET status = ?, finished_at = ?, validity_status = ? WHERE id = ?""",
-            (p.get("status", "completed"), now, p.get("validity_status", "valid"), eid)
-        )
+        # Process completion is not scientific validation. Preserve current validity unless
+        # a separate, explicit validity decision is supplied by an authoritative event.
+        if "validity_status" in p:
+            db.execute(
+                "UPDATE experiments SET status = ?, finished_at = ?, validity_status = ? WHERE id = ?",
+                (p.get("status", "completed"), now, p["validity_status"], eid),
+            )
+        else:
+            db.execute(
+                "UPDATE experiments SET status = ?, finished_at = ? WHERE id = ?",
+                (p.get("status", "completed"), now, eid),
+            )
 
     elif etype == "artifact.created":
         aid = p["id"]
         meta_json = json.dumps(p.get("metadata", {}), ensure_ascii=False)
+        if p.get("canonical", True):
+            db.execute(
+                "UPDATE artifacts SET canonical = 0 WHERE path = ? AND id <> ? AND canonical = 1",
+                (p["path"], aid),
+            )
         db.execute(
             """INSERT INTO artifacts (id, artifact_type, path, content_hash, canonical, git_sha,
                                      created_by_agent_run, created_by_experiment, metadata_json, created_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-               ON CONFLICT(id) DO UPDATE SET canonical=excluded.canonical""",
+               ON CONFLICT(id) DO UPDATE SET
+               canonical=excluded.canonical, metadata_json=excluded.metadata_json""",
             (aid, p["artifact_type"], p["path"], p["content_hash"], int(p.get("canonical", True)),
-             p.get("git_sha"), p.get("created_by_agent_run"), p.get("created_by_experiment"), meta_json, now)
+             p.get("git_sha"), p.get("created_by_agent_run"), p.get("created_by_experiment"), meta_json,
+             p.get("created_at", now))
         )
 
     elif etype == "finding.recorded":
@@ -187,7 +246,8 @@ def apply_event(db: MasterDatabase, event: Event) -> None:
             """INSERT INTO relations (id, from_type, from_id, relation, to_type, to_id, status, source_event_id, created_at)
                VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)
                ON CONFLICT(id) DO UPDATE SET status='active'""",
-            (rid, p["from_type"], p["from_id"], p["relation"], p["to_type"], p["to_id"], event.id, now)
+            (rid, p["from_type"], p["from_id"], p["relation"], p["to_type"], p["to_id"],
+             p.get("source_event_id") or event.id, p.get("created_at", now))
         )
 
     elif etype == "relation.invalidated":
@@ -197,14 +257,22 @@ def apply_event(db: MasterDatabase, event: Event) -> None:
     elif etype == "assertion.recorded":
         as_id = p["id"]
         val_json = json.dumps(p["value"], ensure_ascii=False)
+        supersedes_id = p.get("supersedes_id")
+        if supersedes_id:
+            db.execute(
+                "UPDATE assertions SET status = 'superseded', valid_until = ? WHERE id = ?",
+                (p.get("valid_from", now), supersedes_id),
+            )
         db.execute(
             """INSERT INTO assertions (id, subject_type, subject_id, field, value_json, authority,
-                                      confidence, source_event_id, valid_from, status, supersedes_id, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+                                      confidence, source_event_id, valid_from, valid_until, status, supersedes_id, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
                ON CONFLICT(id) DO UPDATE SET status='active', value_json=excluded.value_json""",
             (as_id, p["subject_type"], p["subject_id"], p["field"], val_json, p.get("authority", 200),
-             p.get("confidence", 1.0), event.id, now, p.get("supersedes_id"), now)
+             p.get("confidence", 1.0), p.get("source_event_id") or event.id, p.get("valid_from", now),
+             p.get("valid_until"), supersedes_id, p.get("created_at", now))
         )
+        _materialize_assertion_field(db, p["subject_type"], p["subject_id"], p["field"], now)
 
     elif etype == "lab_resource.updated":
         rid = p["id"]
@@ -228,13 +296,9 @@ def apply_event(db: MasterDatabase, event: Event) -> None:
 
 
 def rebuild_state(db: MasterDatabase) -> int:
-    """Deterministic state rebuild from canonical event history.
-    
-    Returns count of replayed events.
-    """
+    """Deterministically rebuild materialized state from canonical event history."""
     db.clear_materialized_state()
-    events_cursor = db.execute("SELECT * FROM events ORDER BY occurred_at ASC, rowid ASC")
-    rows = events_cursor.fetchall()
+    rows = db.fetchall("SELECT * FROM events ORDER BY occurred_at ASC, rowid ASC")
 
     replayed = 0
     for row in rows:
