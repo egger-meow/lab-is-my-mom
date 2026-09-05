@@ -9,6 +9,7 @@ from typing import Any, Callable, Optional
 
 from master_os.agents.packet import AgentJobPacket
 from master_os.core.artifacts import ArtifactRegistry
+from master_os.core.commands import DomainCommandBus
 from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
 from master_os.core.models import generate_id
@@ -31,11 +32,13 @@ class AgentRuntime:
     ) -> None:
         self.db = db
         self.events = event_store
+        self.commands = DomainCommandBus(db, event_store)
         self.artifacts = artifact_registry
         self.repo_root = repo_root.resolve()
         self.worktrees_dir = self.repo_root / ".master-os" / "worktrees"
         self.worktrees_dir.mkdir(parents=True, exist_ok=True)
         self.heartbeat_interval_seconds = 30.0
+        self.source = self.events.register_source("agent_runner", "Agent Runner", "master-os-agent-runner")
 
     def _prepare_workspace(self, packet: AgentJobPacket) -> Path:
         """Prepare a fresh workspace without silently degrading isolation."""
@@ -65,9 +68,6 @@ class AgentRuntime:
         path = Path(packet.workspace_path).resolve()
         if not path.exists() or not path.is_dir():
             raise RuntimeError(f"Interrupted agent workspace no longer exists: {path}")
-        # Empty is still a valid interrupted worktree, but it must already exist. We do
-        # not recreate or reset anything here because the point of resume is evidence
-        # preservation, not a disguised fresh retry.
         return path
 
     def _claim_task_run(
@@ -76,21 +76,37 @@ class AgentRuntime:
         packet: AgentJobPacket,
         agent_type: str,
         base_sha: Optional[str],
+        *,
+        require_queued: bool = False,
     ) -> None:
-        """Atomically claim the task by materializing one active run.
-
-        ``BEGIN IMMEDIATE`` serializes claim attempts across independent SQLite
-        connections/processes. The canonical start event and materialized run row are
-        committed together, so a rejected duplicate cannot leave a phantom event.
-        """
+        """Atomically claim a direct or prequeued run before execution."""
+        source = self.events.register_source(
+            "agent_runner", f"{agent_type}_runner", f"runner-{agent_type}"
+        )
         try:
             self.db.execute("BEGIN IMMEDIATE")
-            active = self.db.fetchone(
-                """SELECT id FROM agent_runs
-                   WHERE task_id = ? AND status = 'running'
-                   ORDER BY started_at DESC LIMIT 1""",
-                (packet.task_id,),
-            )
+            packet_artifact_id: Optional[str] = None
+            if require_queued:
+                queued = self.db.fetchone("SELECT * FROM agent_runs WHERE id = ?", (run_id,))
+                if not queued or queued["status"] != "queued":
+                    state = queued["status"] if queued else "missing"
+                    raise RuntimeError(f"Queued run {run_id} cannot be claimed; current state is {state}")
+                if queued["task_id"] != packet.task_id:
+                    raise RuntimeError(f"Queued run {run_id} task identity no longer matches its packet")
+                packet_artifact_id = queued["packet_artifact_id"]
+                active = self.db.fetchone(
+                    """SELECT id FROM agent_runs
+                       WHERE task_id = ? AND id <> ? AND status = 'running'
+                       ORDER BY started_at DESC LIMIT 1""",
+                    (packet.task_id, run_id),
+                )
+            else:
+                active = self.db.fetchone(
+                    """SELECT id FROM agent_runs
+                       WHERE task_id = ? AND status IN ('queued', 'running')
+                       ORDER BY created_at DESC LIMIT 1""",
+                    (packet.task_id,),
+                )
             if active:
                 raise RuntimeError(
                     f"Task {packet.task_id} already has active agent run {active['id']}; lease is held"
@@ -98,9 +114,7 @@ class AgentRuntime:
 
             start_event = self.events.record_event(
                 event_type="agent_run.started",
-                source_id=self.events.register_source(
-                    "agent_runner", f"{agent_type}_runner", f"runner-{agent_type}"
-                ).id,
+                source_id=source.id,
                 payload={
                     "id": run_id,
                     "agent_type": agent_type,
@@ -109,11 +123,20 @@ class AgentRuntime:
                     "workspace": str(Path(packet.workspace_path).resolve()),
                     "branch": packet.branch,
                     "base_git_sha": base_sha,
-                    "packet_artifact_id": None,
+                    "packet_artifact_id": packet_artifact_id,
                 },
+                dedup_key=f"agent-run-started:{run_id}",
                 commit=False,
             )
             apply_event(self.db, start_event, commit=False)
+            task_event = self.events.record_event(
+                "task.status_changed",
+                source.id,
+                {"id": packet.task_id, "status": "in_progress"},
+                dedup_key=f"agent-run-task-started:{run_id}",
+                commit=False,
+            )
+            apply_event(self.db, task_event, commit=False)
             self.db.commit()
         except Exception:
             self.db.rollback()
@@ -135,8 +158,6 @@ class AgentRuntime:
         if self.heartbeat_interval_seconds <= 0:
             raise ValueError("heartbeat_interval_seconds must be positive")
 
-        # Publish immediately so recovery never sees a freshly started run with an
-        # ambiguous NULL heartbeat.
         self._publish_heartbeat(self.db, run_id)
         stop_event = threading.Event()
 
@@ -164,28 +185,59 @@ class AgentRuntime:
         *,
         resume_existing_workspace: bool = False,
     ) -> dict[str, Any]:
-        """Execute an authorized job and record only observed results.
-
-        ``resume_existing_workspace`` is deliberately opt-in and intended only for
-        an explicit interrupted-run recovery decision. Ordinary dispatch always
-        demands a fresh isolated workspace.
-        """
+        """Execute an immediately dispatched authorized job."""
         if executor_func is None:
             raise RuntimeError(f"No real executor configured for agent type: {agent_type}")
 
-        source = self.events.register_source("agent_runner", f"{agent_type}_runner", f"runner-{agent_type}")
         run_id = generate_id("RUN-")
         workspace = Path(packet.workspace_path).resolve()
         base_sha = self._get_head_sha(self.repo_root)
-
-        # Validate explicit resume evidence before taking the task lease. This avoids
-        # creating a phantom running row when the interrupted worktree vanished.
         if resume_existing_workspace:
             workspace = self._resume_workspace(packet)
 
-        # Claim before touching a fresh worktree. A competing process sees the
-        # committed running row and is rejected instead of creating a second run.
         self._claim_task_run(run_id, packet, agent_type, base_sha)
+        return self._execute_claimed_job(
+            run_id,
+            packet,
+            agent_type,
+            executor_func,
+            resume_existing_workspace=resume_existing_workspace,
+            workspace=workspace,
+        )
+
+    def execute_queued_job(
+        self,
+        run_id: str,
+        packet: AgentJobPacket,
+        *,
+        agent_type: str = "codex",
+        executor_func: Optional[Callable[[Path, AgentJobPacket], dict[str, Any]]] = None,
+    ) -> dict[str, Any]:
+        """Claim and execute a durable queued run using its existing run identity."""
+        if executor_func is None:
+            raise RuntimeError(f"No real executor configured for agent type: {agent_type}")
+        base_sha = self._get_head_sha(self.repo_root)
+        self._claim_task_run(run_id, packet, agent_type, base_sha, require_queued=True)
+        return self._execute_claimed_job(
+            run_id,
+            packet,
+            agent_type,
+            executor_func,
+            resume_existing_workspace=False,
+            workspace=Path(packet.workspace_path).resolve(),
+        )
+
+    def _execute_claimed_job(
+        self,
+        run_id: str,
+        packet: AgentJobPacket,
+        agent_type: str,
+        executor_func: Callable[[Path, AgentJobPacket], dict[str, Any]],
+        *,
+        resume_existing_workspace: bool,
+        workspace: Path,
+    ) -> dict[str, Any]:
+        source = self.events.register_source("agent_runner", f"{agent_type}_runner", f"runner-{agent_type}")
         heartbeat_stop, heartbeat_thread = self._start_heartbeat(run_id)
 
         exit_code = 1
@@ -207,8 +259,6 @@ class AgentRuntime:
                 error_msg = f"Missing expected artifacts: {', '.join(missing)}"
 
             run_status = "completed" if exit_code == 0 else "failed"
-            # Task model has no 'failed' status. A failed/unfinished agent run leaves
-            # work blocked for repair or user inspection rather than inventing a state.
             task_status = "completed" if exit_code == 0 else "blocked"
         except Exception as exc:
             exit_code = 1
@@ -232,11 +282,10 @@ class AgentRuntime:
             )
             registered_artifact_ids.append(artifact.id)
 
-        # Agent findings are always candidates. They are not silently validated.
         for finding in findings:
             if not finding.get("statement"):
                 continue
-            find_event = self.events.record_event(
+            self.commands.emit(
                 event_type="finding.recorded",
                 source_id=source.id,
                 payload={
@@ -246,28 +295,17 @@ class AgentRuntime:
                     "confidence": finding.get("confidence", 0.5),
                 },
             )
-            apply_event(self.db, find_event)
 
-        complete_event = self.events.record_event(
-            event_type="agent_run.completed",
-            source_id=source.id,
-            payload={
-                "id": run_id,
-                "status": run_status,
-                "exit_code": exit_code,
-                "result_git_sha": self._get_head_sha(workspace),
-                "result_artifact_id": registered_artifact_ids[0] if registered_artifact_ids else None,
-                "failure_id": None,
-            },
+        self._finalize_run(
+            run_id,
+            packet.task_id,
+            source.id,
+            run_status=run_status,
+            task_status=task_status,
+            exit_code=exit_code,
+            result_git_sha=self._get_head_sha(workspace),
+            result_artifact_id=registered_artifact_ids[0] if registered_artifact_ids else None,
         )
-        apply_event(self.db, complete_event)
-
-        task_event = self.events.record_event(
-            event_type="task.status_changed",
-            source_id=source.id,
-            payload={"id": packet.task_id, "status": task_status},
-        )
-        apply_event(self.db, task_event)
 
         return {
             "run_id": run_id,
@@ -277,6 +315,49 @@ class AgentRuntime:
             "error": error_msg,
             "artifacts": registered_artifact_ids,
         }
+
+    def _finalize_run(
+        self,
+        run_id: str,
+        task_id: str,
+        source_id: str,
+        *,
+        run_status: str,
+        task_status: str,
+        exit_code: int,
+        result_git_sha: Optional[str],
+        result_artifact_id: Optional[str],
+    ) -> None:
+        """Commit run terminal state and task state in one transaction."""
+        try:
+            self.db.execute("BEGIN IMMEDIATE")
+            complete_event = self.events.record_event(
+                event_type="agent_run.completed",
+                source_id=source_id,
+                payload={
+                    "id": run_id,
+                    "status": run_status,
+                    "exit_code": exit_code,
+                    "result_git_sha": result_git_sha,
+                    "result_artifact_id": result_artifact_id,
+                    "failure_id": None,
+                },
+                dedup_key=f"agent-run-completed:{run_id}",
+                commit=False,
+            )
+            apply_event(self.db, complete_event, commit=False)
+            task_event = self.events.record_event(
+                event_type="task.status_changed",
+                source_id=source_id,
+                payload={"id": task_id, "status": task_status},
+                dedup_key=f"agent-run-task-final:{run_id}:{task_status}",
+                commit=False,
+            )
+            apply_event(self.db, task_event, commit=False)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
 
     @staticmethod
     def _get_head_sha(path: Path) -> Optional[str]:
