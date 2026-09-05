@@ -19,6 +19,7 @@ from master_os.supervisor.runtime import MasterSupervisor
 
 SlackCollectorFactory = Callable[..., Any]
 _ADVISOR_PREP_NAME = "Advisor Pre-Meeting Readiness & Pack"
+_POST_MEETING_SLACK_NAME = "Advisor Post-Meeting Digest to Slack"
 
 
 def parse_slack_conversations(value: str) -> list[tuple[str, str]]:
@@ -90,19 +91,37 @@ def build_supervisor(
     scheduler = SchedulerEngine(db, events, MasterCritic(db))
 
     def handle_meeting_routine(item: dict[str, Any]) -> dict[str, Any]:
-        if item.get("name") != _ADVISOR_PREP_NAME:
-            raise RuntimeError(
-                f"No evidence-backed runtime handler is implemented for meeting routine {item.get('name')!r}"
-            )
-        meeting_id = str((item.get("context") or {}).get("meeting_id") or "").strip()
-        if not meeting_id:
-            raise RuntimeError("Advisor meeting-pack routine is missing meeting_id context")
-        meeting_agent.generate_meeting_pack(meeting_id)
-        return {
-            "status": "ok",
-            "meeting_id": meeting_id,
-            "artifact_path": str(repo_root / "data" / "meeting_packs" / f"{meeting_id}_pack.md"),
-        }
+        name = item.get("name")
+        context = item.get("context") or {}
+
+        if name == _ADVISOR_PREP_NAME:
+            meeting_id = str(context.get("meeting_id") or "").strip()
+            if not meeting_id:
+                raise RuntimeError("Advisor meeting-pack routine is missing meeting_id context")
+            meeting_agent.generate_meeting_pack(meeting_id)
+            return {
+                "status": "ok",
+                "meeting_id": meeting_id,
+                "artifact_path": str(repo_root / "data" / "meeting_packs" / f"{meeting_id}_pack.md"),
+            }
+
+        if name == _POST_MEETING_SLACK_NAME:
+            if context.get("event_type") != "meeting.completed":
+                raise RuntimeError("Post-meeting Slack routine requires meeting.completed event context")
+            event_payload = context.get("event_payload") or {}
+            meeting_id = str(event_payload.get("id") or "").strip()
+            if not meeting_id:
+                raise RuntimeError("Post-meeting Slack routine is missing meeting_id in event payload")
+            approval_id = meeting_agent.create_post_meeting_slack_approval_from_evidence(meeting_id)
+            return {
+                "status": "ok",
+                "meeting_id": meeting_id,
+                "approval_id": approval_id,
+            }
+
+        raise RuntimeError(
+            f"No evidence-backed runtime handler is implemented for meeting routine {name!r}"
+        )
 
     source_syncers: dict[str, Callable[[], dict[str, Any]]] = {}
     if token:
