@@ -1,4 +1,5 @@
 """Tests for Master OS Web Cockpit API and endpoints."""
+import time
 from pathlib import Path
 
 import pytest
@@ -85,6 +86,7 @@ def test_end_to_end_web_flow_uses_confirmed_state_and_injected_executor(api_clie
             "priority": "critical",
             "agentability": "autonomous",
             "preferred_agent": "codex",
+            "acceptance_criteria": ["test executor produced reports/summary.md"],
         },
         created_by="user_explicit",
     )
@@ -93,11 +95,22 @@ def test_end_to_end_web_flow_uses_confirmed_state_and_injected_executor(api_clie
     cockpit = client.get("/api/cockpit").json()
     assert cockpit["what_matters_now"]["focus_action"]["task_id"] == "T-web-e2e"
 
-    # 4. Dispatch uses the injected test executor, never a production demo result.
+    # 4. Web request only durably queues/submits work. It must not wait for Codex.
     dispatch = client.post("/api/tasks/T-web-e2e/dispatch")
-    assert dispatch.status_code == 200
-    assert dispatch.json()["status"] == "completed"
-    assert dispatch.json()["artifacts"]
+    assert dispatch.status_code == 202
+    dispatch_data = dispatch.json()
+    assert dispatch_data["status"] == "queued"
+    assert dispatch_data["run_id"].startswith("RUN-")
+
+    deadline = time.monotonic() + 2
+    while time.monotonic() < deadline:
+        row = db.fetchone("SELECT status FROM agent_runs WHERE id = ?", (dispatch_data["run_id"],))
+        if row and row["status"] == "completed":
+            break
+        time.sleep(0.01)
+    row = db.fetchone("SELECT status, result_artifact_id FROM agent_runs WHERE id = ?", (dispatch_data["run_id"],))
+    assert row["status"] == "completed"
+    assert row["result_artifact_id"] is not None
 
     # 5. Meeting pack is generated from stored state only.
     pack = client.post("/api/meetings/M-20260917/pack")
