@@ -13,6 +13,7 @@ dependencies = [
 [project.scripts]
 research-os = "research_os.cli:main"
 master-os = "master_os.cli:main"
+master-os-setup = "master_os.setup_cli:main"
 
 [build-system]
 requires = ["hatchling"]
