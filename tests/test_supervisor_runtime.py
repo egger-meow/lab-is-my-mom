@@ -10,11 +10,21 @@ from master_os.scheduler.engine import SchedulerEngine
 from master_os.supervisor.runtime import MasterSupervisor
 
 
+_ADVISOR_PREP = "Advisor Pre-Meeting Readiness & Pack"
+
+
+def _isolate_advisor_schedule(db: MasterDatabase) -> None:
+    """Keep these unit tests focused on one due occurrence."""
+    db.execute("UPDATE schedules SET enabled = CASE WHEN name = ? THEN 1 ELSE 0 END", (_ADVISOR_PREP,))
+    db.commit()
+
+
 def test_supervisor_tick_syncs_sources_executes_due_work_and_heartbeats(tmp_path: Path):
     db = MasterDatabase(tmp_path / "master.db")
     try:
         events = EventStore(db)
         scheduler = SchedulerEngine(db, events, MasterCritic(db))
+        _isolate_advisor_schedule(db)
         source = events.register_source("test", "test", "supervisor-meeting")
         meeting = events.record_event(
             "meeting.scheduled",
@@ -59,7 +69,7 @@ def test_supervisor_tick_syncs_sources_executes_due_work_and_heartbeats(tmp_path
         assert health["status"] == "ok"
         assert health["last_heartbeat"] == now.isoformat()
 
-        schedule = db.fetchone("SELECT * FROM schedules WHERE name='Advisor Pre-Meeting Readiness & Pack'")
+        schedule = db.fetchone("SELECT * FROM schedules WHERE name = ?", (_ADVISOR_PREP,))
         assert schedule["last_run_at"] == now.isoformat()
 
         second = supervisor.run_once(now)
@@ -75,6 +85,7 @@ def test_supervisor_does_not_acknowledge_failed_routine(tmp_path: Path):
     try:
         events = EventStore(db)
         scheduler = SchedulerEngine(db, events, MasterCritic(db))
+        _isolate_advisor_schedule(db)
         source = events.register_source("test", "test", "failed-supervisor-meeting")
         meeting = events.record_event(
             "meeting.scheduled",
@@ -97,9 +108,9 @@ def test_supervisor_does_not_acknowledge_failed_routine(tmp_path: Path):
         report = supervisor.run_once(now)
 
         assert report["status"] == "warning"
-        failed = next(item for item in report["routines"] if item["name"] == "Advisor Pre-Meeting Readiness & Pack")
+        failed = next(item for item in report["routines"] if item["name"] == _ADVISOR_PREP)
         assert failed["status"] == "failed"
-        schedule = db.fetchone("SELECT * FROM schedules WHERE name='Advisor Pre-Meeting Readiness & Pack'")
+        schedule = db.fetchone("SELECT * FROM schedules WHERE name = ?", (_ADVISOR_PREP,))
         assert schedule["last_run_at"] is None
     finally:
         db.close()
