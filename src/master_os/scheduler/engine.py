@@ -268,30 +268,52 @@ class SchedulerEngine:
             parsed = parsed.replace(tzinfo=timezone.utc)
         return parsed.astimezone(timezone.utc)
 
-    def trigger_routine(self, schedule_name: str) -> dict[str, Any]:
-        """Execute a routine and record the trigger in canonical history."""
-        row = self.db.fetchone("SELECT * FROM schedules WHERE name = ? AND enabled = 1", (schedule_name,))
-        if not row:
-            raise ValueError(f"Enabled schedule not found: {schedule_name}")
-
-        now = utc_now()
-        role = row["agent_role"]
-        result: dict[str, Any] = {"schedule": schedule_name, "executed_at": now, "status": "ok"}
-
-        if role == "critic":
-            report = self.critic.evaluate_health()
-            result["health_report"] = {
-                "velocity": report.research_velocity,
-                "warning": report.fake_progress_warning,
-                "message": report.warning_message,
-                "burn_warnings": report.resource_burn_warnings,
-            }
-
+    def mark_triggered(
+        self,
+        schedule_id: str,
+        executed_at: datetime,
+        *,
+        trigger_at: Optional[str] = None,
+    ) -> None:
+        """Durably acknowledge one successful schedule occurrence."""
+        if executed_at.tzinfo is None:
+            raise ValueError("Scheduler execution time must be timezone-aware")
+        executed_iso = executed_at.astimezone(timezone.utc).isoformat()
+        occurrence = trigger_at or executed_iso
         source = self.events.register_source("scheduler", "Master Scheduler", "master-os-scheduler")
         event = self.events.record_event(
             "schedule.triggered",
             source.id,
-            {"id": row["id"], "last_run_at": now},
+            {"id": schedule_id, "last_run_at": executed_iso, "trigger_at": occurrence},
+            occurred_at=executed_iso,
+            dedup_key=f"schedule-trigger:{schedule_id}:{occurrence}",
         )
         apply_event(self.db, event)
+
+    def trigger_routine(self, schedule_name: str) -> dict[str, Any]:
+        """Execute a built-in routine and record the trigger in canonical history."""
+        row = self.db.fetchone("SELECT * FROM schedules WHERE name = ? AND enabled = 1", (schedule_name,))
+        if not row:
+            raise ValueError(f"Enabled schedule not found: {schedule_name}")
+
+        role = row["agent_role"]
+        if role != "critic":
+            raise RuntimeError(
+                f"Schedule {schedule_name!r} requires a configured {role!r} runtime handler; refusing a fake success."
+            )
+
+        report = self.critic.evaluate_health()
+        now = datetime.now(timezone.utc)
+        result: dict[str, Any] = {
+            "schedule": schedule_name,
+            "executed_at": now.isoformat(),
+            "status": "ok",
+            "health_report": {
+                "velocity": report.research_velocity,
+                "warning": report.fake_progress_warning,
+                "message": report.warning_message,
+                "burn_warnings": report.resource_burn_warnings,
+            },
+        }
+        self.mark_triggered(row["id"], now)
         return result
