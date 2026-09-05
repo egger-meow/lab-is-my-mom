@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from master_os.agents.critic import MasterCritic
 from master_os.agents.packet import AgentJobPacket, WorkPacketBuilder
+from master_os.agents.recovery_actions import AgentRecoveryActions
 from master_os.agents.runtime import AgentRuntime
 from master_os.core.artifacts import ArtifactRegistry
 from master_os.core.database import MasterDatabase
@@ -36,6 +37,11 @@ class DecideApprovalRequest(BaseModel):
     note: Optional[str] = None
 
 
+class RecoverAgentRunRequest(BaseModel):
+    action: str
+    note: Optional[str] = None
+
+
 def create_app(
     db: MasterDatabase,
     repo_root: Path,
@@ -51,15 +57,24 @@ def create_app(
     explicitly. Tests may inject deterministic executors without contaminating
     production behavior with fabricated metrics/findings.
     """
-    app = FastAPI(title="Master OS Cockpit", version="0.2.0")
+    app = FastAPI(title="Master OS Cockpit", version="0.3.0")
 
     executors = agent_executors or {}
+    repo_root = repo_root.resolve()
     events = EventStore(db)
     artifacts = ArtifactRegistry(db, repo_root=repo_root, events=events)
     relations = RelationGraph(db, events=events)
     critic = MasterCritic(db)
     runtime = AgentRuntime(db, events, artifacts, repo_root=repo_root)
     packet_builder = WorkPacketBuilder(db)
+    recovery_actions = AgentRecoveryActions(
+        db,
+        events,
+        runtime,
+        packet_builder,
+        relations,
+        repo_root,
+    )
     meeting_agent = MeetingAgent(db, events, artifacts, relations, repo_root=repo_root)
     planner = MasterPlanner(db)
     scheduler = SchedulerEngine(db, events, critic)
@@ -119,9 +134,12 @@ def create_app(
             item["action_payload"] = json.loads(item["action_payload_json"])
             parsed_approvals.append(item)
 
+        interrupted_runs = recovery_actions.list_interrupted()
         what_needs_me = {
             "pending_approvals": parsed_approvals,
             "approval_count": len(parsed_approvals),
+            "interrupted_runs": interrupted_runs,
+            "interrupted_run_count": len(interrupted_runs),
             "resource_burn_warnings": health_report.resource_burn_warnings,
         }
 
@@ -167,6 +185,48 @@ def create_app(
             "status": req.status,
             "materialized_entity_id": materialized_entity_id,
         }
+
+    @app.get("/api/agent-runs/{run_id}/inspect")
+    def inspect_agent_run(run_id: str):
+        try:
+            return recovery_actions.inspect(run_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.post("/api/agent-runs/{run_id}/recover")
+    def recover_agent_run(run_id: str, req: RecoverAgentRunRequest):
+        if req.action not in {"resume", "retry_fresh", "abandon"}:
+            raise HTTPException(status_code=400, detail="action must be resume, retry_fresh, or abandon")
+
+        executor: Optional[AgentExecutor] = None
+        if req.action in {"resume", "retry_fresh"}:
+            run = db.fetchone("SELECT task_id, status FROM agent_runs WHERE id = ?", (run_id,))
+            if not run:
+                raise HTTPException(status_code=404, detail="agent run not found")
+            task = db.fetchone("SELECT preferred_agent FROM tasks WHERE id = ?", (run["task_id"],))
+            if not task:
+                raise HTTPException(status_code=409, detail="interrupted run task no longer exists")
+            agent_type = task["preferred_agent"] or "codex"
+            executor = executors.get(agent_type)
+            if executor is None:
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"No real {agent_type} executor is configured. Recovery cannot fabricate execution.",
+                )
+
+        try:
+            return recovery_actions.recover(
+                run_id,
+                req.action,
+                executor=executor,
+                note=req.note or "",
+            )
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     @app.post("/api/tasks/{task_id}/dispatch")
     def dispatch_task(task_id: str):
