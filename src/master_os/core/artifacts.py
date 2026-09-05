@@ -6,10 +6,10 @@ import json
 from pathlib import Path
 from typing import Any, Optional
 
+from master_os.core.commands import DomainCommandBus
 from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
 from master_os.core.models import Artifact, generate_id, utc_now
-from master_os.core.reducer import apply_event
 
 
 class ArtifactRegistry:
@@ -24,6 +24,7 @@ class ArtifactRegistry:
         self.db = db
         self.repo_root = repo_root.resolve()
         self.events = events or EventStore(db)
+        self.commands = DomainCommandBus(db, self.events)
 
     def relative_path(self, path: Path | str) -> str:
         """Convert path to a portable relative string when it lives under repo_root."""
@@ -65,7 +66,7 @@ class ArtifactRegistry:
         aid = generate_id("A-")
         now = utc_now()
         source = self.events.register_source("artifact_registry", "Artifact Registry", "master-os-artifacts")
-        event = self.events.record_event(
+        event = self.commands.emit(
             event_type="artifact.created",
             source_id=source.id,
             payload={
@@ -84,7 +85,6 @@ class ArtifactRegistry:
             raw_ref=rel_path,
             raw_content=content,
         )
-        apply_event(self.db, event)
 
         row = self.db.fetchone("SELECT * FROM artifacts WHERE id = ?", (aid,))
         if not row:
