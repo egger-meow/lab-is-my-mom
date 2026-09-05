@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from master_os.agents.critic import MasterCritic
+from master_os.agents.dispatcher import AgentDispatcher
 from master_os.agents.packet import AgentJobPacket, WorkPacketBuilder
 from master_os.agents.recovery_actions import AgentRecoveryActions
 from master_os.agents.runtime import AgentRuntime
@@ -57,7 +58,7 @@ def create_app(
     explicitly. Tests may inject deterministic executors without contaminating
     production behavior with fabricated metrics/findings.
     """
-    app = FastAPI(title="Master OS Cockpit", version="0.3.0")
+    app = FastAPI(title="Master OS Cockpit", version="0.4.0")
 
     executors = agent_executors or {}
     repo_root = repo_root.resolve()
@@ -67,6 +68,8 @@ def create_app(
     critic = MasterCritic(db)
     runtime = AgentRuntime(db, events, artifacts, repo_root=repo_root)
     packet_builder = WorkPacketBuilder(db)
+    dispatcher = AgentDispatcher(db, repo_root, executors=executors)
+    app.state.agent_dispatcher = dispatcher
     recovery_actions = AgentRecoveryActions(
         db,
         events,
@@ -119,9 +122,10 @@ def create_app(
             "recent_artifacts": [dict(a) for a in artifacts_rows],
         }
 
-        runs_rows = db.fetchall("SELECT * FROM agent_runs ORDER BY created_at DESC LIMIT 5")
+        runs_rows = db.fetchall("SELECT * FROM agent_runs ORDER BY created_at DESC LIMIT 8")
         what_are_agents_doing = {
             "recent_runs": [dict(r) for r in runs_rows],
+            "inflight_runs": dispatcher.inflight(),
             "schedules": scheduler.list_schedules(),
         }
 
@@ -228,7 +232,7 @@ def create_app(
         except RuntimeError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
 
-    @app.post("/api/tasks/{task_id}/dispatch")
+    @app.post("/api/tasks/{task_id}/dispatch", status_code=202)
     def dispatch_task(task_id: str):
         task = db.fetchone("SELECT * FROM tasks WHERE id = ?", (task_id,))
         if not task:
@@ -237,16 +241,20 @@ def create_app(
             raise HTTPException(status_code=409, detail="task is not authorized for autonomous execution")
 
         agent_type = task["preferred_agent"] or "codex"
-        executor = executors.get(agent_type)
-        if executor is None:
+        if agent_type not in executors:
             raise HTTPException(
                 status_code=503,
                 detail=f"No real {agent_type} executor is configured. Refusing to fabricate an agent result.",
             )
 
-        ws_path = repo_root / ".master-os" / "worktrees" / f"auto-{task_id.lower()}"
-        packet = packet_builder.build_packet(task_id, workspace_path=str(ws_path), repo_name=repo_root.name)
-        return runtime.dispatch_autonomous_job(packet, agent_type=agent_type, executor_func=executor)
+        try:
+            queued = dispatcher.enqueue_task(task_id)
+            pump = dispatcher.pump_once()
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return {**queued, "submitted": queued["run_id"] in pump["submitted"]}
 
     static_dir = Path(__file__).parent / "static"
     if static_dir.exists():
