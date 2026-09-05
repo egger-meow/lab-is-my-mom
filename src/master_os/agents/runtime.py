@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import subprocess
+import threading
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -33,6 +35,7 @@ class AgentRuntime:
         self.repo_root = repo_root.resolve()
         self.worktrees_dir = self.repo_root / ".master-os" / "worktrees"
         self.worktrees_dir.mkdir(parents=True, exist_ok=True)
+        self.heartbeat_interval_seconds = 30.0
 
     def _prepare_workspace(self, packet: AgentJobPacket) -> Path:
         """Prepare the requested workspace without silently degrading isolation."""
@@ -106,6 +109,43 @@ class AgentRuntime:
             self.db.rollback()
             raise
 
+    @staticmethod
+    def _heartbeat_timestamp() -> str:
+        return datetime.now(timezone.utc).isoformat()
+
+    def _publish_heartbeat(self, db: MasterDatabase, run_id: str) -> None:
+        db.execute(
+            "UPDATE agent_runs SET heartbeat_at = ? WHERE id = ? AND status = 'running'",
+            (self._heartbeat_timestamp(), run_id),
+        )
+        db.commit()
+
+    def _start_heartbeat(self, run_id: str) -> tuple[threading.Event, threading.Thread]:
+        """Start a lease heartbeat without sharing the dispatch SQLite connection."""
+        if self.heartbeat_interval_seconds <= 0:
+            raise ValueError("heartbeat_interval_seconds must be positive")
+
+        # Publish immediately so recovery never sees a freshly started run with an
+        # ambiguous NULL heartbeat.
+        self._publish_heartbeat(self.db, run_id)
+        stop_event = threading.Event()
+
+        def heartbeat_loop() -> None:
+            heartbeat_db = MasterDatabase(self.db.db_path)
+            try:
+                while not stop_event.wait(self.heartbeat_interval_seconds):
+                    self._publish_heartbeat(heartbeat_db, run_id)
+            finally:
+                heartbeat_db.close()
+
+        thread = threading.Thread(
+            target=heartbeat_loop,
+            name=f"master-os-agent-heartbeat-{run_id}",
+            daemon=True,
+        )
+        thread.start()
+        return stop_event, thread
+
     def dispatch_autonomous_job(
         self,
         packet: AgentJobPacket,
@@ -124,6 +164,7 @@ class AgentRuntime:
         # Claim before touching the worktree. A competing process sees the committed
         # running row and is rejected instead of creating a second workspace/run.
         self._claim_task_run(run_id, packet, agent_type, base_sha)
+        heartbeat_stop, heartbeat_thread = self._start_heartbeat(run_id)
 
         exit_code = 1
         error_msg: Optional[str] = None
@@ -151,6 +192,9 @@ class AgentRuntime:
             error_msg = str(exc)
             run_status = "failed"
             task_status = "blocked"
+        finally:
+            heartbeat_stop.set()
+            heartbeat_thread.join(timeout=max(1.0, self.heartbeat_interval_seconds * 2))
 
         registered_artifact_ids: list[str] = []
         for rel_art in produced_artifacts:
