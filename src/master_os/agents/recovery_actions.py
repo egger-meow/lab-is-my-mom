@@ -122,7 +122,7 @@ class AgentRecoveryActions:
             run_id,
             action,
             note=note,
-            extra={"task_id": row["task_id"]},
+            extra={"task_id": row["task_id"], "final_status": "recovering"},
             dedup_key=f"agent-recovery-start:{run_id}:{action}",
         )
 
@@ -221,14 +221,17 @@ class AgentRecoveryActions:
         extra: dict[str, Any],
         dedup_key: str,
     ) -> None:
+        """Append recovery intent plus a replayable terminal-state transition atomically."""
         payload = {"id": run_id, "action": action, "note": note, **extra}
+        final_status = str(extra.get("final_status") or "").strip()
         try:
             self.db.execute("BEGIN IMMEDIATE")
             if event_type == "agent_run.recovery_started":
                 current = self.db.fetchone("SELECT status FROM agent_runs WHERE id = ?", (run_id,))
                 if not current or current["status"] != "interrupted":
                     raise RuntimeError(f"Agent run {run_id} is no longer available for recovery")
-            event = self.events.record_event(
+
+            recovery_event = self.events.record_event(
                 event_type,
                 self.source.id,
                 payload,
@@ -236,7 +239,29 @@ class AgentRecoveryActions:
                 created_by="user_explicit",
                 commit=False,
             )
-            apply_event(self.db, event, commit=False)
+            # recovery_event is audit/decision evidence. The existing replayable
+            # agent_run.completed transition carries the materialized status so we do
+            # not create a second ad-hoc state mutation path.
+            _ = recovery_event
+
+            if final_status:
+                state_event = self.events.record_event(
+                    "agent_run.completed",
+                    self.source.id,
+                    {
+                        "id": run_id,
+                        "status": final_status,
+                        "exit_code": None,
+                        "result_git_sha": None,
+                        "result_artifact_id": None,
+                        "failure_id": None,
+                    },
+                    dedup_key=f"{dedup_key}:state:{final_status}",
+                    created_by="user_explicit",
+                    commit=False,
+                )
+                apply_event(self.db, state_event, commit=False)
+
             self.db.commit()
         except Exception:
             self.db.rollback()
