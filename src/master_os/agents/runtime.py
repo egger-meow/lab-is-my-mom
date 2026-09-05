@@ -38,7 +38,7 @@ class AgentRuntime:
         self.heartbeat_interval_seconds = 30.0
 
     def _prepare_workspace(self, packet: AgentJobPacket) -> Path:
-        """Prepare the requested workspace without silently degrading isolation."""
+        """Prepare a fresh workspace without silently degrading isolation."""
         path = Path(packet.workspace_path).resolve()
         if path.exists() and any(path.iterdir()):
             # Existing non-empty workspaces may contain interrupted work. Never delete
@@ -58,6 +58,16 @@ class AgentRuntime:
         else:
             # Non-git sandboxes are allowed for tests/local tools only.
             path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def _resume_workspace(self, packet: AgentJobPacket) -> Path:
+        """Reuse an interrupted workspace only when recovery explicitly requests it."""
+        path = Path(packet.workspace_path).resolve()
+        if not path.exists() or not path.is_dir():
+            raise RuntimeError(f"Interrupted agent workspace no longer exists: {path}")
+        # Empty is still a valid interrupted worktree, but it must already exist. We do
+        # not recreate or reset anything here because the point of resume is evidence
+        # preservation, not a disguised fresh retry.
         return path
 
     def _claim_task_run(
@@ -151,8 +161,15 @@ class AgentRuntime:
         packet: AgentJobPacket,
         agent_type: str = "codex",
         executor_func: Optional[Callable[[Path, AgentJobPacket], dict[str, Any]]] = None,
+        *,
+        resume_existing_workspace: bool = False,
     ) -> dict[str, Any]:
-        """Execute an authorized job and record only observed results."""
+        """Execute an authorized job and record only observed results.
+
+        ``resume_existing_workspace`` is deliberately opt-in and intended only for
+        an explicit interrupted-run recovery decision. Ordinary dispatch always
+        demands a fresh isolated workspace.
+        """
         if executor_func is None:
             raise RuntimeError(f"No real executor configured for agent type: {agent_type}")
 
@@ -161,8 +178,13 @@ class AgentRuntime:
         workspace = Path(packet.workspace_path).resolve()
         base_sha = self._get_head_sha(self.repo_root)
 
-        # Claim before touching the worktree. A competing process sees the committed
-        # running row and is rejected instead of creating a second workspace/run.
+        # Validate explicit resume evidence before taking the task lease. This avoids
+        # creating a phantom running row when the interrupted worktree vanished.
+        if resume_existing_workspace:
+            workspace = self._resume_workspace(packet)
+
+        # Claim before touching a fresh worktree. A competing process sees the
+        # committed running row and is rejected instead of creating a second run.
         self._claim_task_run(run_id, packet, agent_type, base_sha)
         heartbeat_stop, heartbeat_thread = self._start_heartbeat(run_id)
 
@@ -172,7 +194,8 @@ class AgentRuntime:
         findings: list[dict[str, Any]] = []
 
         try:
-            workspace = self._prepare_workspace(packet)
+            if not resume_existing_workspace:
+                workspace = self._prepare_workspace(packet)
             result = executor_func(workspace, packet)
             exit_code = int(result.get("exit_code", 1))
             produced_artifacts = list(result.get("artifacts", []))
