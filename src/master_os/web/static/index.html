@@ -2,517 +2,215 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0f14">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/app.css">
   <title>Master OS · NYCU NLP Lab</title>
-  <style>
-    :root {
-      --bg: #0d1117;
-      --card-bg: #161b22;
-      --border: #30363d;
-      --text: #c9d1d9;
-      --text-bright: #f0f6fc;
-      --text-muted: #8b949e;
-      --accent: #58a6ff;
-      --accent-glow: rgba(88, 166, 255, 0.15);
-      --success: #2ea043;
-      --warning: #d29922;
-      --danger: #f85149;
-      --purple: #bc8cff;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      padding: 1rem;
-    }
-    .container { max-width: 1200px; margin: 0 auto; }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 1.5rem;
-    }
-    .brand { font-size: 1.25rem; font-weight: 700; color: var(--text-bright); display: flex; align-items: center; gap: 0.5rem; }
-    .brand span { color: var(--accent); font-size: 0.85rem; background: var(--accent-glow); padding: 0.2rem 0.6rem; border-radius: 999px; }
-    .header-actions { display: flex; gap: 0.75rem; align-items: center; }
-    button {
-      background: #21262d;
-      border: 1px solid var(--border);
-      color: var(--text-bright);
-      padding: 0.4rem 0.8rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      transition: all 0.2s;
-    }
-    button:hover { background: #30363d; border-color: var(--text-muted); }
-    button.primary { background: #238636; border-color: rgba(240, 246, 252, 0.1); color: #fff; }
-    button.primary:hover { background: #2ea043; }
-    button.danger { background: #da3633; border-color: var(--border); color: #fff; }
-
-    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem; }
-    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem; }
-
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.25rem;
-      position: relative;
-    }
-    .card-title {
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin-bottom: 0.75rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .hero-action {
-      background: linear-gradient(135deg, rgba(88, 166, 255, 0.08) 0%, rgba(188, 140, 255, 0.08) 100%);
-      border: 1px solid var(--accent);
-    }
-    .hero-title { font-size: 1.35rem; color: var(--text-bright); font-weight: 700; margin-bottom: 0.5rem; }
-    .hero-meta { display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; }
-    .badge {
-      display: inline-block;
-      padding: 0.15rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    .badge-critical { background: rgba(248, 81, 73, 0.2); color: var(--danger); border: 1px solid rgba(248, 81, 73, 0.4); }
-    .badge-high { background: rgba(210, 153, 34, 0.2); color: var(--warning); border: 1px solid rgba(210, 153, 34, 0.4); }
-    .badge-success { background: rgba(46, 160, 67, 0.2); color: var(--success); border: 1px solid rgba(46, 160, 67, 0.4); }
-
-    .item-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
-    .item-row {
-      padding: 0.6rem;
-      background: #0d1117;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 0.85rem;
-    }
-    .subsection-title {
-      margin: 1rem 0 0.6rem;
-      padding-top: 0.8rem;
-      border-top: 1px solid var(--border);
-      color: var(--text-bright);
-      font-size: 0.85rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-    }
-    .recovery-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.55rem; }
-    .recovery-meta { color: var(--text-muted); font-size: 0.78rem; margin-top: 0.25rem; word-break: break-all; }
-    .alert-box {
-      background: rgba(210, 153, 34, 0.15);
-      border: 1px solid var(--warning);
-      color: #f0f6fc;
-      padding: 0.75rem 1rem;
-      border-radius: 6px;
-      margin-bottom: 1.25rem;
-      font-size: 0.85rem;
-      display: none;
-    }
-
-    textarea {
-      width: 100%;
-      background: #0d1117;
-      border: 1px solid var(--border);
-      color: var(--text-bright);
-      padding: 0.5rem;
-      border-radius: 6px;
-      font-family: inherit;
-      font-size: 0.85rem;
-      margin-top: 0.5rem;
-      resize: vertical;
-    }
-    pre {
-      background: #0d1117;
-      padding: 0.75rem;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-  </style>
 </head>
 <body>
-  <div class="container">
-    <header>
+  <div class="shell">
+    <aside class="sidebar">
       <div class="brand">
-        lab-is-my-mom <span>Master OS v0.4</span>
+        <strong>lab-is-my-mom</strong>
+        <small>Master OS v0.5</small>
       </div>
-      <div class="header-actions">
-        <button onclick="refreshData()">重新整頓</button>
-        <button onclick="openModal('ingest-modal')">匯入會議紀錄</button>
-        <button class="primary" onclick="triggerMeetingPack()">產出 Meeting Pack</button>
-      </div>
-    </header>
+      <nav class="nav" aria-label="Master OS navigation">
+        <button class="nav-btn" data-nav="today"><span class="nav-icon">⌂</span>Today</button>
+        <button class="nav-btn" data-nav="tasks"><span class="nav-icon">✓</span>Tasks</button>
+        <button class="nav-btn" data-nav="meetings"><span class="nav-icon">◷</span>Meetings</button>
+        <button class="nav-btn" data-nav="research"><span class="nav-icon">⌁</span>Research</button>
+        <button class="nav-btn" data-nav="papers"><span class="nav-icon">▤</span>Papers</button>
+        <button class="nav-btn" data-nav="agents"><span class="nav-icon">⌘</span>Agents</button>
+        <button class="nav-btn" data-nav="system"><span class="nav-icon">⚙</span>System</button>
+        <button class="nav-btn" data-nav="help"><span class="nav-icon">?</span>使用說明</button>
+      </nav>
+      <div class="sidebar-foot"><span class="status-dot"></span>local-first mothership<br><span class="muted">127.0.0.1 · Tailscale friendly</span></div>
+    </aside>
 
-    <div id="critic-alert" class="alert-box"></div>
+    <main class="main">
+      <header class="topbar">
+        <h1 id="top-title">Today · 今日總覽</h1>
+        <div class="top-actions">
+          <button class="btn ghost desktop-only" id="refresh-btn">↻ 重新整理</button>
+          <button class="btn desktop-only" id="quick-ingest">＋ 匯入 Meeting</button>
+          <button class="btn" data-nav="help">? 說明</button>
+        </div>
+      </header>
 
-    <!-- 1. 當前最重要 (What matters now?) -->
-    <div class="card hero-action" style="margin-bottom: 1.5rem;">
-      <div class="card-title">
-        <span>1. 當前最重要 · 焦點行動 (What Matters Now)</span>
-        <span id="hero-est" class="badge badge-high">預估 ~8 分鐘</span>
-      </div>
-      <div id="hero-title" class="hero-title">載入中...</div>
-      <div id="hero-why" class="hero-meta">正在計算 Master Planner 關鍵路徑...</div>
-      <div style="display: flex; gap: 0.75rem;">
-        <button id="dispatch-btn" class="primary" onclick="dispatchFocusTask()">自主派工 Codex 執行</button>
-        <button onclick="openModal('ingest-modal')">上傳實驗與會議回饋</button>
-      </div>
-    </div>
+      <div class="content">
+        <section class="page" data-page="today">
+          <div id="onboarding-panel" class="onboarding">
+            <h3>Master OS 還沒吃到足夠的真實研究狀態</h3>
+            <p>先餵它幾個真正的 anchor。不是你沒事做，是 DB 還不知道你正在做什麼。</p>
+            <div id="onboarding-steps" class="onboarding-steps"></div>
+          </div>
+          <div id="critic-alert" class="alert"></div>
+          <div class="card hero">
+            <div class="card-title"><span>現在最值得做的一件事</span><span id="hero-est" class="badge yellow">計算中</span></div>
+            <h2 id="hero-title">讀取 Master Planner...</h2>
+            <p id="hero-why">正在整理你的 obligation、deadline 與 agent state。</p>
+            <div class="hero-actions">
+              <button id="dispatch-focus" class="btn primary">派 Codex 執行</button>
+              <button class="btn" data-nav="tasks">看全部 Tasks</button>
+              <button class="btn" id="hero-ingest">匯入 Meeting 回饋</button>
+            </div>
+          </div>
+          <div class="grid-2 mt">
+            <div class="card"><div class="card-title"><span>接下來會撞到什麼</span><span class="badge red">Coming</span></div><div id="today-coming" class="list"></div></div>
+            <div class="card"><div class="card-title"><span>Needs You</span><span id="today-approval-count" class="badge yellow">0</span></div><div id="today-approvals" class="list"></div></div>
+            <div class="card"><div class="card-title"><span>最近研究變化</span><span class="badge green">Evidence</span></div><div id="today-changed" class="list"></div></div>
+            <div class="card"><div class="card-title"><span>Agent 動態</span><span class="badge blue">Runtime</span></div><div id="today-agents" class="list"></div></div>
+          </div>
+        </section>
 
-    <div class="grid-2">
-      <!-- 2. 未來義務與死線 (What is coming?) -->
-      <div class="card">
-        <div class="card-title">
-          <span>2. 未來義務與死線 (What is coming?)</span>
-          <span class="badge badge-critical">生存紅線</span>
-        </div>
-        <ul id="obligations-list" class="item-list">
-          <li class="item-row">讀取義務中...</li>
-        </ul>
-      </div>
+        <section class="page" data-page="tasks">
+          <div class="page-head"><div><h2>Tasks & Obligations</h2><p>把「老師/研究一定要做到」和「可執行工作」分開看，不再混成一坨 TODO。</p></div></div>
+          <div id="task-stats" class="stats"></div>
+          <div class="grid-2">
+            <div class="card"><div class="card-title"><span>Tasks</span><span class="badge blue">可派工</span></div><div id="tasks-list" class="list"></div></div>
+            <div class="card"><div class="card-title"><span>Obligations</span><span class="badge red">不能忘</span></div><div id="obligations-list" class="list"></div></div>
+          </div>
+        </section>
 
-      <!-- 5. 等待你裁量與審批 (What needs me?) -->
-      <div class="card">
-        <div class="card-title">
-          <span>5. 等待你裁量與審批 (What needs me?)</span>
-          <span id="approval-count-badge" class="badge badge-warning">0 項待審</span>
-        </div>
-        <div id="approvals-container" class="item-list">
-          <div class="item-row" style="color: var(--text-muted);">目前無待審批項目，AI 可自主推進。</div>
-        </div>
-        <div class="subsection-title">
-          <span>中斷 Agent · 保留現場</span>
-          <span id="interrupted-count-badge" class="badge badge-high">0 個待處理</span>
-        </div>
-        <div id="interrupted-runs-container" class="item-list">
-          <div class="item-row" style="color: var(--text-muted);">目前沒有中斷中的 Agent Run。</div>
-        </div>
-      </div>
-    </div>
+        <section class="page" data-page="meetings">
+          <div class="page-head"><div><h2>Meetings</h2><p>下一次 meeting 是整個 scheduler 的時間錨。改時間，pre-meeting readiness 會跟著移。</p></div><button class="btn" id="meeting-ingest-top">＋ 匯入逐字稿</button></div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title"><span>設定 / 修改 Meeting</span><span class="badge blue">User explicit</span></div>
+              <form id="meeting-form">
+                <div class="form-grid">
+                  <div class="field"><label for="meeting-id">Meeting ID（留空自動產生）</label><input id="meeting-id" placeholder="例：M-20260910"></div>
+                  <div class="field"><label for="meeting-kind">類型</label><select id="meeting-kind"><option value="advisor">Advisor meeting</option><option value="lab_seminar">Lab seminar</option><option value="course">Course</option><option value="other">Other</option></select></div>
+                  <div class="field full"><label for="meeting-title">標題</label><input id="meeting-title" placeholder="Advisor Meeting"></div>
+                  <div class="field full"><label for="meeting-time">時間（你的本機時區）</label><input id="meeting-time" type="datetime-local" required></div>
+                </div>
+                <div class="form-actions"><button type="submit" class="btn primary">儲存 Meeting</button><button type="button" id="meeting-form-clear" class="btn ghost">清空</button></div>
+              </form>
+            </div>
+            <div class="card"><div class="card-title"><span>接下來的 Meetings</span><span id="meeting-upcoming-count" class="badge yellow">0</span></div><div id="meetings-upcoming" class="list"></div></div>
+          </div>
+          <div class="card mt"><div class="card-title"><span>Meeting History</span><span class="badge">歷史</span></div><div id="meetings-history" class="list"></div></div>
+        </section>
 
-    <div class="grid-2">
-      <!-- 3. 近期變化與實驗突破 (What changed?) -->
-      <div class="card">
-        <div class="card-title">
-          <span>3. 近期變化與實驗突破 (What changed?)</span>
-          <span class="badge badge-success">實證資產</span>
-        </div>
-        <ul id="findings-list" class="item-list">
-          <li class="item-row">讀取 Findings 中...</li>
-        </ul>
-      </div>
+        <section class="page" data-page="research">
+          <div class="page-head"><div><h2>Research</h2><p>從研究題目一路追到 Experiment、Finding、Decision 與 Artifact。</p></div></div>
+          <div class="card">
+            <div class="card-title"><span>目前研究主軸 / Hypothesis</span><span class="badge purple">User truth</span></div>
+            <form id="research-topic-form"><div class="field"><label for="research-topic">這是你目前真正想研究的問題，不是 agent 猜的</label><textarea id="research-topic" placeholder="例如：Uncertainty-Aware Selective Routing under Non-Stationary, Heterogeneous Costs"></textarea></div><div class="form-actions"><button class="btn primary" type="submit">儲存研究主軸</button></div></form>
+          </div>
+          <div class="research-columns mt">
+            <div class="card"><div class="card-title"><span>Experiments</span><span id="research-exp-count" class="badge blue">0</span></div><div id="research-experiments" class="list"></div></div>
+            <div class="card"><div class="card-title"><span>Findings</span><span id="research-find-count" class="badge green">0</span></div><div id="research-findings" class="list"></div></div>
+            <div class="card"><div class="card-title"><span>Decisions</span><span id="research-decision-count" class="badge purple">0</span></div><div id="research-decisions" class="list"></div></div>
+            <div class="card"><div class="card-title"><span>Artifacts</span><span id="research-artifact-count" class="badge">0</span></div><div id="research-artifacts" class="list"></div></div>
+          </div>
+        </section>
 
-      <!-- 4. Agent 執行動態 (What are agents doing?) -->
-      <div class="card">
-        <div class="card-title">
-          <span>4. Agent 執行動態 (What are agents doing?)</span>
-          <span class="badge">沙盒運行</span>
-        </div>
-        <ul id="agents-list" class="item-list">
-          <li class="item-row">讀取 Agent 狀態中...</li>
-        </ul>
+        <section class="page" data-page="papers">
+          <div class="page-head"><div><h2>Papers</h2><p>原本 Research OS 的論文庫保留在這裡，現在變成 Master OS 的一個器官。</p></div></div>
+          <div id="paper-stats" class="stats"></div>
+          <div class="card">
+            <div class="paper-toolbar"><input id="paper-search" type="search" placeholder="搜尋 title / author / venue..."><span id="paper-visible-count" class="badge blue"></span></div>
+            <div id="papers-list" class="paper-list"></div>
+          </div>
+        </section>
+
+        <section class="page" data-page="agents">
+          <div class="page-head"><div><h2>Agents</h2><p>所有 queued、running、completed、interrupted 都留痕，不讓背景 agent 變幽靈。</p></div></div>
+          <div id="agent-stats" class="stats"></div>
+          <div class="grid-2">
+            <div class="card"><div class="card-title"><span>正在跑 / 排隊</span><span class="badge blue">Live</span></div><div id="agents-live" class="list"></div></div>
+            <div class="card"><div class="card-title"><span>中斷待處理</span><span id="agent-interrupted-count" class="badge yellow">0</span></div><div id="agents-interrupted" class="list"></div></div>
+          </div>
+          <div class="card mt"><div class="card-title"><span>Run History</span><span class="badge">Audit trail</span></div><div id="agents-history" class="list"></div></div>
+        </section>
+
+        <section class="page" data-page="system">
+          <div class="page-head"><div><h2>System</h2><p>Master OS 的健康、資料來源、scheduler 與 compute/resource 狀態。</p></div></div>
+          <div id="system-summary" class="stats"></div>
+          <div class="grid-2">
+            <div class="card"><div class="card-title"><span>Doctor / Health</span><span class="badge green">Local</span></div><div id="system-health" class="health-grid"></div></div>
+            <div class="card"><div class="card-title"><span>Sources</span><span class="badge blue">Evidence inputs</span></div><div id="system-sources" class="list"></div></div>
+            <div class="card"><div class="card-title"><span>Schedules</span><span class="badge purple">Supervisor</span></div><div id="system-schedules" class="list"></div></div>
+            <div class="card"><div class="card-title"><span>Compute / Lab Resources</span><span class="badge yellow">Cost aware</span></div><div id="system-resources" class="list"></div></div>
+          </div>
+          <div class="card mt"><div class="card-title"><span>Local paths</span><span class="badge">只在本機</span></div><div id="system-paths"></div></div>
+        </section>
+
+        <section class="page" data-page="help">
+          <div class="page-head"><div><h2>使用說明</h2><p>不用記一堆 CLI。平常照這個節奏餵 Master OS 就好。</p></div></div>
+          <div class="card guide">
+            <h3>第一次使用，只做三件必要的事</h3>
+            <ol>
+              <li>到 <strong>Meetings</strong> 設定下一次 Advisor Meeting。</li>
+              <li>到 <strong>Research</strong> 填入目前真正的研究主軸。</li>
+              <li>有最近一次 meeting 筆記或逐字稿，就用右上角「匯入 Meeting」。</li>
+            </ol>
+            <p>Slack 是加速器，不是啟動條件。沒設定 Slack，Master OS 仍然可以正常跑。</p>
+
+            <h3>一週的正常節奏</h3>
+            <div class="flow"><span>Meeting 時間</span><i>→</i><span>自動 readiness</span><i>→</i><span>Tasks / Codex</span><i>→</i><span>Experiment</span><i>→</i><span>Finding</span><i>→</i><span>Meeting Pack</span><i>→</i><span>Transcript</span></div>
+            <ul>
+              <li><strong>Meeting 前：</strong>Today 看「現在最值得做的一件事」，必要時派 Codex。</li>
+              <li><strong>Meeting 當天：</strong>Meetings 產 Meeting Pack。</li>
+              <li><strong>Meeting 後：</strong>把 transcript / 筆記貼進來。高影響語意會進 Needs You，不會偷偷寫成研究真相。</li>
+              <li><strong>實驗期間：</strong>Research 看 Experiment → Finding 是否真的有證據鏈。</li>
+            </ul>
+
+            <h3>AI 會自己做什麼</h3>
+            <p>已授權的本地 repo 工作、scheduler tick、backup、health check、已設定 source 的讀取，可以自主執行。Agent 的「完成」只代表 run 完成，不等於研究結論已被驗證。</p>
+
+            <h3>哪些事情一定會問你</h3>
+            <ul>
+              <li>老師的話到底是「建議」還是「承諾 / obligation」這類高影響語意。</li>
+              <li>對外 Slack / Email 發送。</li>
+              <li>付費 OpenAI/API、H100/NCHC 等有成本的 compute。</li>
+              <li>merge / publish 這類會改外部世界的動作。</li>
+            </ul>
+
+            <h3>每個分頁在幹嘛</h3>
+            <ul>
+              <li><strong>Today：</strong>只回答今天最重要、快到的 deadline、Needs You、Agent 狀態。</li>
+              <li><strong>Tasks：</strong>可執行工作與 obligations。</li>
+              <li><strong>Meetings：</strong>meeting 時間、逐字稿、Meeting Pack、歷史。</li>
+              <li><strong>Research：</strong>研究主軸、experiments、findings、decisions、artifacts。</li>
+              <li><strong>Papers：</strong>Research OS 累積的論文 corpus。</li>
+              <li><strong>Agents：</strong>背景工作與 crash recovery。</li>
+              <li><strong>System：</strong>source、scheduler、backup / health、resource 狀態。</li>
+            </ul>
+          </div>
+        </section>
       </div>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <button data-nav="today"><span class="mi">⌂</span>Today</button>
+    <button data-nav="tasks"><span class="mi">✓</span>Tasks</button>
+    <button data-nav="meetings"><span class="mi">◷</span>Meet</button>
+    <button data-nav="research"><span class="mi">⌁</span>Research</button>
+    <button data-nav="papers"><span class="mi">▤</span>Papers</button>
+    <button data-nav="agents"><span class="mi">⌘</span>Agents</button>
+    <button data-nav="system"><span class="mi">⚙</span>System</button>
+    <button data-nav="help"><span class="mi">?</span>Help</button>
+  </nav>
+
+  <div id="transcript-modal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h3>匯入 Meeting transcript / 筆記</h3>
+      <p>只萃取候選語意。會影響 obligation / decision 的內容仍然進 Needs You。</p>
+      <div class="field"><label for="transcript-mid">Meeting ID</label><input id="transcript-mid" placeholder="M-20260910"></div>
+      <div class="field mt"><label for="transcript-text">逐字稿 / 筆記</label><textarea id="transcript-text" rows="10" placeholder="Prof: ...\n我: ..."></textarea></div>
+      <div class="modal-actions"><button class="btn ghost" data-close="transcript-modal">取消</button><button class="btn primary" id="submit-transcript">匯入並分析</button></div>
     </div>
   </div>
 
-  <!-- Modal for Ingesting Transcript -->
-  <div id="ingest-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center;">
-    <div class="card" style="width: 500px; max-width: 90%;">
-      <h3 style="color: var(--text-bright); margin-bottom: 0.5rem;">匯入 Advisor Meeting 逐字稿 / 筆記</h3>
-      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Meeting Agent 將自動萃取 Commitments、Obligations、Tasks 並生成待審批 Slack 回報草稿。</p>
-      <input id="modal-mid" type="text" placeholder="會議 ID (例：M-20260910)" style="width: 100%; padding: 0.4rem; background: #0d1117; border: 1px solid var(--border); color: #fff; border-radius: 4px; margin-bottom: 0.5rem;">
-      <textarea id="modal-transcript" rows="6" placeholder="貼上會議逐字稿或筆記重點..."></textarea>
-      <div style="margin-top: 0.75rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
-        <button onclick="closeModal('ingest-modal')">取消</button>
-        <button class="primary" onclick="submitTranscript()">匯入並分析</button>
-      </div>
-    </div>
+  <div id="text-modal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal"><h3 id="text-modal-title">內容</h3><pre id="text-modal-body"></pre><div class="modal-actions"><button class="btn" data-close="text-modal">關閉</button></div></div>
   </div>
 
-  <script>
-    let currentFocusTaskId = null;
-
-    async function readJsonResponse(res) {
-      let body = {};
-      try { body = await res.json(); } catch (_) {}
-      if (!res.ok) {
-        throw new Error(body.detail || `HTTP ${res.status}`);
-      }
-      return body;
-    }
-
-    async function refreshData() {
-      try {
-        const res = await fetch('/api/cockpit');
-        const data = await readJsonResponse(res);
-
-        // 1. What matters now
-        const now = data.what_matters_now;
-        const fa = now.focus_action;
-        currentFocusTaskId = fa.task_id;
-        document.getElementById('hero-title').textContent = fa.title || '無待辦任務';
-        document.getElementById('hero-why').textContent = `${fa.why} · 建議代理: ${fa.suggested_agent.toUpperCase()}`;
-        document.getElementById('hero-est').textContent = `預估 ~${fa.estimated_minutes} 分鐘`;
-        document.getElementById('dispatch-btn').style.display = fa.task_id ? 'inline-block' : 'none';
-
-        // Fake progress warning
-        const alertBox = document.getElementById('critic-alert');
-        if (now.fake_progress_warning) {
-          alertBox.style.display = 'block';
-          alertBox.textContent = now.warning_message;
-        } else {
-          alertBox.style.display = 'none';
-        }
-
-        // 2. What is coming (Obligations)
-        const obList = document.getElementById('obligations-list');
-        obList.innerHTML = '';
-        if (now.critical_obligations.length === 0) {
-          obList.innerHTML = '<li class="item-row" style="color: var(--text-muted);">目前無待滿足之緊急 Obligation</li>';
-        } else {
-          now.critical_obligations.forEach(ob => {
-            const li = document.createElement('li');
-            li.className = 'item-row';
-            const badgeClass = ob.severity === 'critical' ? 'badge-critical' : 'badge-high';
-            li.innerHTML = `<span class="badge ${badgeClass}">${ob.severity.toUpperCase()}</span> <strong>${ob.title}</strong> (${ob.status})`;
-            obList.appendChild(li);
-          });
-        }
-
-        // 5. What needs me (Approvals)
-        const appContainer = document.getElementById('approvals-container');
-        const pending = data.what_needs_me.pending_approvals;
-        document.getElementById('approval-count-badge').textContent = `${pending.length} 項待審`;
-        appContainer.innerHTML = '';
-        if (pending.length === 0) {
-          appContainer.innerHTML = '<div class="item-row" style="color: var(--text-muted);">目前無待審批項目，AI 可自主推進。</div>';
-        } else {
-          pending.forEach(ap => {
-            const div = document.createElement('div');
-            div.className = 'item-row';
-            div.innerHTML = `
-              <div style="font-weight: 600; color: var(--text-bright); margin-bottom: 0.3rem;">[${ap.action_type.toUpperCase()}] ${ap.reason}</div>
-              <pre style="margin-bottom: 0.5rem;">${ap.action_payload.text || JSON.stringify(ap.action_payload, null, 2)}</pre>
-              <div style="display: flex; gap: 0.5rem;">
-                <button class="primary" onclick="decideApproval('${ap.id}', 'approved')">核准傳送</button>
-                <button class="danger" onclick="decideApproval('${ap.id}', 'rejected')">駁回</button>
-              </div>
-            `;
-            appContainer.appendChild(div);
-          });
-        }
-
-        renderInterruptedRuns(data.what_needs_me.interrupted_runs || []);
-
-        // 3. What changed (Findings)
-        const findList = document.getElementById('findings-list');
-        findList.innerHTML = '';
-        const findings = data.what_changed.recent_findings;
-        if (findings.length === 0) {
-          findList.innerHTML = '<li class="item-row" style="color: var(--text-muted);">尚未沉澱出最新 Findings</li>';
-        } else {
-          findings.forEach(f => {
-            const li = document.createElement('li');
-            li.className = 'item-row';
-            li.innerHTML = `<span class="badge badge-success">${f.status.toUpperCase()}</span> <strong>${f.statement}</strong> (信賴度: ${f.confidence})`;
-            findList.appendChild(li);
-          });
-        }
-
-        // 4. What are agents doing
-        const agentList = document.getElementById('agents-list');
-        agentList.innerHTML = '';
-        const runs = data.what_are_agents_doing.recent_runs;
-        if (runs.length === 0) {
-          agentList.innerHTML = '<li class="item-row" style="color: var(--text-muted);">所有 Agent 處於 Idle 待命狀態。</li>';
-        } else {
-          runs.forEach(r => {
-            const li = document.createElement('li');
-            li.className = 'item-row';
-            li.innerHTML = `<strong>${r.agent_type.toUpperCase()}</strong> (${r.job_type}) · 狀態: <code>${r.status}</code> · 分支: <code>${r.branch || 'none'}</code>`;
-            agentList.appendChild(li);
-          });
-        }
-
-      } catch (e) {
-        console.error('Error refreshing data:', e);
-      }
-    }
-
-    function renderInterruptedRuns(runs) {
-      const container = document.getElementById('interrupted-runs-container');
-      const badge = document.getElementById('interrupted-count-badge');
-      badge.textContent = `${runs.length} 個待處理`;
-      container.innerHTML = '';
-
-      if (runs.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'item-row';
-        empty.style.color = 'var(--text-muted)';
-        empty.textContent = '目前沒有中斷中的 Agent Run。';
-        container.appendChild(empty);
-        return;
-      }
-
-      runs.forEach(run => {
-        const div = document.createElement('div');
-        div.className = 'item-row';
-
-        const title = document.createElement('div');
-        title.style.fontWeight = '700';
-        title.style.color = 'var(--text-bright)';
-        title.textContent = `${run.id} · ${run.task_title || run.task_id || '未知 Task'}`;
-        div.appendChild(title);
-
-        const meta = document.createElement('div');
-        meta.className = 'recovery-meta';
-        meta.textContent = `建議: ${run.recommended_action === 'resume' ? '續跑原現場' : '乾淨重跑'} · Worktree: ${run.workspace_exists ? '仍在' : '遺失'} · ${run.workspace || ''}`;
-        div.appendChild(meta);
-
-        const actions = document.createElement('div');
-        actions.className = 'recovery-actions';
-        actions.appendChild(recoveryButton('查看現場', () => inspectInterruptedRun(run.id)));
-        actions.appendChild(recoveryButton('繼續原 Worktree', () => recoverInterruptedRun(run.id, 'resume'), 'primary'));
-        actions.appendChild(recoveryButton('乾淨重跑', () => recoverInterruptedRun(run.id, 'retry_fresh')));
-        actions.appendChild(recoveryButton('放棄這次 Run', () => recoverInterruptedRun(run.id, 'abandon'), 'danger'));
-        div.appendChild(actions);
-        container.appendChild(div);
-      });
-    }
-
-    function recoveryButton(label, handler, className = '') {
-      const button = document.createElement('button');
-      button.textContent = label;
-      if (className) button.className = className;
-      button.addEventListener('click', handler);
-      return button;
-    }
-
-    async function inspectInterruptedRun(runId) {
-      try {
-        const res = await fetch(`/api/agent-runs/${runId}/inspect`);
-        const data = await readJsonResponse(res);
-        const files = (data.workspace_files || []).slice(0, 80);
-        const fileText = files.length ? files.join('\n') : '(沒有可列出的檔案)';
-        alert(`Run: ${runId}\nWorktree: ${data.run.workspace || '(none)'}\n建議: ${data.recommended_action}\n\n現場檔案:\n${fileText}`);
-      } catch (e) {
-        alert('讀取中斷現場失敗：' + e.message);
-      }
-    }
-
-    async function recoverInterruptedRun(runId, action) {
-      const labels = {
-        resume: '繼續原 Worktree',
-        retry_fresh: '乾淨重跑',
-        abandon: '放棄這次 Run',
-      };
-      if (!confirm(`${labels[action] || action}：${runId}？\n原本的 Worktree 不會被系統自動刪除。`)) return;
-
-      try {
-        const res = await fetch(`/api/agent-runs/${runId}/recover`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action }),
-        });
-        const result = await readJsonResponse(res);
-        const newRun = result.new_run_id ? `\n新 Run: ${result.new_run_id}` : '';
-        alert(`${labels[action] || action} 已受理。\n狀態: ${result.status}${newRun}`);
-        refreshData();
-      } catch (e) {
-        alert('Recovery 失敗：' + e.message);
-      }
-    }
-
-    async function dispatchFocusTask() {
-      if (!currentFocusTaskId) return;
-      try {
-        const res = await fetch(`/api/tasks/${currentFocusTaskId}/dispatch`, { method: 'POST' });
-        const result = await readJsonResponse(res);
-        const submitText = result.submitted ? '已送進背景 worker' : '已可靠排隊，Supervisor 會接手';
-        alert(`Codex 任務已排隊。\nRun ID: ${result.run_id}\n狀態: ${result.status}\n${submitText}\n\n完成後會自動出現在 Agent 執行動態，不需要把這個頁面開著。`);
-        refreshData();
-      } catch (e) {
-        alert('派工失敗：' + e.message);
-      }
-    }
-
-    async function triggerMeetingPack() {
-      const mid = prompt('請輸入欲產出 Pack 的會議 ID (例：M-20260917)：', 'M-20260917');
-      if (!mid) return;
-      try {
-        const res = await fetch(`/api/meetings/${mid}/pack`, { method: 'POST' });
-        const data = await readJsonResponse(res);
-        alert(`Meeting Pack 已成功產出並存證至 Artifact Registry！\n\n大綱預覽：\n` + data.meeting_pack.substring(0, 300) + '...');
-        refreshData();
-      } catch (e) {
-        alert('產出失敗：' + e.message);
-      }
-    }
-
-    async function decideApproval(apId, decision) {
-      try {
-        const res = await fetch(`/api/approvals/${apId}/decide`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: decision }),
-        });
-        await readJsonResponse(res);
-        refreshData();
-      } catch (e) {
-        alert('操作失敗：' + e.message);
-      }
-    }
-
-    function openModal(id) {
-      document.getElementById(id).style.display = 'flex';
-    }
-    function closeModal(id) {
-      document.getElementById(id).style.display = 'none';
-    }
-
-    async function submitTranscript() {
-      const mid = document.getElementById('modal-mid').value.trim();
-      const text = document.getElementById('modal-transcript').value.trim();
-      if (!mid || !text) {
-        alert('請填寫會議 ID 與逐字稿內容');
-        return;
-      }
-      try {
-        const res = await fetch('/api/meetings/ingest', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ meeting_id: mid, transcript_text: text }),
-        });
-        await readJsonResponse(res);
-        closeModal('ingest-modal');
-        alert('逐字稿已成功匯入；高影響語意會進 Needs You，而不是被 Agent 自動寫成研究真相。');
-        refreshData();
-      } catch (e) {
-        alert('匯入失敗：' + e.message);
-      }
-    }
-
-    // Initial load
-    closeModal('ingest-modal');
-    refreshData();
-    setInterval(refreshData, 10000);
-  </script>
+  <div id="toast" class="toast"></div>
+  <script src="/static/app.js"></script>
 </body>
 </html>
