@@ -11,10 +11,7 @@
 <body>
   <div class="shell">
     <aside class="sidebar">
-      <div class="brand">
-        <strong>lab-is-my-mom</strong>
-        <small>Master OS v0.5</small>
-      </div>
+      <div class="brand"><strong>lab-is-my-mom</strong><small>Master OS v0.5.1</small></div>
       <nav class="nav" aria-label="Master OS navigation">
         <button class="nav-btn" data-nav="today"><span class="nav-icon">⌂</span>Today</button>
         <button class="nav-btn" data-nav="tasks"><span class="nav-icon">✓</span>Tasks</button>
@@ -74,22 +71,53 @@
         </section>
 
         <section class="page" data-page="meetings">
-          <div class="page-head"><div><h2>Meetings</h2><p>下一次 meeting 是整個 scheduler 的時間錨。改時間，pre-meeting readiness 會跟著移。</p></div><button class="btn" id="meeting-ingest-top">＋ 匯入逐字稿</button></div>
+          <div class="page-head">
+            <div><h2>Meetings</h2><p>正常情況是每週固定節奏。Advisor 時間設定一次，Lab Seminar 依實驗室規範固定；單次日期只用在少見的臨時會議。</p></div>
+            <button class="btn" id="meeting-ingest-top">＋ 匯入逐字稿</button>
+          </div>
           <div class="grid-2">
             <div class="card">
-              <div class="card-title"><span>設定 / 修改 Meeting</span><span class="badge blue">User explicit</span></div>
-              <form id="meeting-form">
+              <div class="card-title"><span>每週 Advisor Meeting</span><span class="badge blue">User explicit</span></div>
+              <p class="item-meta" style="margin-bottom:12px">研究生需知只說「每週一次個人 meeting」，沒有寫固定星期與時間，所以這裡由你設定一次。</p>
+              <form id="advisor-routine-form">
                 <div class="form-grid">
-                  <div class="field"><label for="meeting-id">Meeting ID（留空自動產生）</label><input id="meeting-id" placeholder="例：M-20260910"></div>
-                  <div class="field"><label for="meeting-kind">類型</label><select id="meeting-kind"><option value="advisor">Advisor meeting</option><option value="lab_seminar">Lab seminar</option><option value="course">Course</option><option value="other">Other</option></select></div>
-                  <div class="field full"><label for="meeting-title">標題</label><input id="meeting-title" placeholder="Advisor Meeting"></div>
-                  <div class="field full"><label for="meeting-time">時間（你的本機時區）</label><input id="meeting-time" type="datetime-local" required></div>
+                  <div class="field"><label for="advisor-weekday">每週星期幾</label>
+                    <select id="advisor-weekday" required>
+                      <option value="mon">週一</option><option value="tue">週二</option><option value="wed">週三</option><option value="thu">週四</option><option value="fri">週五</option><option value="sat">週六</option><option value="sun">週日</option>
+                    </select>
+                  </div>
+                  <div class="field"><label for="advisor-time">固定開始時間</label><input id="advisor-time" type="time" required></div>
                 </div>
-                <div class="form-actions"><button type="submit" class="btn primary">儲存 Meeting</button><button type="button" id="meeting-form-clear" class="btn ghost">清空</button></div>
+                <div id="advisor-routine-current" class="item-meta" style="margin-top:10px"></div>
+                <div class="form-actions"><button type="submit" class="btn primary">儲存每週固定時間</button></div>
               </form>
             </div>
-            <div class="card"><div class="card-title"><span>接下來的 Meetings</span><span id="meeting-upcoming-count" class="badge yellow">0</span></div><div id="meetings-upcoming" class="list"></div></div>
+            <div class="card">
+              <div class="card-title"><span>Lab Seminar</span><span class="badge green">Lab 規範</span></div>
+              <h3 style="margin-bottom:8px">每週一 13:30–14:10</h3>
+              <p class="item-meta">Google Meet。每週一位同學報論文，每位同學準備 30 分鐘；第二學期起進入報告順序。</p>
+              <div id="seminar-next" class="item" style="margin-top:14px">讀取下一次 Seminar...</div>
+              <p class="item-meta" style="margin-top:10px">Seminar 不用 Meeting Pack。輪到你報告時走獨立 Seminar Prep 流程。</p>
+            </div>
           </div>
+
+          <div class="card mt">
+            <div class="card-title"><span>下一輪 Meetings</span><span id="meeting-upcoming-count" class="badge yellow">0</span></div>
+            <div id="meetings-upcoming" class="list"></div>
+          </div>
+
+          <div class="card mt">
+            <div class="card-title"><span>臨時 / 額外 Meeting</span><span class="badge">偶爾才用</span></div>
+            <form id="adhoc-meeting-form">
+              <div class="form-grid">
+                <div class="field"><label for="adhoc-kind">類型</label><select id="adhoc-kind"><option value="advisor_adhoc">臨時 Advisor Meeting</option><option value="course">Course</option><option value="other">Other</option></select></div>
+                <div class="field"><label for="adhoc-time">日期時間</label><input id="adhoc-time" type="datetime-local" required></div>
+                <div class="field full"><label for="adhoc-title">標題</label><input id="adhoc-title" placeholder="例如：臨時討論實驗結果"></div>
+              </div>
+              <div class="form-actions"><button type="submit" class="btn">新增臨時 Meeting</button></div>
+            </form>
+          </div>
+
           <div class="card mt"><div class="card-title"><span>Meeting History</span><span class="badge">歷史</span></div><div id="meetings-history" class="list"></div></div>
         </section>
 
@@ -110,10 +138,7 @@
         <section class="page" data-page="papers">
           <div class="page-head"><div><h2>Papers</h2><p>原本 Research OS 的論文庫保留在這裡，現在變成 Master OS 的一個器官。</p></div></div>
           <div id="paper-stats" class="stats"></div>
-          <div class="card">
-            <div class="paper-toolbar"><input id="paper-search" type="search" placeholder="搜尋 title / author / venue..."><span id="paper-visible-count" class="badge blue"></span></div>
-            <div id="papers-list" class="paper-list"></div>
-          </div>
+          <div class="card"><div class="paper-toolbar"><input id="paper-search" type="search" placeholder="搜尋 title / author / venue..."><span id="paper-visible-count" class="badge blue"></span></div><div id="papers-list" class="paper-list"></div></div>
         </section>
 
         <section class="page" data-page="agents">
@@ -143,18 +168,18 @@
           <div class="card guide">
             <h3>第一次使用，只做三件必要的事</h3>
             <ol>
-              <li>到 <strong>Meetings</strong> 設定下一次 Advisor Meeting。</li>
+              <li>到 <strong>Meetings</strong> 設定「每週 Advisor Meeting」的固定星期與時間。Lab Seminar 已依實驗室規範固定為每週一 13:30–14:10。</li>
               <li>到 <strong>Research</strong> 填入目前真正的研究主軸。</li>
-              <li>有最近一次 meeting 筆記或逐字稿，就用右上角「匯入 Meeting」。</li>
+              <li>有最近一次 meeting 筆記或逐字稿，就用「匯入 Meeting」。</li>
             </ol>
-            <p>Slack 是加速器，不是啟動條件。沒設定 Slack，Master OS 仍然可以正常跑。</p>
+            <p>臨時 Meeting 才需要輸入單次日期。Slack 是加速器，不是啟動條件。</p>
 
             <h3>一週的正常節奏</h3>
-            <div class="flow"><span>Meeting 時間</span><i>→</i><span>自動 readiness</span><i>→</i><span>Tasks / Codex</span><i>→</i><span>Experiment</span><i>→</i><span>Finding</span><i>→</i><span>Meeting Pack</span><i>→</i><span>Transcript</span></div>
+            <div class="flow"><span>固定 Advisor cadence</span><i>→</i><span>自動 readiness</span><i>→</i><span>Tasks / Codex</span><i>→</i><span>Experiment</span><i>→</i><span>Finding</span><i>→</i><span>Meeting Pack</span><i>→</i><span>Transcript</span></div>
             <ul>
-              <li><strong>Meeting 前：</strong>Today 看「現在最值得做的一件事」，必要時派 Codex。</li>
-              <li><strong>Meeting 當天：</strong>Meetings 產 Meeting Pack。</li>
-              <li><strong>Meeting 後：</strong>把 transcript / 筆記貼進來。高影響語意會進 Needs You，不會偷偷寫成研究真相。</li>
+              <li><strong>Advisor Meeting 前：</strong>Scheduler 依固定星期/時間自動推算下一次 meeting，Meeting Pack 只服務這條研究進度 workflow。</li>
+              <li><strong>Lab Seminar：</strong>每週一 13:30–14:10，是另一種 meeting；輪到你報告時使用 Seminar Prep，不跟 Advisor Meeting Pack 混在一起。</li>
+              <li><strong>Meeting 後：</strong>貼 transcript / 筆記。高影響語意進 Needs You，不會偷偷寫成研究真相。</li>
               <li><strong>實驗期間：</strong>Research 看 Experiment → Finding 是否真的有證據鏈。</li>
             </ul>
 
@@ -171,9 +196,9 @@
 
             <h3>每個分頁在幹嘛</h3>
             <ul>
-              <li><strong>Today：</strong>只回答今天最重要、快到的 deadline、Needs You、Agent 狀態。</li>
+              <li><strong>Today：</strong>今天最重要、快到的 deadline、Needs You、Agent 狀態。</li>
               <li><strong>Tasks：</strong>可執行工作與 obligations。</li>
-              <li><strong>Meetings：</strong>meeting 時間、逐字稿、Meeting Pack、歷史。</li>
+              <li><strong>Meetings：</strong>兩種每週固定 meeting、臨時 meeting、逐字稿、Meeting Pack、歷史。</li>
               <li><strong>Research：</strong>研究主軸、experiments、findings、decisions、artifacts。</li>
               <li><strong>Papers：</strong>Research OS 累積的論文 corpus。</li>
               <li><strong>Agents：</strong>背景工作與 crash recovery。</li>
@@ -186,21 +211,18 @@
   </div>
 
   <nav class="mobile-nav" aria-label="Mobile navigation">
-    <button data-nav="today"><span class="mi">⌂</span>Today</button>
-    <button data-nav="tasks"><span class="mi">✓</span>Tasks</button>
-    <button data-nav="meetings"><span class="mi">◷</span>Meet</button>
-    <button data-nav="research"><span class="mi">⌁</span>Research</button>
-    <button data-nav="papers"><span class="mi">▤</span>Papers</button>
-    <button data-nav="agents"><span class="mi">⌘</span>Agents</button>
-    <button data-nav="system"><span class="mi">⚙</span>System</button>
-    <button data-nav="help"><span class="mi">?</span>Help</button>
+    <button data-nav="today"><span class="mi">⌂</span>Today</button><button data-nav="tasks"><span class="mi">✓</span>Tasks</button><button data-nav="meetings"><span class="mi">◷</span>Meet</button><button data-nav="research"><span class="mi">⌁</span>Research</button><button data-nav="papers"><span class="mi">▤</span>Papers</button><button data-nav="agents"><span class="mi">⌘</span>Agents</button><button data-nav="system"><span class="mi">⚙</span>System</button><button data-nav="help"><span class="mi">?</span>Help</button>
   </nav>
 
   <div id="transcript-modal" class="modal-backdrop" role="dialog" aria-modal="true">
     <div class="modal">
       <h3>匯入 Meeting transcript / 筆記</h3>
-      <p>只萃取候選語意。會影響 obligation / decision 的內容仍然進 Needs You。</p>
-      <div class="field"><label for="transcript-mid">Meeting ID</label><input id="transcript-mid" placeholder="M-20260910"></div>
+      <p>從 Meetings 裡的 recurring occurrence 點「匯入」會自動帶入時間。若你手動輸入一個尚不存在的 Meeting ID，請也填真實日期時間，Master OS 不會猜。</p>
+      <div class="field"><label for="transcript-mid">Meeting ID</label><input id="transcript-mid" placeholder="例如：M-ADV-20260910"></div>
+      <div class="form-grid mt">
+        <div class="field"><label for="transcript-kind">類型</label><select id="transcript-kind"><option value="advisor">Advisor Meeting</option><option value="advisor_adhoc">臨時 Advisor Meeting</option><option value="lab_seminar">Lab Seminar</option><option value="other">Other</option></select></div>
+        <div class="field"><label for="transcript-time">實際 / 排定日期時間</label><input id="transcript-time" type="datetime-local"></div>
+      </div>
       <div class="field mt"><label for="transcript-text">逐字稿 / 筆記</label><textarea id="transcript-text" rows="10" placeholder="Prof: ...\n我: ..."></textarea></div>
       <div class="modal-actions"><button class="btn ghost" data-close="transcript-modal">取消</button><button class="btn primary" id="submit-transcript">匯入並分析</button></div>
     </div>
