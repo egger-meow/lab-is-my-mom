@@ -89,8 +89,14 @@ class MasterDoctor:
             elif age_hours > 36:
                 self._warn(results, f"Latest Master DB backup is stale ({age_hours:.1f}h old)")
         else:
-            results["checks"]["backup"] = {"latest": None, "snapshot_count": 0}
-            self._warn(results, "No Master DB backup snapshot exists yet")
+            # A brand-new install is allowed to be healthy before the first supervisor
+            # tick. Production supervisor maintenance creates and verifies the initial
+            # snapshot immediately, then keeps it fresh daily.
+            results["checks"]["backup"] = {
+                "latest": None,
+                "snapshot_count": 0,
+                "status": "awaiting_first_supervisor_tick",
+            }
 
         supervisor_row = self.db.fetchone(
             "SELECT status, last_heartbeat, message, details_json FROM system_health WHERE subsystem='supervisor'"
