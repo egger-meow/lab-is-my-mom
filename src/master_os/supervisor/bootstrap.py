@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
 from master_os.agents.critic import MasterCritic
+from master_os.agents.recovery import AgentRecovery
 from master_os.collectors.slack import SlackCollector
 from master_os.core.artifacts import ArtifactRegistry
 from master_os.core.database import MasterDatabase
@@ -82,6 +83,15 @@ def build_supervisor(
         poll_seconds = float(str(config.get("MASTER_OS_SUPERVISOR_POLL_SECONDS", "60")).strip())
     except ValueError as exc:
         raise ValueError("MASTER_OS_SUPERVISOR_POLL_SECONDS must be numeric") from exc
+    if poll_seconds <= 0:
+        raise ValueError("MASTER_OS_SUPERVISOR_POLL_SECONDS must be positive")
+
+    try:
+        stale_seconds = float(str(config.get("MASTER_OS_AGENT_STALE_SECONDS", "180")).strip())
+    except ValueError as exc:
+        raise ValueError("MASTER_OS_AGENT_STALE_SECONDS must be numeric") from exc
+    if stale_seconds <= 0:
+        raise ValueError("MASTER_OS_AGENT_STALE_SECONDS must be positive")
 
     repo_root = repo_root.resolve()
     events = EventStore(db)
@@ -89,6 +99,7 @@ def build_supervisor(
     relations = RelationGraph(db, events=events)
     meeting_agent = MeetingAgent(db, events, artifacts, relations, repo_root)
     scheduler = SchedulerEngine(db, events, MasterCritic(db))
+    recovery = AgentRecovery(db, events, stale_after_seconds=stale_seconds)
 
     def handle_meeting_routine(item: dict[str, Any]) -> dict[str, Any]:
         name = item.get("name")
@@ -134,6 +145,7 @@ def build_supervisor(
         scheduler,
         routine_handlers={"meeting_agent": handle_meeting_routine},
         source_syncers=source_syncers,
+        recovery_handler=recovery.recover_stale_runs,
         poll_seconds=poll_seconds,
     )
 
