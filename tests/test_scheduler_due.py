@@ -1,5 +1,5 @@
 """Regression tests for durable scheduler timing semantics."""
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from master_os.agents.critic import MasterCritic
@@ -101,26 +101,91 @@ def test_relative_meeting_schedule_becomes_due_once_for_next_advisor_meeting(tmp
 
         before = datetime(2026, 9, 9, 21, 59, tzinfo=timezone.utc)
         due_at = datetime(2026, 9, 9, 22, 0, tzinfo=timezone.utc)
-        assert _advisor_due(scheduler.due_schedules(before)) == []
+        assert _named_due(scheduler.due_schedules(before), "Advisor Pre-Meeting Readiness & Pack") == []
 
-        due = _advisor_due(scheduler.due_schedules(due_at))
+        due = _named_due(scheduler.due_schedules(due_at), "Advisor Pre-Meeting Readiness & Pack")
         assert len(due) == 1
         assert due[0]["trigger_at"] == "2026-09-09T22:00:00+00:00"
         assert due[0]["context"]["meeting_id"] == "M-NEXT"
 
-        schedule_id = due[0]["id"]
-        scheduler_source = events.register_source("scheduler", "Master Scheduler", "master-os-scheduler")
-        triggered = events.record_event(
-            "schedule.triggered",
-            scheduler_source.id,
-            {"id": schedule_id, "last_run_at": due_at.isoformat()},
-            occurred_at=due_at.isoformat(),
-        )
-        apply_event(db, triggered)
-        assert _advisor_due(scheduler.due_schedules(due_at)) == []
+        _mark_triggered(db, events, due[0]["id"], due_at)
+        assert _named_due(scheduler.due_schedules(due_at), "Advisor Pre-Meeting Readiness & Pack") == []
     finally:
         db.close()
 
 
-def _advisor_due(items: list[dict]) -> list[dict]:
-    return [item for item in items if item["name"] == "Advisor Pre-Meeting Readiness & Pack"]
+def test_interval_schedule_catches_up_once_then_waits_for_next_interval(tmp_path: Path):
+    db, scheduler = _scheduler(tmp_path)
+    try:
+        events = EventStore(db)
+        schedule = next(item for item in scheduler.list_schedules() if item["name"] == "NCHC & API Resource Burn Watchdog")
+        created_at = datetime.fromisoformat(schedule["created_at"])
+        first_due_at = created_at + timedelta(minutes=60)
+
+        assert _named_due(scheduler.due_schedules(first_due_at - timedelta(seconds=1)), schedule["name"]) == []
+        due = _named_due(scheduler.due_schedules(first_due_at), schedule["name"])
+        assert len(due) == 1
+        assert due[0]["trigger_at"] == first_due_at.isoformat()
+
+        _mark_triggered(db, events, schedule["id"], first_due_at)
+        assert _named_due(scheduler.due_schedules(first_due_at + timedelta(minutes=59)), schedule["name"]) == []
+        assert len(_named_due(scheduler.due_schedules(first_due_at + timedelta(minutes=60)), schedule["name"])) == 1
+    finally:
+        db.close()
+
+
+def test_weekly_time_cron_is_evaluated_in_taipei_timezone(tmp_path: Path):
+    db, scheduler = _scheduler(tmp_path)
+    try:
+        name = "Weekly Research Progress & Critic"
+        before = datetime(2026, 9, 6, 11, 59, tzinfo=timezone.utc)
+        occurrence = datetime(2026, 9, 6, 12, 0, tzinfo=timezone.utc)  # Sunday 20:00 Asia/Taipei
+
+        assert _named_due(scheduler.due_schedules(before), name) == []
+        due = _named_due(scheduler.due_schedules(occurrence), name)
+        assert len(due) == 1
+        assert due[0]["trigger_at"] == occurrence.isoformat()
+    finally:
+        db.close()
+
+
+def test_event_schedule_fires_once_for_new_matching_event(tmp_path: Path):
+    db, scheduler = _scheduler(tmp_path)
+    try:
+        events = EventStore(db)
+        name = "Advisor Post-Meeting Digest to Slack"
+        before = datetime(2026, 9, 5, 5, 0, tzinfo=timezone.utc)
+        assert _named_due(scheduler.due_schedules(before), name) == []
+
+        source = events.register_source("test", "test", "meeting-event")
+        completed = events.record_event(
+            "meeting.completed",
+            source.id,
+            {"id": "M-DONE"},
+            occurred_at="2026-09-05T05:01:00+00:00",
+        )
+        due_at = datetime(2026, 9, 5, 5, 1, tzinfo=timezone.utc)
+        due = _named_due(scheduler.due_schedules(due_at), name)
+        assert len(due) == 1
+        assert due[0]["context"]["event_id"] == completed.id
+        assert due[0]["context"]["event_type"] == "meeting.completed"
+
+        _mark_triggered(db, events, due[0]["id"], due_at)
+        assert _named_due(scheduler.due_schedules(due_at + timedelta(minutes=1)), name) == []
+    finally:
+        db.close()
+
+
+def _mark_triggered(db: MasterDatabase, events: EventStore, schedule_id: str, when: datetime) -> None:
+    scheduler_source = events.register_source("scheduler", "Master Scheduler", "master-os-scheduler")
+    event = events.record_event(
+        "schedule.triggered",
+        scheduler_source.id,
+        {"id": schedule_id, "last_run_at": when.isoformat()},
+        occurred_at=when.isoformat(),
+    )
+    apply_event(db, event)
+
+
+def _named_due(items: list[dict], name: str) -> list[dict]:
+    return [item for item in items if item["name"] == name]
