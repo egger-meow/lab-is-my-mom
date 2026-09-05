@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from datetime import datetime, timedelta, timezone
+from typing import Any, Optional
 
 from master_os.agents.critic import MasterCritic
 from master_os.core.database import MasterDatabase
@@ -125,22 +126,71 @@ class SchedulerEngine:
 
     def list_schedules(self) -> list[dict[str, Any]]:
         rows = self.db.fetchall("SELECT * FROM schedules ORDER BY created_at ASC")
-        return [
-            {
-                "id": r["id"],
-                "name": r["name"],
-                "trigger_type": r["trigger_type"],
-                "trigger_spec": json.loads(r["trigger_spec_json"]),
-                "agent_role": r["agent_role"],
-                "prompt_template": r["prompt_template"],
-                "enabled": bool(r["enabled"]),
-                "catch_up_policy": r["catch_up_policy"],
-                "autonomy_policy": json.loads(r["autonomy_policy_json"]),
-                "last_run_at": r["last_run_at"],
-                "next_run_at": r["next_run_at"],
-            }
-            for r in rows
-        ]
+        return [self._schedule_payload_from_row(r) for r in rows]
+
+    def due_schedules(self, now: Optional[datetime] = None) -> list[dict[str, Any]]:
+        """Return enabled routines whose current trigger occurrence has not run.
+
+        This first durable timing primitive intentionally starts with
+        ``relative_meeting``. Other trigger families are added explicitly rather
+        than pretending that a stored schedule is already an executing daemon.
+        """
+        current = now or datetime.now(timezone.utc)
+        if current.tzinfo is None:
+            raise ValueError("Scheduler clock must be timezone-aware")
+        current = current.astimezone(timezone.utc)
+
+        due: list[dict[str, Any]] = []
+        rows = self.db.fetchall("SELECT * FROM schedules WHERE enabled = 1 ORDER BY created_at ASC")
+        for row in rows:
+            if row["trigger_type"] != "relative_meeting":
+                continue
+            item = self._relative_meeting_due(row, current)
+            if item is not None:
+                due.append(item)
+        return due
+
+    def _relative_meeting_due(self, row: Any, current: datetime) -> Optional[dict[str, Any]]:
+        spec = json.loads(row["trigger_spec_json"])
+        meeting_kind = str(spec.get("meeting_kind") or "").strip()
+        if not meeting_kind:
+            return None
+
+        meeting = self.db.fetchone(
+            """SELECT * FROM meetings
+               WHERE kind = ? AND status = 'scheduled' AND scheduled_at > ?
+               ORDER BY scheduled_at ASC LIMIT 1""",
+            (meeting_kind, current.isoformat()),
+        )
+        if not meeting:
+            return None
+
+        meeting_at = self._parse_time(meeting["scheduled_at"])
+        offset_minutes = int(spec.get("offset_minutes", 0))
+        trigger_at = meeting_at + timedelta(minutes=offset_minutes)
+        if current < trigger_at:
+            return None
+
+        last_run_at = self._parse_time(row["last_run_at"]) if row["last_run_at"] else None
+        if last_run_at is not None and last_run_at >= trigger_at:
+            return None
+
+        item = self._schedule_payload_from_row(row)
+        item["trigger_at"] = trigger_at.isoformat()
+        item["context"] = {
+            "meeting_id": meeting["id"],
+            "meeting_kind": meeting["kind"],
+            "meeting_title": meeting["title"],
+            "scheduled_at": meeting["scheduled_at"],
+        }
+        return item
+
+    @staticmethod
+    def _parse_time(value: str) -> datetime:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
 
     def trigger_routine(self, schedule_name: str) -> dict[str, Any]:
         """Execute a routine and record the trigger in canonical history."""
