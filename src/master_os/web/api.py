@@ -3,25 +3,28 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from master_os.agents.critic import MasterCritic
+from master_os.agents.packet import AgentJobPacket, WorkPacketBuilder
+from master_os.agents.runtime import AgentRuntime
+from master_os.core.artifacts import ArtifactRegistry
 from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
-from master_os.core.artifacts import ArtifactRegistry
-from master_os.core.relations import RelationGraph
 from master_os.core.reducer import apply_event
-from master_os.agents.critic import MasterCritic
-from master_os.agents.packet import WorkPacketBuilder
-from master_os.agents.runtime import AgentRuntime
+from master_os.core.relations import RelationGraph
 from master_os.intelligence.meeting_agent import MeetingAgent
 from master_os.intelligence.planner import MasterPlanner
 from master_os.scheduler.engine import SchedulerEngine
 from master_os.supervisor.doctor import MasterDoctor
+
+AgentExecutor = Callable[[Path, AgentJobPacket], dict[str, Any]]
 
 
 class IngestTranscriptRequest(BaseModel):
@@ -30,16 +33,22 @@ class IngestTranscriptRequest(BaseModel):
 
 
 class DecideApprovalRequest(BaseModel):
-    status: str  # approved, rejected
+    status: str
     note: Optional[str] = None
 
 
 def create_app(
     db: MasterDatabase,
     repo_root: Path,
+    agent_executors: Optional[dict[str, AgentExecutor]] = None,
 ) -> FastAPI:
-    app = FastAPI(title="Master OS Cockpit", version="0.2.0")
+    """Create the local cockpit API.
 
+    Production does not contain a demo executor. Real agent adapters are injected
+    explicitly. Tests may inject deterministic executors without contaminating
+    production behavior with fabricated metrics/findings.
+    """
+    app = FastAPI(title="Master OS Cockpit", version="0.2.0")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -48,9 +57,10 @@ def create_app(
         allow_headers=["*"],
     )
 
+    executors = agent_executors or {}
     events = EventStore(db)
-    artifacts = ArtifactRegistry(db, repo_root=repo_root)
-    relations = RelationGraph(db)
+    artifacts = ArtifactRegistry(db, repo_root=repo_root, events=events)
+    relations = RelationGraph(db, events=events)
     critic = MasterCritic(db)
     runtime = AgentRuntime(db, events, artifacts, repo_root=repo_root)
     packet_builder = WorkPacketBuilder(db)
@@ -68,7 +78,6 @@ def create_app(
         plan = planner.get_plan()
         health_report = critic.evaluate_health()
 
-        # 1. What matters now?
         what_matters_now = {
             "focus_action": {
                 "task_id": plan.focus_action.task_id,
@@ -84,7 +93,6 @@ def create_app(
             "warning_message": health_report.warning_message,
         }
 
-        # 2. What is coming?
         meetings_rows = db.fetchall(
             "SELECT * FROM meetings WHERE status = 'scheduled' ORDER BY scheduled_at ASC LIMIT 5"
         )
@@ -93,36 +101,27 @@ def create_app(
             "deadlines": plan.imminent_deadlines,
         }
 
-        # 3. What changed?
-        findings_rows = db.fetchall(
-            "SELECT * FROM findings ORDER BY created_at DESC LIMIT 5"
-        )
-        artifacts_rows = db.fetchall(
-            "SELECT * FROM artifacts ORDER BY created_at DESC LIMIT 5"
-        )
+        findings_rows = db.fetchall("SELECT * FROM findings ORDER BY created_at DESC LIMIT 5")
+        artifacts_rows = db.fetchall("SELECT * FROM artifacts ORDER BY created_at DESC LIMIT 5")
         what_changed = {
             "recent_findings": [dict(f) for f in findings_rows],
             "recent_artifacts": [dict(a) for a in artifacts_rows],
         }
 
-        # 4. What are agents doing?
-        runs_rows = db.fetchall(
-            "SELECT * FROM agent_runs ORDER BY created_at DESC LIMIT 5"
-        )
+        runs_rows = db.fetchall("SELECT * FROM agent_runs ORDER BY created_at DESC LIMIT 5")
         what_are_agents_doing = {
             "recent_runs": [dict(r) for r in runs_rows],
             "schedules": scheduler.list_schedules(),
         }
 
-        # 5. What needs me?
         approvals_rows = db.fetchall(
             "SELECT * FROM approvals WHERE status = 'pending' ORDER BY requested_at DESC"
         )
         parsed_approvals = []
-        for r in approvals_rows:
-            d = dict(r)
-            d["action_payload"] = json.loads(d["action_payload_json"])
-            parsed_approvals.append(d)
+        for row in approvals_rows:
+            item = dict(row)
+            item["action_payload"] = json.loads(item["action_payload_json"])
+            parsed_approvals.append(item)
 
         what_needs_me = {
             "pending_approvals": parsed_approvals,
@@ -140,53 +139,63 @@ def create_app(
 
     @app.post("/api/meetings/ingest")
     def ingest_transcript(req: IngestTranscriptRequest):
-        res = meeting_agent.ingest_transcript(req.meeting_id, req.transcript_text)
-        return res
+        return meeting_agent.ingest_transcript(req.meeting_id, req.transcript_text)
 
     @app.post("/api/meetings/{meeting_id}/pack")
     def generate_meeting_pack(meeting_id: str):
-        pack_text = meeting_agent.generate_meeting_pack(meeting_id)
-        return {"meeting_id": meeting_id, "meeting_pack": pack_text}
+        return {"meeting_id": meeting_id, "meeting_pack": meeting_agent.generate_meeting_pack(meeting_id)}
 
     @app.post("/api/approvals/{approval_id}/decide")
     def decide_approval(approval_id: str, req: DecideApprovalRequest):
+        if req.status not in {"approved", "rejected"}:
+            raise HTTPException(status_code=400, detail="status must be approved or rejected")
+        approval = db.fetchone("SELECT * FROM approvals WHERE id = ?", (approval_id,))
+        if not approval:
+            raise HTTPException(status_code=404, detail="approval not found")
+
         source = events.register_source("user", "User Cockpit", "cockpit-ui")
         event = events.record_event(
             event_type="approval.decided",
             source_id=source.id,
-            payload={
-                "id": approval_id,
-                "status": req.status,
-                "decision_note": req.note or "",
-            },
+            payload={"id": approval_id, "status": req.status, "decision_note": req.note or ""},
             created_by="user_explicit",
         )
         apply_event(db, event)
-        return {"approval_id": approval_id, "status": req.status}
+
+        materialized_entity_id = None
+        if req.status == "approved" and approval["action_type"] == "confirm_semantic_change":
+            materialized_entity_id = meeting_agent.apply_semantic_approval(approval_id)
+
+        return {
+            "approval_id": approval_id,
+            "status": req.status,
+            "materialized_entity_id": materialized_entity_id,
+        }
 
     @app.post("/api/tasks/{task_id}/dispatch")
     def dispatch_task(task_id: str):
+        task = db.fetchone("SELECT * FROM tasks WHERE id = ?", (task_id,))
+        if not task:
+            raise HTTPException(status_code=404, detail="task not found")
+        if task["agentability"] != "autonomous":
+            raise HTTPException(status_code=409, detail="task is not authorized for autonomous execution")
+
+        agent_type = task["preferred_agent"] or "codex"
+        executor = executors.get(agent_type)
+        if executor is None:
+            raise HTTPException(
+                status_code=503,
+                detail=f"No real {agent_type} executor is configured. Refusing to fabricate an agent result.",
+            )
+
         ws_path = repo_root / ".master-os" / "worktrees" / f"auto-{task_id.lower()}"
-        packet = packet_builder.build_packet(task_id, workspace_path=str(ws_path))
+        packet = packet_builder.build_packet(
+            task_id,
+            workspace_path=str(ws_path),
+            repo_name=repo_root.name,
+        )
+        return runtime.dispatch_autonomous_job(packet, agent_type=agent_type, executor_func=executor)
 
-        # Default executor for demo/dispatch
-        def run_executor(path: Path, pkt):
-            res_dir = path / "results"
-            res_dir.mkdir(parents=True, exist_ok=True)
-            (res_dir / "metrics.csv").write_text("method,acc,cost\nProposedRouter,0.864,0.012\n")
-            rep_dir = path / "reports"
-            rep_dir.mkdir(parents=True, exist_ok=True)
-            (rep_dir / "summary.md").write_text("# Autonomous Run\nVerified successfully.")
-            return {
-                "exit_code": 0,
-                "artifacts": ["results/metrics.csv", "reports/summary.md"],
-                "findings": [{"statement": "Proposed router achieved 86.4% accuracy with 17.8% cost savings"}],
-            }
-
-        res = runtime.dispatch_autonomous_job(packet, executor_func=run_executor)
-        return res
-
-    # Serve static Cockpit UI
     static_dir = Path(__file__).parent / "static"
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
@@ -194,8 +203,6 @@ def create_app(
         @app.get("/", response_class=HTMLResponse)
         def serve_ui():
             index_file = static_dir / "index.html"
-            if index_file.exists():
-                return index_file.read_text(encoding="utf-8")
-            return "<h1>Master OS Cockpit Ready</h1>"
+            return index_file.read_text(encoding="utf-8") if index_file.exists() else "<h1>Master OS Cockpit Ready</h1>"
 
     return app
