@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from master_os.core.commands import DomainCommandBus
 from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
 from master_os.core.models import Relation, generate_id
-from master_os.core.reducer import apply_event
 
 
 class RelationGraph:
@@ -15,6 +15,7 @@ class RelationGraph:
     def __init__(self, db: MasterDatabase, events: Optional[EventStore] = None) -> None:
         self.db = db
         self.events = events or EventStore(db)
+        self.commands = DomainCommandBus(db, self.events)
 
     def link(
         self,
@@ -35,7 +36,7 @@ class RelationGraph:
 
         rid = generate_id("R-")
         source = self.events.register_source("relation_graph", "Relation Graph", "master-os-relations")
-        event = self.events.record_event(
+        event = self.commands.emit(
             event_type="relation.created",
             source_id=source.id,
             payload={
@@ -48,7 +49,6 @@ class RelationGraph:
                 "source_event_id": source_event_id,
             },
         )
-        apply_event(self.db, event)
         row = self.db.fetchone("SELECT * FROM relations WHERE id = ?", (rid,))
         if not row:
             raise RuntimeError(f"Relation event {event.id} did not materialize {rid}")
@@ -60,12 +60,11 @@ class RelationGraph:
         if not current or current["status"] == "invalidated":
             return
         source = self.events.register_source("relation_graph", "Relation Graph", "master-os-relations")
-        event = self.events.record_event(
+        self.commands.emit(
             event_type="relation.invalidated",
             source_id=source.id,
             payload={"id": relation_id, "source_event_id": source_event_id},
         )
-        apply_event(self.db, event)
 
     def get_out_relations(
         self,
