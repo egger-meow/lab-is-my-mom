@@ -3,10 +3,13 @@ from __future__ import annotations
 
 import os
 from dataclasses import asdict, is_dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
 from master_os.agents.critic import MasterCritic
+from master_os.agents.dispatcher import AgentDispatcher
+from master_os.agents.executors import build_local_executors
 from master_os.agents.recovery import AgentRecovery
 from master_os.collectors.slack import SlackCollector
 from master_os.core.artifacts import ArtifactRegistry
@@ -14,7 +17,9 @@ from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
 from master_os.core.relations import RelationGraph
 from master_os.intelligence.meeting_agent import MeetingAgent
+from master_os.intelligence.planner import MasterPlanner
 from master_os.scheduler.engine import SchedulerEngine
+from master_os.supervisor.backup import BackupManager
 from master_os.supervisor.runtime import MasterSupervisor
 
 
@@ -24,10 +29,7 @@ _POST_MEETING_SLACK_NAME = "Advisor Post-Meeting Digest to Slack"
 
 
 def parse_slack_conversations(value: str) -> list[tuple[str, str]]:
-    """Parse ``conversation_id:scope`` entries from an explicit allow-list.
-
-    Example:: ``C123:lab-general,D456:advisor-dm``.
-    """
+    """Parse ``conversation_id:scope`` entries from an explicit allow-list."""
     entries: list[tuple[str, str]] = []
     seen_channels: set[str] = set()
     seen_scopes: set[str] = set()
@@ -60,12 +62,9 @@ def build_supervisor(
     *,
     env: Optional[Mapping[str, str]] = None,
     slack_collector_factory: SlackCollectorFactory = SlackCollector,
+    agent_executors: Optional[dict[str, Any]] = None,
 ) -> MasterSupervisor:
-    """Construct the production supervisor without performing external I/O.
-
-    Slack is opt-in and scoped. Supplying only half of its configuration is a
-    startup error so a typo cannot silently disable lab ingestion.
-    """
+    """Construct the production supervisor without performing external I/O."""
     config: Mapping[str, str] = os.environ if env is None else env
     token = str(config.get("SLACK_BOT_TOKEN", "")).strip()
     conversations_raw = str(config.get("MASTER_OS_SLACK_CONVERSATIONS", "")).strip()
@@ -98,8 +97,15 @@ def build_supervisor(
     artifacts = ArtifactRegistry(db, repo_root, events=events)
     relations = RelationGraph(db, events=events)
     meeting_agent = MeetingAgent(db, events, artifacts, relations, repo_root)
+    planner = MasterPlanner(db)
     scheduler = SchedulerEngine(db, events, MasterCritic(db))
     recovery = AgentRecovery(db, events, stale_after_seconds=stale_seconds)
+    dispatcher = AgentDispatcher(
+        db,
+        repo_root,
+        executors=agent_executors if agent_executors is not None else build_local_executors(),
+    )
+    backups = BackupManager(db, repo_root)
 
     def handle_meeting_routine(item: dict[str, Any]) -> dict[str, Any]:
         name = item.get("name")
@@ -134,6 +140,51 @@ def build_supervisor(
             f"No evidence-backed runtime handler is implemented for meeting routine {name!r}"
         )
 
+    def handle_agent_dispatch_routine(item: dict[str, Any]) -> dict[str, Any]:
+        policy = item.get("autonomy_policy") or {}
+        if policy.get("dispatch_local") is not True:
+            raise RuntimeError("Schedule does not authorize local autonomous dispatch")
+        focus = planner.get_plan().focus_action
+        if not focus.task_id:
+            return {"status": "idle", "reason": "no focus task"}
+        if focus.agentability != "autonomous":
+            return {
+                "status": "needs_user",
+                "task_id": focus.task_id,
+                "reason": "focus task is not autonomous",
+            }
+        queued = dispatcher.enqueue_task(focus.task_id)
+        return {"status": "queued", **queued}
+
+    def maintain_backup(current: datetime) -> dict[str, Any]:
+        snapshots = sorted(
+            backups.backup_dir.glob("master_snapshot_*.db"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        if snapshots:
+            age_seconds = max(0.0, current.timestamp() - snapshots[0].stat().st_mtime)
+            if age_seconds < 24 * 60 * 60:
+                return {
+                    "status": "fresh",
+                    "latest": str(snapshots[0]),
+                    "age_seconds": int(age_seconds),
+                }
+
+        snapshot = backups.create_snapshot()
+        integrity = backups.verify_integrity(snapshot)
+        if not integrity["integrity_ok"] or integrity["foreign_key_violations"]:
+            raise RuntimeError(f"Fresh backup failed integrity verification: {integrity}")
+
+        snapshots = sorted(
+            backups.backup_dir.glob("master_snapshot_*.db"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        for old in snapshots[14:]:
+            old.unlink(missing_ok=True)
+        return {"status": "created", "snapshot": str(snapshot), "integrity": integrity}
+
     source_syncers: dict[str, Callable[[], dict[str, Any]]] = {}
     if token:
         collector = slack_collector_factory(db, events, token)
@@ -143,9 +194,14 @@ def build_supervisor(
     return MasterSupervisor(
         db,
         scheduler,
-        routine_handlers={"meeting_agent": handle_meeting_routine},
+        routine_handlers={
+            "meeting_agent": handle_meeting_routine,
+            "agent_dispatcher": handle_agent_dispatch_routine,
+        },
         source_syncers=source_syncers,
         recovery_handler=recovery.recover_stale_runs,
+        agent_pump=dispatcher.pump_once,
+        maintenance_handlers={"daily_backup": maintain_backup},
         poll_seconds=poll_seconds,
     )
 
