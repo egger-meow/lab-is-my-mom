@@ -57,6 +57,55 @@ class AgentRuntime:
             path.mkdir(parents=True, exist_ok=True)
         return path
 
+    def _claim_task_run(
+        self,
+        run_id: str,
+        packet: AgentJobPacket,
+        agent_type: str,
+        base_sha: Optional[str],
+    ) -> None:
+        """Atomically claim the task by materializing one active run.
+
+        ``BEGIN IMMEDIATE`` serializes claim attempts across independent SQLite
+        connections/processes. The canonical start event and materialized run row are
+        committed together, so a rejected duplicate cannot leave a phantom event.
+        """
+        try:
+            self.db.execute("BEGIN IMMEDIATE")
+            active = self.db.fetchone(
+                """SELECT id FROM agent_runs
+                   WHERE task_id = ? AND status = 'running'
+                   ORDER BY started_at DESC LIMIT 1""",
+                (packet.task_id,),
+            )
+            if active:
+                raise RuntimeError(
+                    f"Task {packet.task_id} already has active agent run {active['id']}; lease is held"
+                )
+
+            start_event = self.events.record_event(
+                event_type="agent_run.started",
+                source_id=self.events.register_source(
+                    "agent_runner", f"{agent_type}_runner", f"runner-{agent_type}"
+                ).id,
+                payload={
+                    "id": run_id,
+                    "agent_type": agent_type,
+                    "job_type": "implementation",
+                    "task_id": packet.task_id,
+                    "workspace": str(Path(packet.workspace_path).resolve()),
+                    "branch": packet.branch,
+                    "base_git_sha": base_sha,
+                    "packet_artifact_id": None,
+                },
+                commit=False,
+            )
+            apply_event(self.db, start_event, commit=False)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
+
     def dispatch_autonomous_job(
         self,
         packet: AgentJobPacket,
@@ -69,24 +118,12 @@ class AgentRuntime:
 
         source = self.events.register_source("agent_runner", f"{agent_type}_runner", f"runner-{agent_type}")
         run_id = generate_id("RUN-")
-        workspace = self._prepare_workspace(packet)
-        base_sha = self._get_head_sha(workspace) or self._get_head_sha(self.repo_root)
+        workspace = Path(packet.workspace_path).resolve()
+        base_sha = self._get_head_sha(self.repo_root)
 
-        start_event = self.events.record_event(
-            event_type="agent_run.started",
-            source_id=source.id,
-            payload={
-                "id": run_id,
-                "agent_type": agent_type,
-                "job_type": "implementation",
-                "task_id": packet.task_id,
-                "workspace": str(workspace),
-                "branch": packet.branch,
-                "base_git_sha": base_sha,
-                "packet_artifact_id": None,
-            },
-        )
-        apply_event(self.db, start_event)
+        # Claim before touching the worktree. A competing process sees the committed
+        # running row and is rejected instead of creating a second workspace/run.
+        self._claim_task_run(run_id, packet, agent_type, base_sha)
 
         exit_code = 1
         error_msg: Optional[str] = None
@@ -94,6 +131,7 @@ class AgentRuntime:
         findings: list[dict[str, Any]] = []
 
         try:
+            workspace = self._prepare_workspace(packet)
             result = executor_func(workspace, packet)
             exit_code = int(result.get("exit_code", 1))
             produced_artifacts = list(result.get("artifacts", []))
