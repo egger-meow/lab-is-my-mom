@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -23,10 +23,11 @@ from master_os.core.commands import DomainCommandBus
 from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
 from master_os.core.models import AuthorityLevel, generate_id
-from master_os.core.reducer import apply_event
 from master_os.core.relations import RelationGraph
 from master_os.intelligence.meeting_agent import MeetingAgent
 from master_os.intelligence.planner import MasterPlanner
+from master_os.lab.cadence import resolved_weekly_spec, routine_occurrence, validate_weekly_spec
+from master_os.lab.protocol import SEMINAR_WEEKLY_SPEC
 from master_os.scheduler.engine import SchedulerEngine
 from master_os.supervisor.doctor import MasterDoctor
 
@@ -36,12 +37,21 @@ AgentExecutor = Callable[[Path, AgentJobPacket], dict[str, Any]]
 class IngestTranscriptRequest(BaseModel):
     meeting_id: str
     transcript_text: str
+    scheduled_at: Optional[str] = None
+    kind: str = "advisor"
+    title: Optional[str] = None
+
+
+class AdvisorRoutineRequest(BaseModel):
+    day_of_week: str
+    start_time: str
+    timezone: str = "Asia/Taipei"
 
 
 class ScheduleMeetingRequest(BaseModel):
     meeting_id: Optional[str] = None
     title: Optional[str] = None
-    kind: str = "advisor"
+    kind: str = "advisor_adhoc"
     scheduled_at: str
 
 
@@ -72,13 +82,23 @@ def _parse_json_field(value: Optional[str], fallback: Any) -> Any:
         return fallback
 
 
+def _parse_aware_datetime(value: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="scheduled_at must be an ISO-8601 datetime") from exc
+    if parsed.tzinfo is None:
+        raise HTTPException(status_code=400, detail="scheduled_at must include a timezone offset")
+    return parsed
+
+
 def create_app(
     db: MasterDatabase,
     repo_root: Path,
     agent_executors: Optional[dict[str, AgentExecutor]] = None,
 ) -> FastAPI:
     """Create the same-origin local Cockpit API and workspace UI."""
-    app = FastAPI(title="Master OS Cockpit", version="0.5.0")
+    app = FastAPI(title="Master OS Cockpit", version="0.5.1")
 
     executors = agent_executors or {}
     repo_root = repo_root.resolve()
@@ -92,14 +112,7 @@ def create_app(
     packet_builder = WorkPacketBuilder(db)
     dispatcher = AgentDispatcher(db, repo_root, executors=executors)
     app.state.agent_dispatcher = dispatcher
-    recovery_actions = AgentRecoveryActions(
-        db,
-        events,
-        runtime,
-        packet_builder,
-        relations,
-        repo_root,
-    )
+    recovery_actions = AgentRecoveryActions(db, events, runtime, packet_builder, relations, repo_root)
     meeting_agent = MeetingAgent(db, events, artifacts, relations, repo_root=repo_root)
     planner = MasterPlanner(db)
     scheduler = SchedulerEngine(db, events, critic)
@@ -111,6 +124,50 @@ def create_app(
     def research_topic() -> Optional[str]:
         resolved = assertions.resolve_field("research_profile", "current", "topic")
         return str(resolved.value) if resolved and resolved.value else None
+
+    def meeting_routines(now: Optional[datetime] = None) -> list[dict[str, Any]]:
+        current = now or datetime.now(timezone.utc)
+        advisor_spec = resolved_weekly_spec(db, "advisor")
+        advisor_occurrence = routine_occurrence("advisor", "Weekly Advisor Meeting", advisor_spec, now=current) if advisor_spec else None
+        seminar_spec = dict(SEMINAR_WEEKLY_SPEC)
+        seminar_occurrence = routine_occurrence("lab_seminar", "Lab Seminar", seminar_spec, now=current)
+        return [
+            {
+                "kind": "advisor",
+                "title": "Weekly Advisor Meeting",
+                "editable": True,
+                "source": "user_explicit" if advisor_spec else "not_configured",
+                "weekly_spec": advisor_spec,
+                "next_occurrence": advisor_occurrence,
+            },
+            {
+                "kind": "lab_seminar",
+                "title": "Lab Seminar",
+                "editable": False,
+                "source": "NYCU NLP Lab 研究生需知",
+                "weekly_spec": seminar_spec,
+                "next_occurrence": seminar_occurrence,
+                "note": "每週一 13:30–14:10，Google Meet；每週一位同學報論文。",
+            },
+        ]
+
+    def upcoming_meetings(now: Optional[datetime] = None) -> list[dict[str, Any]]:
+        routines = meeting_routines(now)
+        items = [dict(r["next_occurrence"]) for r in routines if r.get("next_occurrence")]
+        rows = db.fetchall("SELECT * FROM meetings WHERE status='scheduled' ORDER BY scheduled_at ASC LIMIT 50")
+        for row in rows:
+            item = dict(row)
+            item["recurring"] = False
+            item["explicit"] = True
+            items.append(item)
+        seen: set[str] = set()
+        deduped = []
+        for item in sorted(items, key=lambda value: value["scheduled_at"]):
+            if item["id"] in seen:
+                continue
+            seen.add(item["id"])
+            deduped.append(item)
+        return deduped
 
     def paper_snapshot(limit: int = 250) -> dict[str, Any]:
         paper_db = repo_root / ".research-os" / "research.db"
@@ -150,7 +207,6 @@ def create_app(
     def get_cockpit():
         plan = planner.get_plan()
         health_report = critic.evaluate_health()
-
         what_matters_now = {
             "focus_action": {
                 "task_id": plan.focus_action.task_id,
@@ -165,38 +221,25 @@ def create_app(
             "fake_progress_warning": health_report.fake_progress_warning,
             "warning_message": health_report.warning_message,
         }
-
-        meetings_rows = db.fetchall(
-            "SELECT * FROM meetings WHERE status = 'scheduled' ORDER BY scheduled_at ASC LIMIT 5"
-        )
-        what_is_coming = {
-            "upcoming_meetings": [dict(m) for m in meetings_rows],
-            "deadlines": plan.imminent_deadlines,
-        }
-
+        what_is_coming = {"upcoming_meetings": upcoming_meetings()[:5], "deadlines": plan.imminent_deadlines}
         findings_rows = db.fetchall("SELECT * FROM findings ORDER BY created_at DESC LIMIT 5")
         artifacts_rows = db.fetchall("SELECT * FROM artifacts ORDER BY created_at DESC LIMIT 5")
         what_changed = {
             "recent_findings": [dict(f) for f in findings_rows],
             "recent_artifacts": [dict(a) for a in artifacts_rows],
         }
-
         runs_rows = db.fetchall("SELECT * FROM agent_runs ORDER BY created_at DESC LIMIT 8")
         what_are_agents_doing = {
             "recent_runs": [dict(r) for r in runs_rows],
             "inflight_runs": dispatcher.inflight(),
             "schedules": scheduler.list_schedules(),
         }
-
-        approvals_rows = db.fetchall(
-            "SELECT * FROM approvals WHERE status = 'pending' ORDER BY requested_at DESC"
-        )
+        approvals_rows = db.fetchall("SELECT * FROM approvals WHERE status = 'pending' ORDER BY requested_at DESC")
         parsed_approvals = []
         for row in approvals_rows:
             item = dict(row)
             item["action_payload"] = _parse_json_field(item.get("action_payload_json"), {})
             parsed_approvals.append(item)
-
         interrupted_runs = recovery_actions.list_interrupted()
         what_needs_me = {
             "pending_approvals": parsed_approvals,
@@ -205,7 +248,6 @@ def create_app(
             "interrupted_run_count": len(interrupted_runs),
             "resource_burn_warnings": health_report.resource_burn_warnings,
         }
-
         return {
             "what_matters_now": what_matters_now,
             "what_is_coming": what_is_coming,
@@ -216,14 +258,13 @@ def create_app(
 
     @app.get("/api/onboarding")
     def onboarding():
-        advisor_meeting = db.fetchone(
-            "SELECT id,scheduled_at,title FROM meetings WHERE kind='advisor' AND status='scheduled' ORDER BY scheduled_at ASC LIMIT 1"
-        )
+        routines = meeting_routines()
+        advisor = next(item for item in routines if item["kind"] == "advisor")
         transcript_count = db.fetchone("SELECT COUNT(*) AS n FROM meetings WHERE transcript_artifact_id IS NOT NULL")["n"]
         slack_count = db.fetchone("SELECT COUNT(*) AS n FROM sources WHERE type='slack_channel' AND enabled=1")["n"]
         topic = research_topic()
         steps = [
-            {"id": "advisor_meeting", "label": "設定下一次 Advisor Meeting", "done": bool(advisor_meeting)},
+            {"id": "advisor_meeting", "label": "設定每週 Advisor Meeting 固定時間", "done": bool(advisor["weekly_spec"])},
             {"id": "research_topic", "label": "填入目前研究題目 / Hypothesis", "done": bool(topic)},
             {"id": "meeting_transcript", "label": "匯入最近一次 Meeting transcript / 筆記", "done": int(transcript_count) > 0},
             {"id": "slack", "label": "設定 Lab Slack scope（可稍後）", "done": int(slack_count) > 0, "optional": True},
@@ -233,7 +274,8 @@ def create_app(
             "complete": all(step["done"] for step in required),
             "steps": steps,
             "research_topic": topic,
-            "next_advisor_meeting": dict(advisor_meeting) if advisor_meeting else None,
+            "advisor_routine": advisor,
+            "next_advisor_meeting": advisor.get("next_occurrence"),
         }
 
     @app.get("/api/tasks")
@@ -268,59 +310,99 @@ def create_app(
         if not db.fetchone("SELECT id FROM tasks WHERE id=?", (task_id,)):
             raise HTTPException(status_code=404, detail="task not found")
         source = user_source()
-        event = commands.emit(
-            "task.status_changed",
-            source.id,
-            {"id": task_id, "status": req.status},
-            created_by="user_explicit",
-        )
+        event = commands.emit("task.status_changed", source.id, {"id": task_id, "status": req.status}, created_by="user_explicit")
         return {"task_id": task_id, "status": req.status, "event_id": event.id}
 
     @app.get("/api/meetings")
     def list_meetings():
-        rows = db.fetchall(
-            "SELECT * FROM meetings ORDER BY CASE status WHEN 'scheduled' THEN 0 ELSE 1 END, scheduled_at DESC"
-        )
-        upcoming = [dict(row) for row in rows if row["status"] == "scheduled"]
+        rows = db.fetchall("SELECT * FROM meetings ORDER BY scheduled_at DESC")
+        explicit_upcoming = [dict(row) for row in rows if row["status"] == "scheduled"]
         history = [dict(row) for row in rows if row["status"] != "scheduled"]
-        return {"upcoming": sorted(upcoming, key=lambda item: item["scheduled_at"]), "history": history}
+        routines = meeting_routines()
+        return {
+            "routines": routines,
+            "upcoming": upcoming_meetings(),
+            "explicit_upcoming": sorted(explicit_upcoming, key=lambda item: item["scheduled_at"]),
+            "history": history,
+        }
 
-    @app.post("/api/meetings/schedule")
-    def schedule_meeting(req: ScheduleMeetingRequest):
-        scheduled_at = req.scheduled_at.strip()
+    @app.post("/api/meetings/routines/advisor")
+    def configure_advisor_routine(req: AdvisorRoutineRequest):
         try:
-            parsed = datetime.fromisoformat(scheduled_at.replace("Z", "+00:00"))
+            spec = validate_weekly_spec({
+                "day_of_week": req.day_of_week,
+                "start_time": req.start_time,
+                "timezone": req.timezone,
+            })
         except ValueError as exc:
-            raise HTTPException(status_code=400, detail="scheduled_at must be an ISO-8601 datetime") from exc
-        if parsed.tzinfo is None:
-            raise HTTPException(status_code=400, detail="scheduled_at must include a timezone offset")
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        assertion = assertions.assert_field(
+            "meeting_routine",
+            "advisor",
+            "weekly_spec",
+            spec,
+            authority=AuthorityLevel.USER_EXPLICIT,
+            confidence=1.0,
+        )
+        routine = next(item for item in meeting_routines() if item["kind"] == "advisor")
+        return {"routine": routine, "assertion_id": assertion.id}
 
+    def _schedule_explicit(req: ScheduleMeetingRequest) -> dict[str, Any]:
+        parsed = _parse_aware_datetime(req.scheduled_at)
         meeting_id = (req.meeting_id or "").strip() or generate_id("M-")
         existing = db.fetchone("SELECT status FROM meetings WHERE id=?", (meeting_id,))
         if existing and existing["status"] == "completed":
             raise HTTPException(status_code=409, detail="completed meeting history cannot be rescheduled; create a new meeting")
-        title = (req.title or "").strip() or ("Advisor Meeting" if req.kind == "advisor" else "Meeting")
+        kind = req.kind.strip() or "advisor_adhoc"
+        title = (req.title or "").strip() or ("Ad-hoc Advisor Meeting" if kind.startswith("advisor") else "Ad-hoc Meeting")
         source = user_source()
         event = commands.emit(
             "meeting.scheduled",
             source.id,
-            {
-                "id": meeting_id,
-                "kind": req.kind.strip() or "advisor",
-                "title": title,
-                "scheduled_at": parsed.isoformat(),
-                "status": "scheduled",
-            },
+            {"id": meeting_id, "kind": kind, "title": title, "scheduled_at": parsed.isoformat(), "status": "scheduled"},
             created_by="user_explicit",
         )
         return {"meeting_id": meeting_id, "scheduled_at": parsed.isoformat(), "event_id": event.id}
 
+    @app.post("/api/meetings/adhoc")
+    def schedule_adhoc_meeting(req: ScheduleMeetingRequest):
+        return _schedule_explicit(req)
+
+    @app.post("/api/meetings/schedule")
+    def schedule_meeting_legacy(req: ScheduleMeetingRequest):
+        """Compatibility endpoint for old clients. New UI uses weekly routine + ad-hoc."""
+        return _schedule_explicit(req)
+
     @app.post("/api/meetings/ingest")
     def ingest_transcript(req: IngestTranscriptRequest):
+        existing = db.fetchone("SELECT id FROM meetings WHERE id=?", (req.meeting_id,))
+        if not existing:
+            if not req.scheduled_at:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Unknown meeting occurrence. Choose a recurring/ad-hoc meeting or provide its date/time; Master OS will not invent one.",
+                )
+            parsed = _parse_aware_datetime(req.scheduled_at)
+            source = user_source()
+            commands.emit(
+                "meeting.scheduled",
+                source.id,
+                {
+                    "id": req.meeting_id,
+                    "kind": req.kind.strip() or "advisor",
+                    "title": (req.title or "").strip() or "Advisor Meeting",
+                    "scheduled_at": parsed.isoformat(),
+                    "status": "scheduled",
+                },
+                created_by="user_explicit",
+            )
         return meeting_agent.ingest_transcript(req.meeting_id, req.transcript_text)
 
     @app.post("/api/meetings/{meeting_id}/pack")
     def generate_meeting_pack(meeting_id: str):
+        existing = db.fetchone("SELECT kind FROM meetings WHERE id=?", (meeting_id,))
+        if meeting_id.startswith("M-SEM-") or (existing and existing["kind"] == "lab_seminar"):
+            raise HTTPException(status_code=409, detail="Meeting Pack is for the weekly Advisor Meeting. Lab Seminar uses the separate Seminar Prep workflow.")
         return {"meeting_id": meeting_id, "meeting_pack": meeting_agent.generate_meeting_pack(meeting_id)}
 
     @app.get("/api/research")
@@ -348,12 +430,8 @@ def create_app(
         if not topic:
             raise HTTPException(status_code=400, detail="topic cannot be empty")
         assertion = assertions.assert_field(
-            "research_profile",
-            "current",
-            "topic",
-            topic,
-            authority=AuthorityLevel.USER_EXPLICIT,
-            confidence=1.0,
+            "research_profile", "current", "topic", topic,
+            authority=AuthorityLevel.USER_EXPLICIT, confidence=1.0,
         )
         return {"topic": topic, "assertion_id": assertion.id}
 
@@ -364,11 +442,7 @@ def create_app(
     @app.get("/api/agents")
     def agent_workspace():
         runs = [dict(row) for row in db.fetchall("SELECT * FROM agent_runs ORDER BY created_at DESC LIMIT 200")]
-        return {
-            "runs": runs,
-            "inflight": dispatcher.inflight(),
-            "interrupted": recovery_actions.list_interrupted(),
-        }
+        return {"runs": runs, "inflight": dispatcher.inflight(), "interrupted": recovery_actions.list_interrupted()}
 
     @app.get("/api/system")
     def system_workspace():
@@ -398,7 +472,6 @@ def create_app(
         approval = db.fetchone("SELECT * FROM approvals WHERE id = ?", (approval_id,))
         if not approval:
             raise HTTPException(status_code=404, detail="approval not found")
-
         source = user_source()
         event = commands.emit(
             event_type="approval.decided",
@@ -406,11 +479,9 @@ def create_app(
             payload={"id": approval_id, "status": req.status, "decision_note": req.note or ""},
             created_by="user_explicit",
         )
-
         materialized_entity_id = None
         if req.status == "approved" and approval["action_type"] == "confirm_semantic_change":
             materialized_entity_id = meeting_agent.apply_semantic_approval(approval_id)
-
         return {
             "approval_id": approval_id,
             "status": req.status,
@@ -429,7 +500,6 @@ def create_app(
     def recover_agent_run(run_id: str, req: RecoverAgentRunRequest):
         if req.action not in {"resume", "retry_fresh", "abandon"}:
             raise HTTPException(status_code=400, detail="action must be resume, retry_fresh, or abandon")
-
         executor: Optional[AgentExecutor] = None
         if req.action in {"resume", "retry_fresh"}:
             run = db.fetchone("SELECT task_id, status FROM agent_runs WHERE id = ?", (run_id,))
@@ -441,18 +511,9 @@ def create_app(
             agent_type = task["preferred_agent"] or "codex"
             executor = executors.get(agent_type)
             if executor is None:
-                raise HTTPException(
-                    status_code=503,
-                    detail=f"No real {agent_type} executor is configured. Recovery cannot fabricate execution.",
-                )
-
+                raise HTTPException(status_code=503, detail=f"No real {agent_type} executor is configured. Recovery cannot fabricate execution.")
         try:
-            return recovery_actions.recover(
-                run_id,
-                req.action,
-                executor=executor,
-                note=req.note or "",
-            )
+            return recovery_actions.recover(run_id, req.action, executor=executor, note=req.note or "")
         except LookupError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except ValueError as exc:
@@ -467,14 +528,9 @@ def create_app(
             raise HTTPException(status_code=404, detail="task not found")
         if task["agentability"] != "autonomous":
             raise HTTPException(status_code=409, detail="task is not authorized for autonomous execution")
-
         agent_type = task["preferred_agent"] or "codex"
         if agent_type not in executors:
-            raise HTTPException(
-                status_code=503,
-                detail=f"No real {agent_type} executor is configured. Refusing to fabricate an agent result.",
-            )
-
+            raise HTTPException(status_code=503, detail=f"No real {agent_type} executor is configured. Refusing to fabricate an agent result.")
         try:
             queued = dispatcher.enqueue_task(task_id)
             pump = dispatcher.pump_once()
