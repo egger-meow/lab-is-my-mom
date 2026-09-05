@@ -16,6 +16,7 @@ from master_os.core.events import EventStore
 from master_os.core.relations import RelationGraph
 from master_os.intelligence.meeting_agent import MeetingAgent
 from master_os.intelligence.planner import MasterPlanner
+from master_os.supervisor.autostart import AutostartManager
 from master_os.supervisor.backup import BackupManager
 from master_os.supervisor.bootstrap import build_supervisor
 from master_os.supervisor.doctor import MasterDoctor
@@ -82,6 +83,12 @@ def main() -> None:
     subparsers.add_parser("doctor", help="Run database integrity, worktree, and research health diagnostics")
     subparsers.add_parser("backup", help="Create an atomic SQLite snapshot")
     subparsers.add_parser("rebuild-state", help="Deterministically rebuild current state from canonical event history")
+
+    p_autostart = subparsers.add_parser("autostart", help="Manage boot/login startup for the Master OS mothership")
+    autostart_sub = p_autostart.add_subparsers(dest="autostart_cmd", required=True)
+    autostart_sub.add_parser("install", help="Install and start user-scoped autostart")
+    autostart_sub.add_parser("status", help="Show whether autostart is installed")
+    autostart_sub.add_parser("uninstall", help="Disable and remove user-scoped autostart")
 
     p_meeting = subparsers.add_parser("meeting", help="Meeting operations (ingest, pack)")
     meeting_sub = p_meeting.add_subparsers(dest="meeting_cmd", required=True)
@@ -153,6 +160,19 @@ def main() -> None:
         elif args.command == "rebuild-state":
             count = BackupManager(db, repo_root).rebuild_current_state()
             print(f"已從 {count} 筆 canonical events 確定性還原 Current State。")
+
+        elif args.command == "autostart":
+            manager = AutostartManager(repo_root)
+            if args.autostart_cmd == "install":
+                result = manager.install()
+                print(f"Master OS autostart 已安裝：{result['kind']}")
+            elif args.autostart_cmd == "status":
+                result = manager.status()
+                state = "已安裝" if result["installed"] else "未安裝"
+                print(f"Master OS autostart 狀態：{state} ({result['kind']})")
+            else:
+                result = manager.uninstall()
+                print(f"Master OS autostart 已移除：{result['kind']}")
 
         elif args.command == "meeting":
             events = EventStore(db)
