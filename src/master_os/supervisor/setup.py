@@ -57,7 +57,17 @@ class SetupManager:
             backup = {"status": "created", "path": str(snapshot), "integrity": integrity}
         checks["backup"] = backup
 
-        autostart = AutostartManager(self.repo_root, port=port)
+        master_os_executable = shutil.which("master-os")
+        if install_autostart and not master_os_executable:
+            raise RuntimeError(
+                "Cannot install autostart because the master-os executable is not on PATH. "
+                "Run this setup through `uv run master-os-setup` after `uv sync`."
+            )
+        autostart = AutostartManager(
+            self.repo_root,
+            executable=Path(master_os_executable) if master_os_executable else None,
+            port=port,
+        )
         if install_autostart:
             checks["autostart"] = autostart.install()
         else:
@@ -96,6 +106,8 @@ class SetupManager:
                 [executable, *args],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 check=False,
                 timeout=8,
             )
@@ -150,7 +162,7 @@ class SetupManager:
         elif checks["slack"].get("status") == "disabled":
             commands.append("Optional: configure scoped Slack ingestion when the bot token/channel IDs are ready")
         if not checks["autostart"].get("installed"):
-            commands.append(f"uv run master-os setup --install-autostart --port {port}")
+            commands.append(f"uv run master-os-setup --install-autostart --port {port}")
         commands.append(f"uv run master-os start --host 127.0.0.1 --port {port}")
         commands.append("uv run master-os doctor")
         return commands
