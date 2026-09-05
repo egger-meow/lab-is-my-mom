@@ -12,6 +12,7 @@ from master_os.scheduler.engine import SchedulerEngine
 
 RoutineHandler = Callable[[dict[str, Any]], dict[str, Any]]
 SourceSyncer = Callable[[], dict[str, Any]]
+RecoveryHandler = Callable[[datetime], list[dict[str, Any]]]
 
 
 class MasterSupervisor:
@@ -28,6 +29,7 @@ class MasterSupervisor:
         *,
         routine_handlers: Optional[dict[str, RoutineHandler]] = None,
         source_syncers: Optional[dict[str, SourceSyncer]] = None,
+        recovery_handler: Optional[RecoveryHandler] = None,
         poll_seconds: float = 60.0,
     ) -> None:
         if poll_seconds <= 0:
@@ -36,6 +38,7 @@ class MasterSupervisor:
         self.scheduler = scheduler
         self.routine_handlers = dict(routine_handlers or {})
         self.source_syncers = dict(source_syncers or {})
+        self.recovery_handler = recovery_handler
         self.poll_seconds = float(poll_seconds)
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
@@ -46,9 +49,18 @@ class MasterSupervisor:
             raise ValueError("Supervisor clock must be timezone-aware")
         current = current.astimezone(timezone.utc)
 
+        recoveries: list[dict[str, Any]] = []
         source_results: dict[str, dict[str, Any]] = {}
         routine_results: list[dict[str, Any]] = []
         warnings: list[str] = []
+
+        # Recover expired agent leases before collecting or scheduling new work. This
+        # frees tasks left in a phantom-running state after process/OS interruption.
+        if self.recovery_handler is not None:
+            try:
+                recoveries = self.recovery_handler(current)
+            except Exception as exc:
+                warnings.append(f"agent recovery: {exc}")
 
         # Collect first so newly observed events are eligible for event schedules in
         # this very tick rather than waiting for another polling interval.
@@ -114,6 +126,7 @@ class MasterSupervisor:
 
         status = "warning" if warnings else "ok"
         details = {
+            "recoveries": recoveries,
             "sources": source_results,
             "routines": routine_results,
             "warnings": warnings,
@@ -122,6 +135,7 @@ class MasterSupervisor:
         return {
             "status": status,
             "checked_at": current.isoformat(),
+            "recoveries": recoveries,
             "sources": source_results,
             "routines": routine_results,
             "warnings": warnings,
@@ -155,7 +169,12 @@ class MasterSupervisor:
                 self._heartbeat(
                     "warning",
                     now,
-                    {"warnings": [f"supervisor loop: {exc}"], "sources": {}, "routines": []},
+                    {
+                        "warnings": [f"supervisor loop: {exc}"],
+                        "recoveries": [],
+                        "sources": {},
+                        "routines": [],
+                    },
                 )
             self._stop_event.wait(self.poll_seconds)
 
