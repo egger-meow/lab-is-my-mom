@@ -13,14 +13,12 @@ from master_os.scheduler.engine import SchedulerEngine
 RoutineHandler = Callable[[dict[str, Any]], dict[str, Any]]
 SourceSyncer = Callable[[], dict[str, Any]]
 RecoveryHandler = Callable[[datetime], list[dict[str, Any]]]
+AgentPump = Callable[[], dict[str, Any]]
+MaintenanceHandler = Callable[[datetime], dict[str, Any]]
 
 
 class MasterSupervisor:
-    """Continuously collect sources, run due routines, and publish a heartbeat.
-
-    One call to :meth:`run_once` is deterministic and testable. ``start`` wraps the
-    same operation in a daemon thread for the local long-lived process.
-    """
+    """Continuously collect, schedule, recover, dispatch, maintain, and heartbeat."""
 
     def __init__(
         self,
@@ -30,6 +28,8 @@ class MasterSupervisor:
         routine_handlers: Optional[dict[str, RoutineHandler]] = None,
         source_syncers: Optional[dict[str, SourceSyncer]] = None,
         recovery_handler: Optional[RecoveryHandler] = None,
+        agent_pump: Optional[AgentPump] = None,
+        maintenance_handlers: Optional[dict[str, MaintenanceHandler]] = None,
         poll_seconds: float = 60.0,
     ) -> None:
         if poll_seconds <= 0:
@@ -39,6 +39,8 @@ class MasterSupervisor:
         self.routine_handlers = dict(routine_handlers or {})
         self.source_syncers = dict(source_syncers or {})
         self.recovery_handler = recovery_handler
+        self.agent_pump = agent_pump
+        self.maintenance_handlers = dict(maintenance_handlers or {})
         self.poll_seconds = float(poll_seconds)
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
@@ -52,22 +54,20 @@ class MasterSupervisor:
         recoveries: list[dict[str, Any]] = []
         source_results: dict[str, dict[str, Any]] = {}
         routine_results: list[dict[str, Any]] = []
+        maintenance_results: dict[str, dict[str, Any]] = {}
+        agent_queue: dict[str, Any] = {}
         warnings: list[str] = []
 
-        # Recover expired agent leases before collecting or scheduling new work. This
-        # frees tasks left in a phantom-running state after process/OS interruption.
         if self.recovery_handler is not None:
             try:
                 recoveries = self.recovery_handler(current)
             except Exception as exc:
                 warnings.append(f"agent recovery: {exc}")
 
-        # Collect first so newly observed events are eligible for event schedules in
-        # this very tick rather than waiting for another polling interval.
         for name, syncer in self.source_syncers.items():
             try:
                 source_results[name] = syncer()
-            except Exception as exc:  # collector failures must not kill the daemon
+            except Exception as exc:
                 source_results[name] = {"status": "failed", "error": str(exc)}
                 warnings.append(f"source {name}: {exc}")
 
@@ -111,9 +111,6 @@ class MasterSupervisor:
                     }
                 )
             except Exception as exc:
-                # A failed execution is deliberately not acknowledged. The same
-                # occurrence remains due and can be retried after the dependency is
-                # restored instead of silently disappearing.
                 routine_results.append(
                     {
                         "name": item["name"],
@@ -124,11 +121,29 @@ class MasterSupervisor:
                 )
                 warnings.append(f"routine {item['name']}: {exc}")
 
+        # Pump after routines so a scheduled routine can enqueue work and have it
+        # submitted in the same tick. pump_once is non-blocking by contract.
+        if self.agent_pump is not None:
+            try:
+                agent_queue = self.agent_pump()
+            except Exception as exc:
+                agent_queue = {"status": "failed", "error": str(exc)}
+                warnings.append(f"agent queue: {exc}")
+
+        for name, handler in self.maintenance_handlers.items():
+            try:
+                maintenance_results[name] = handler(current)
+            except Exception as exc:
+                maintenance_results[name] = {"status": "failed", "error": str(exc)}
+                warnings.append(f"maintenance {name}: {exc}")
+
         status = "warning" if warnings else "ok"
         details = {
             "recoveries": recoveries,
             "sources": source_results,
             "routines": routine_results,
+            "agent_queue": agent_queue,
+            "maintenance": maintenance_results,
             "warnings": warnings,
         }
         self._heartbeat(status, current, details)
@@ -138,11 +153,12 @@ class MasterSupervisor:
             "recoveries": recoveries,
             "sources": source_results,
             "routines": routine_results,
+            "agent_queue": agent_queue,
+            "maintenance": maintenance_results,
             "warnings": warnings,
         }
 
     def start(self) -> None:
-        """Start the supervisor loop once; repeated calls are idempotent."""
         if self._thread is not None and self._thread.is_alive():
             return
         self._stop_event.clear()
@@ -150,7 +166,6 @@ class MasterSupervisor:
         self._thread.start()
 
     def stop(self, timeout: float = 5.0) -> None:
-        """Request shutdown and wait briefly for the daemon thread."""
         self._stop_event.set()
         thread = self._thread
         if thread is not None and thread.is_alive():
@@ -164,7 +179,7 @@ class MasterSupervisor:
         while not self._stop_event.is_set():
             try:
                 self.run_once()
-            except Exception as exc:  # final guardrail around the long-lived thread
+            except Exception as exc:
                 now = datetime.now(timezone.utc)
                 self._heartbeat(
                     "warning",
@@ -174,6 +189,8 @@ class MasterSupervisor:
                         "recoveries": [],
                         "sources": {},
                         "routines": [],
+                        "agent_queue": {},
+                        "maintenance": {},
                     },
                 )
             self._stop_event.wait(self.poll_seconds)
