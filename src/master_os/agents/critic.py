@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from datetime import datetime, timezone
 
 from master_os.core.database import MasterDatabase
 
@@ -35,9 +35,27 @@ class MasterCritic:
         exp_row = self.db.fetchone("SELECT COUNT(*) as cnt FROM experiments WHERE status = 'completed' AND validity_status = 'valid'")
         completed_exps = exp_row["cnt"] if exp_row else 0
 
-        # 2. Count active and overdue obligations
-        ob_active = self.db.fetchone("SELECT COUNT(*) as cnt FROM obligations WHERE status IN ('pending', 'in_progress')")
-        active_obs = ob_active["cnt"] if ob_active else 0
+        # 2. Count active and actually overdue obligations. Deadline strings are
+        # parsed as instants rather than compared lexically so equivalent offsets
+        # do not produce different health results.
+        active_rows = self.db.fetchall(
+            "SELECT id, due_at FROM obligations WHERE status IN ('pending', 'in_progress')"
+        )
+        active_obs = len(active_rows)
+        now = datetime.now(timezone.utc)
+        overdue_obs = 0
+        for row in active_rows:
+            due_at = row["due_at"]
+            if not due_at:
+                continue
+            try:
+                due = self._parse_time(due_at)
+            except (TypeError, ValueError):
+                # Invalid external metadata must not take down the health daemon.
+                # The malformed value remains visible in canonical state for repair.
+                continue
+            if due < now:
+                overdue_obs += 1
 
         # 3. Check tasks completed
         tasks_row = self.db.fetchone("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'completed'")
@@ -84,8 +102,15 @@ class MasterCritic:
             findings_count=findings_count,
             completed_experiments=completed_exps,
             active_obligations_count=active_obs,
-            overdue_obligations_count=0,
+            overdue_obligations_count=overdue_obs,
             fake_progress_warning=fake_progress,
             warning_message=warning_msg,
             resource_burn_warnings=burn_warnings,
         )
+
+    @staticmethod
+    def _parse_time(value: str) -> datetime:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
