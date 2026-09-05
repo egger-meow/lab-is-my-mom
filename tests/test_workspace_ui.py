@@ -20,7 +20,9 @@ def test_workspace_navigation_is_served(tmp_path: Path):
     try:
         html = client.get("/").text
         assert "Tasks & Obligations" in html
-        assert "Meetings" in html
+        assert "每週 Advisor Meeting" in html
+        assert "每週一 13:30–14:10" in html
+        assert "臨時 / 額外 Meeting" in html
         assert "Research" in html
         assert "Papers" in html
         assert "Agents" in html
@@ -31,25 +33,42 @@ def test_workspace_navigation_is_served(tmp_path: Path):
         db.close()
 
 
-def test_onboarding_can_be_grounded_by_user_meeting_and_research_topic(tmp_path: Path):
+def test_onboarding_is_grounded_by_weekly_advisor_cadence_not_single_date(tmp_path: Path):
     client, db = make_client(tmp_path)
     try:
         initial = client.get("/api/onboarding").json()
         assert initial["complete"] is False
         assert initial["research_topic"] is None
+        meetings = client.get("/api/meetings").json()
+        seminar = next(item for item in meetings["routines"] if item["kind"] == "lab_seminar")
+        assert seminar["weekly_spec"] == {
+            "day_of_week": "mon",
+            "start_time": "13:30",
+            "end_time": "14:10",
+            "timezone": "Asia/Taipei",
+        }
+        assert seminar["editable"] is False
 
-        meeting = client.post(
-            "/api/meetings/schedule",
-            json={
-                "title": "Advisor Meeting",
-                "kind": "advisor",
-                "scheduled_at": "2026-09-10T14:00:00+08:00",
-            },
+        saved_routine = client.post(
+            "/api/meetings/routines/advisor",
+            json={"day_of_week": "wed", "start_time": "14:00", "timezone": "Asia/Taipei"},
         )
-        assert meeting.status_code == 200
-        meeting_id = meeting.json()["meeting_id"]
-        stored = db.fetchone("SELECT * FROM meetings WHERE id=?", (meeting_id,))
-        assert stored["scheduled_at"] == "2026-09-10T14:00:00+08:00"
+        assert saved_routine.status_code == 200
+        routine = saved_routine.json()["routine"]
+        assert routine["weekly_spec"]["day_of_week"] == "wed"
+        assert routine["weekly_spec"]["start_time"] == "14:00"
+        assert routine["next_occurrence"]["kind"] == "advisor"
+        assert routine["next_occurrence"]["recurring"] is True
+
+        # Weekly configuration is stored as user-explicit assertion, not as a fake
+        # single meeting row that must be edited again next week.
+        assert db.fetchone("SELECT COUNT(*) AS n FROM meetings")["n"] == 0
+        assertion = db.fetchone(
+            """SELECT authority FROM assertions
+               WHERE subject_type='meeting_routine' AND subject_id='advisor' AND field='weekly_spec'
+               ORDER BY rowid DESC LIMIT 1"""
+        )
+        assert assertion is not None
 
         topic = "Uncertainty-Aware Selective Routing under Non-Stationary, Heterogeneous Costs"
         saved = client.post("/api/research/context", json={"topic": topic})
@@ -62,6 +81,25 @@ def test_onboarding_can_be_grounded_by_user_meeting_and_research_topic(tmp_path:
         assert by_id["advisor_meeting"]["done"] is True
         assert by_id["research_topic"]["done"] is True
         assert by_id["meeting_transcript"]["done"] is False
+    finally:
+        db.close()
+
+
+def test_adhoc_meeting_is_the_one_off_date_path(tmp_path: Path):
+    client, db = make_client(tmp_path)
+    try:
+        meeting = client.post(
+            "/api/meetings/adhoc",
+            json={
+                "title": "臨時討論",
+                "kind": "advisor_adhoc",
+                "scheduled_at": "2026-09-10T14:00:00+08:00",
+            },
+        )
+        assert meeting.status_code == 200
+        row = db.fetchone("SELECT * FROM meetings WHERE id=?", (meeting.json()["meeting_id"],))
+        assert row["kind"] == "advisor_adhoc"
+        assert row["scheduled_at"] == "2026-09-10T14:00:00+08:00"
     finally:
         db.close()
 
