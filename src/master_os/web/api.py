@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import sqlite3
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -16,8 +18,11 @@ from master_os.agents.packet import AgentJobPacket, WorkPacketBuilder
 from master_os.agents.recovery_actions import AgentRecoveryActions
 from master_os.agents.runtime import AgentRuntime
 from master_os.core.artifacts import ArtifactRegistry
+from master_os.core.assertions import AssertionResolver
+from master_os.core.commands import DomainCommandBus
 from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
+from master_os.core.models import AuthorityLevel, generate_id
 from master_os.core.reducer import apply_event
 from master_os.core.relations import RelationGraph
 from master_os.intelligence.meeting_agent import MeetingAgent
@@ -33,6 +38,21 @@ class IngestTranscriptRequest(BaseModel):
     transcript_text: str
 
 
+class ScheduleMeetingRequest(BaseModel):
+    meeting_id: Optional[str] = None
+    title: Optional[str] = None
+    kind: str = "advisor"
+    scheduled_at: str
+
+
+class ResearchContextRequest(BaseModel):
+    topic: str
+
+
+class TaskStatusRequest(BaseModel):
+    status: str
+
+
 class DecideApprovalRequest(BaseModel):
     status: str
     note: Optional[str] = None
@@ -43,26 +63,28 @@ class RecoverAgentRunRequest(BaseModel):
     note: Optional[str] = None
 
 
+def _parse_json_field(value: Optional[str], fallback: Any) -> Any:
+    if not value:
+        return fallback
+    try:
+        return json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        return fallback
+
+
 def create_app(
     db: MasterDatabase,
     repo_root: Path,
     agent_executors: Optional[dict[str, AgentExecutor]] = None,
 ) -> FastAPI:
-    """Create the same-origin local cockpit API.
-
-    Master OS intentionally does not enable permissive CORS. The UI is served by
-    the same process, and remote access should use Tailscale Serve to proxy the
-    loopback service rather than exposing a cross-origin mutation API.
-
-    Production does not contain a demo executor. Real agent adapters are injected
-    explicitly. Tests may inject deterministic executors without contaminating
-    production behavior with fabricated metrics/findings.
-    """
-    app = FastAPI(title="Master OS Cockpit", version="0.4.0")
+    """Create the same-origin local Cockpit API and workspace UI."""
+    app = FastAPI(title="Master OS Cockpit", version="0.5.0")
 
     executors = agent_executors or {}
     repo_root = repo_root.resolve()
     events = EventStore(db)
+    commands = DomainCommandBus(db, events)
+    assertions = AssertionResolver(db, events)
     artifacts = ArtifactRegistry(db, repo_root=repo_root, events=events)
     relations = RelationGraph(db, events=events)
     critic = MasterCritic(db)
@@ -82,6 +104,43 @@ def create_app(
     planner = MasterPlanner(db)
     scheduler = SchedulerEngine(db, events, critic)
     doctor = MasterDoctor(db, repo_root=repo_root)
+
+    def user_source():
+        return events.register_source("user", "User Cockpit", "cockpit-ui", authority_class="user_explicit")
+
+    def research_topic() -> Optional[str]:
+        resolved = assertions.resolve_field("research_profile", "current", "topic")
+        return str(resolved.value) if resolved and resolved.value else None
+
+    def paper_snapshot(limit: int = 250) -> dict[str, Any]:
+        paper_db = repo_root / ".research-os" / "research.db"
+        if not paper_db.exists():
+            return {"available": False, "count": 0, "papers": [], "database": str(paper_db)}
+        conn = sqlite3.connect(str(paper_db))
+        conn.row_factory = sqlite3.Row
+        try:
+            rows = conn.execute(
+                """SELECT id,title,authors,year,venue,category,source_url,arxiv_id,doi,
+                          fulltext_status,pdf_path,updated_at
+                   FROM papers ORDER BY COALESCE(year,0) DESC,title LIMIT ?""",
+                (limit,),
+            ).fetchall()
+            papers = [dict(row) for row in rows]
+            total = conn.execute("SELECT COUNT(*) FROM papers").fetchone()[0]
+            fetched = conn.execute("SELECT COUNT(*) FROM papers WHERE fulltext_status='fetched'").fetchone()[0]
+            processed = conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0]
+            return {
+                "available": True,
+                "count": int(total),
+                "fulltext_count": int(fetched),
+                "processed_count": int(processed),
+                "papers": papers,
+                "database": str(paper_db),
+            }
+        except sqlite3.DatabaseError as exc:
+            return {"available": False, "count": 0, "papers": [], "database": str(paper_db), "error": str(exc)}
+        finally:
+            conn.close()
 
     @app.get("/api/health")
     def health():
@@ -135,7 +194,7 @@ def create_app(
         parsed_approvals = []
         for row in approvals_rows:
             item = dict(row)
-            item["action_payload"] = json.loads(item["action_payload_json"])
+            item["action_payload"] = _parse_json_field(item.get("action_payload_json"), {})
             parsed_approvals.append(item)
 
         interrupted_runs = recovery_actions.list_interrupted()
@@ -155,6 +214,107 @@ def create_app(
             "what_needs_me": what_needs_me,
         }
 
+    @app.get("/api/onboarding")
+    def onboarding():
+        advisor_meeting = db.fetchone(
+            "SELECT id,scheduled_at,title FROM meetings WHERE kind='advisor' AND status='scheduled' ORDER BY scheduled_at ASC LIMIT 1"
+        )
+        transcript_count = db.fetchone("SELECT COUNT(*) AS n FROM meetings WHERE transcript_artifact_id IS NOT NULL")["n"]
+        slack_count = db.fetchone("SELECT COUNT(*) AS n FROM sources WHERE type='slack_channel' AND enabled=1")["n"]
+        topic = research_topic()
+        steps = [
+            {"id": "advisor_meeting", "label": "設定下一次 Advisor Meeting", "done": bool(advisor_meeting)},
+            {"id": "research_topic", "label": "填入目前研究題目 / Hypothesis", "done": bool(topic)},
+            {"id": "meeting_transcript", "label": "匯入最近一次 Meeting transcript / 筆記", "done": int(transcript_count) > 0},
+            {"id": "slack", "label": "設定 Lab Slack scope（可稍後）", "done": int(slack_count) > 0, "optional": True},
+        ]
+        required = [step for step in steps if not step.get("optional")]
+        return {
+            "complete": all(step["done"] for step in required),
+            "steps": steps,
+            "research_topic": topic,
+            "next_advisor_meeting": dict(advisor_meeting) if advisor_meeting else None,
+        }
+
+    @app.get("/api/tasks")
+    def list_tasks():
+        task_rows = db.fetchall(
+            """SELECT t.*, o.title AS obligation_title, o.severity AS obligation_severity
+               FROM tasks t LEFT JOIN obligations o ON o.id=t.obligation_id
+               ORDER BY CASE t.status WHEN 'in_progress' THEN 0 WHEN 'todo' THEN 1 WHEN 'blocked' THEN 2 ELSE 3 END,
+                        CASE t.priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+                        t.due_at IS NULL,t.due_at,t.created_at DESC"""
+        )
+        tasks = []
+        for row in task_rows:
+            item = dict(row)
+            item["acceptance_criteria"] = _parse_json_field(item.get("acceptance_criteria_json"), [])
+            tasks.append(item)
+        obligation_rows = db.fetchall(
+            "SELECT * FROM obligations ORDER BY CASE status WHEN 'pending' THEN 0 WHEN 'active' THEN 1 ELSE 2 END, due_at IS NULL,due_at,created_at DESC"
+        )
+        obligations = []
+        for row in obligation_rows:
+            item = dict(row)
+            item["satisfaction_rules"] = _parse_json_field(item.get("satisfaction_rules_json"), [])
+            obligations.append(item)
+        return {"tasks": tasks, "obligations": obligations}
+
+    @app.post("/api/tasks/{task_id}/status")
+    def change_task_status(task_id: str, req: TaskStatusRequest):
+        allowed = {"todo", "in_progress", "blocked", "completed", "cancelled"}
+        if req.status not in allowed:
+            raise HTTPException(status_code=400, detail=f"status must be one of {sorted(allowed)}")
+        if not db.fetchone("SELECT id FROM tasks WHERE id=?", (task_id,)):
+            raise HTTPException(status_code=404, detail="task not found")
+        source = user_source()
+        event = commands.emit(
+            "task.status_changed",
+            source.id,
+            {"id": task_id, "status": req.status},
+            created_by="user_explicit",
+        )
+        return {"task_id": task_id, "status": req.status, "event_id": event.id}
+
+    @app.get("/api/meetings")
+    def list_meetings():
+        rows = db.fetchall(
+            "SELECT * FROM meetings ORDER BY CASE status WHEN 'scheduled' THEN 0 ELSE 1 END, scheduled_at DESC"
+        )
+        upcoming = [dict(row) for row in rows if row["status"] == "scheduled"]
+        history = [dict(row) for row in rows if row["status"] != "scheduled"]
+        return {"upcoming": sorted(upcoming, key=lambda item: item["scheduled_at"]), "history": history}
+
+    @app.post("/api/meetings/schedule")
+    def schedule_meeting(req: ScheduleMeetingRequest):
+        scheduled_at = req.scheduled_at.strip()
+        try:
+            parsed = datetime.fromisoformat(scheduled_at.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="scheduled_at must be an ISO-8601 datetime") from exc
+        if parsed.tzinfo is None:
+            raise HTTPException(status_code=400, detail="scheduled_at must include a timezone offset")
+
+        meeting_id = (req.meeting_id or "").strip() or generate_id("M-")
+        existing = db.fetchone("SELECT status FROM meetings WHERE id=?", (meeting_id,))
+        if existing and existing["status"] == "completed":
+            raise HTTPException(status_code=409, detail="completed meeting history cannot be rescheduled; create a new meeting")
+        title = (req.title or "").strip() or ("Advisor Meeting" if req.kind == "advisor" else "Meeting")
+        source = user_source()
+        event = commands.emit(
+            "meeting.scheduled",
+            source.id,
+            {
+                "id": meeting_id,
+                "kind": req.kind.strip() or "advisor",
+                "title": title,
+                "scheduled_at": parsed.isoformat(),
+                "status": "scheduled",
+            },
+            created_by="user_explicit",
+        )
+        return {"meeting_id": meeting_id, "scheduled_at": parsed.isoformat(), "event_id": event.id}
+
     @app.post("/api/meetings/ingest")
     def ingest_transcript(req: IngestTranscriptRequest):
         return meeting_agent.ingest_transcript(req.meeting_id, req.transcript_text)
@@ -162,6 +322,74 @@ def create_app(
     @app.post("/api/meetings/{meeting_id}/pack")
     def generate_meeting_pack(meeting_id: str):
         return {"meeting_id": meeting_id, "meeting_pack": meeting_agent.generate_meeting_pack(meeting_id)}
+
+    @app.get("/api/research")
+    def research_workspace():
+        experiments = [dict(row) for row in db.fetchall("SELECT * FROM experiments ORDER BY created_at DESC LIMIT 100")]
+        findings = [dict(row) for row in db.fetchall("SELECT * FROM findings ORDER BY created_at DESC LIMIT 100")]
+        decisions = [dict(row) for row in db.fetchall("SELECT * FROM decisions ORDER BY decided_at DESC LIMIT 100")]
+        artifacts_rows = db.fetchall("SELECT * FROM artifacts WHERE canonical=1 ORDER BY created_at DESC LIMIT 100")
+        artifact_items = []
+        for row in artifacts_rows:
+            item = dict(row)
+            item["metadata"] = _parse_json_field(item.get("metadata_json"), {})
+            artifact_items.append(item)
+        return {
+            "topic": research_topic(),
+            "experiments": experiments,
+            "findings": findings,
+            "decisions": decisions,
+            "artifacts": artifact_items,
+        }
+
+    @app.post("/api/research/context")
+    def set_research_context(req: ResearchContextRequest):
+        topic = req.topic.strip()
+        if not topic:
+            raise HTTPException(status_code=400, detail="topic cannot be empty")
+        assertion = assertions.assert_field(
+            "research_profile",
+            "current",
+            "topic",
+            topic,
+            authority=AuthorityLevel.USER_EXPLICIT,
+            confidence=1.0,
+        )
+        return {"topic": topic, "assertion_id": assertion.id}
+
+    @app.get("/api/papers")
+    def list_papers():
+        return paper_snapshot()
+
+    @app.get("/api/agents")
+    def agent_workspace():
+        runs = [dict(row) for row in db.fetchall("SELECT * FROM agent_runs ORDER BY created_at DESC LIMIT 200")]
+        return {
+            "runs": runs,
+            "inflight": dispatcher.inflight(),
+            "interrupted": recovery_actions.list_interrupted(),
+        }
+
+    @app.get("/api/system")
+    def system_workspace():
+        sources = [dict(row) for row in db.fetchall("SELECT * FROM sources ORDER BY type,name")]
+        schedules = scheduler.list_schedules()
+        resources = []
+        for row in db.fetchall("SELECT * FROM lab_resources ORDER BY resource_type,name"):
+            item = dict(row)
+            item["metadata"] = _parse_json_field(item.get("metadata_json"), {})
+            item["active_containers"] = _parse_json_field(item.get("active_containers_json"), [])
+            resources.append(item)
+        health_rows = [dict(row) for row in db.fetchall("SELECT * FROM system_health ORDER BY subsystem")]
+        return {
+            "doctor": doctor.run_diagnostics(),
+            "sources": sources,
+            "schedules": schedules,
+            "resources": resources,
+            "health": health_rows,
+            "research_os_database": str(repo_root / ".research-os" / "research.db"),
+            "master_database": str(db.db_path),
+        }
 
     @app.post("/api/approvals/{approval_id}/decide")
     def decide_approval(approval_id: str, req: DecideApprovalRequest):
@@ -171,14 +399,13 @@ def create_app(
         if not approval:
             raise HTTPException(status_code=404, detail="approval not found")
 
-        source = events.register_source("user", "User Cockpit", "cockpit-ui")
-        event = events.record_event(
+        source = user_source()
+        event = commands.emit(
             event_type="approval.decided",
             source_id=source.id,
             payload={"id": approval_id, "status": req.status, "decision_note": req.note or ""},
             created_by="user_explicit",
         )
-        apply_event(db, event)
 
         materialized_entity_id = None
         if req.status == "approved" and approval["action_type"] == "confirm_semantic_change":
@@ -188,6 +415,7 @@ def create_app(
             "approval_id": approval_id,
             "status": req.status,
             "materialized_entity_id": materialized_entity_id,
+            "event_id": event.id,
         }
 
     @app.get("/api/agent-runs/{run_id}/inspect")
