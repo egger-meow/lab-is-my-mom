@@ -48,6 +48,16 @@ def test_cockpit_five_questions_aggregation(api_client):
     assert "research_velocity" in data["what_matters_now"]
 
 
+def test_unknown_transcript_occurrence_requires_real_time(api_client):
+    client, _ = api_client
+    response = client.post(
+        "/api/meetings/ingest",
+        json={"meeting_id": "M-UNKNOWN", "transcript_text": "Prof: test"},
+    )
+    assert response.status_code == 409
+    assert "will not invent" in response.json()["detail"]
+
+
 def test_end_to_end_web_flow_uses_confirmed_state_and_injected_executor(api_client):
     client, db = api_client
 
@@ -56,6 +66,8 @@ def test_end_to_end_web_flow_uses_confirmed_state_and_injected_executor(api_clie
         "/api/meetings/ingest",
         json={
             "meeting_id": "M-20260910",
+            "scheduled_at": "2026-09-10T14:00:00+08:00",
+            "kind": "advisor",
             "transcript_text": "Prof: 下次 meeting 請準備 baseline 結果。",
         },
     )
