@@ -12,6 +12,13 @@ from master_os.core.reducer import apply_event
 from master_os.lab.protocol import create_default_lab_schedules
 
 
+_ADVISOR_PREP_NAME = "Advisor Pre-Meeting Readiness & Pack"
+_LEGACY_ADVISOR_PREP_TRIGGER = {
+    "trigger_type": "time_cron",
+    "trigger_spec": {"day_of_week": "wed", "hour": 20, "minute": 0},
+}
+
+
 class SchedulerEngine:
     """Orchestrates scheduled routines while keeping schedule state replayable."""
 
@@ -38,11 +45,14 @@ class SchedulerEngine:
         }
 
     def _ensure_event_backed_schedules(self) -> None:
-        """Seed defaults or backfill legacy schedule rows into canonical history.
+        """Seed defaults, backfill legacy rows, and apply narrow built-in migrations.
 
         Older Master OS builds inserted schedules directly. On first startup after
         this migration, each existing row is captured once as ``schedule.created``
         so ``rebuild-state`` cannot erase user-visible scheduler configuration.
+
+        Built-in migrations are intentionally narrow. We only rewrite an exact
+        historical default shape, never an arbitrary user-customized schedule.
         """
         source = self.events.register_source("scheduler", "Master Scheduler", "master-os-scheduler")
         existing = self.db.fetchall("SELECT * FROM schedules ORDER BY created_at ASC")
@@ -56,6 +66,7 @@ class SchedulerEngine:
                     dedup_key=f"schedule-bootstrap:{row['id']}",
                 )
                 apply_event(self.db, event)
+            self._migrate_legacy_default_schedules(source.id)
             return
 
         now = utc_now()
@@ -82,6 +93,35 @@ class SchedulerEngine:
                 dedup_key=f"default-schedule:{spec['name']}",
             )
             apply_event(self.db, event)
+
+    def _migrate_legacy_default_schedules(self, source_id: str) -> None:
+        """Upgrade only recognized historical defaults through canonical events."""
+        row = self.db.fetchone("SELECT * FROM schedules WHERE name = ?", (_ADVISOR_PREP_NAME,))
+        if not row:
+            return
+
+        trigger_spec = json.loads(row["trigger_spec_json"])
+        if (
+            row["trigger_type"] != _LEGACY_ADVISOR_PREP_TRIGGER["trigger_type"]
+            or trigger_spec != _LEGACY_ADVISOR_PREP_TRIGGER["trigger_spec"]
+        ):
+            return
+
+        new_default = next(
+            spec for spec in create_default_lab_schedules()
+            if spec["name"] == _ADVISOR_PREP_NAME
+        )
+        payload = self._schedule_payload_from_row(row)
+        payload["trigger_type"] = new_default["trigger_type"]
+        payload["trigger_spec"] = new_default["trigger_spec"]
+        event = self.events.record_event(
+            "schedule.created",
+            source_id,
+            payload,
+            dedup_key="schedule-migration:advisor-premeeting-relative:v1",
+            created_by="scheduler_migration",
+        )
+        apply_event(self.db, event)
 
     def list_schedules(self) -> list[dict[str, Any]]:
         rows = self.db.fetchall("SELECT * FROM schedules ORDER BY created_at ASC")
