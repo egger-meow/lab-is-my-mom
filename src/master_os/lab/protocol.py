@@ -33,6 +33,10 @@ class IndividualMeetingFormat:
 class SeminarFormat:
     """Lab Seminar rules and presentation formats."""
     time: str = "每週一 13:30~14:10 (Google Meet)"
+    day_of_week: str = "mon"
+    start_time: str = "13:30"
+    end_time: str = "14:10"
+    timezone: str = "Asia/Taipei"
     presentation_duration_minutes: int = 30
     eligibility: str = "新生加入實驗室的第二個學期排入報告順序"
     survey_type: str = "Survey 類型：針對特定主題分享 5 篇以上論文，著重研究動機、框架、資料集與議題總結"
@@ -54,6 +58,16 @@ MEETING_FORMAT = IndividualMeetingFormat()
 SEMINAR_FORMAT = SeminarFormat()
 COMPUTE_SAFETY = ComputeSafetyRules()
 
+# The student guide explicitly fixes Seminar at Monday 13:30–14:10. Advisor
+# meeting is weekly too, but the guide does not specify its weekday/time, so that
+# cadence must come from the student as user-explicit state.
+SEMINAR_WEEKLY_SPEC = {
+    "day_of_week": SEMINAR_FORMAT.day_of_week,
+    "start_time": SEMINAR_FORMAT.start_time,
+    "end_time": SEMINAR_FORMAT.end_time,
+    "timezone": SEMINAR_FORMAT.timezone,
+}
+
 
 def create_default_lab_schedules() -> list[dict[str, Any]]:
     """Standard recurring AI routines aligned with NYCU NLP Lab life."""
@@ -71,7 +85,7 @@ def create_default_lab_schedules() -> list[dict[str, Any]]:
             "trigger_type": "relative_meeting",
             "trigger_spec": {"meeting_kind": "advisor", "offset_minutes": -720},
             "agent_role": "meeting_agent",
-            "prompt_template": "依下一場 advisor meeting 的實際時間計算 readiness，根據實驗結果與 Findings 產出個人 Meeting 簡報大綱與數據表格 (Excel/Markdown)",
+            "prompt_template": "依每週 advisor meeting 固定時間計算 readiness，根據實驗結果與 Findings 產出個人 Meeting 簡報大綱與數據表格 (Excel/Markdown)",
             "autonomy_policy": {"dispatch_local": True, "external_actions": "approval"},
         },
         {
