@@ -74,8 +74,13 @@ class EventStore:
         raw_ref: Optional[str] = None,
         raw_content: Optional[str | bytes] = None,
         created_by: str = "system",
+        commit: bool = True,
     ) -> Event:
-        """Record an immutable domain event."""
+        """Record an immutable domain event.
+
+        ``commit=False`` is reserved for command handlers that append the event
+        and materialize its state in one caller-owned transaction.
+        """
         if dedup_key:
             existing = self.db.fetchone("SELECT * FROM events WHERE dedup_key = ?", (dedup_key,))
             if existing:
@@ -97,7 +102,8 @@ class EventStore:
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (eid, event_type, source_id, occ, now, external_id, dedup_key, actor_ref, raw_ref, raw_hash, payload_json, created_by)
         )
-        self.db.commit()
+        if commit:
+            self.db.commit()
 
         return Event(
             id=eid,
@@ -115,11 +121,16 @@ class EventStore:
         )
 
     def get_events(self, after_id: Optional[str] = None, limit: int = 1000) -> list[Event]:
-        """Fetch chronological stream of events for replay."""
+        """Fetch chronological events without losing same-timestamp siblings."""
         if after_id:
+            anchor = self.db.fetchone("SELECT occurred_at, rowid AS event_rowid FROM events WHERE id = ?", (after_id,))
+            if not anchor:
+                raise ValueError(f"Event cursor not found: {after_id}")
             rows = self.db.fetchall(
-                "SELECT * FROM events WHERE occurred_at > (SELECT occurred_at FROM events WHERE id = ?) ORDER BY occurred_at ASC, rowid ASC LIMIT ?",
-                (after_id, limit)
+                """SELECT * FROM events
+                   WHERE occurred_at > ? OR (occurred_at = ? AND rowid > ?)
+                   ORDER BY occurred_at ASC, rowid ASC LIMIT ?""",
+                (anchor["occurred_at"], anchor["occurred_at"], anchor["event_rowid"], limit),
             )
         else:
             rows = self.db.fetchall(

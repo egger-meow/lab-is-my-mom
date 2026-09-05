@@ -24,12 +24,15 @@ class AuthorityLevel(IntEnum):
 
 
 def generate_id(prefix: str) -> str:
-    """Generate human-readable, chronologically-sortable prefixed identifiers.
-    
-    Examples: EV-20260905-a3f1, T-20260905-88c2, M-20260905-19a0
+    """Generate human-readable prefixed identifiers with collision-resistant entropy.
+
+    Examples: EV-20260905-a3f1b2c3d4e5, T-20260905-88c2d1e4f6a7.
+
+    The date remains useful to humans/agents while the 48-bit random suffix is
+    large enough for a long-lived local event store without relying on opaque UUIDs.
     """
     date_part = datetime.now(timezone.utc).strftime("%Y%m%d")
-    token = secrets.token_hex(2)  # 4 hex characters
+    token = secrets.token_hex(6)  # 12 hex chars = 48 bits
     return f"{prefix}{date_part}-{token}"
 
 
@@ -153,7 +156,7 @@ class AgentRun:
 class Experiment:
     id: str
     title: str
-    research_repo: str = "routing-research"
+    research_repo: str = ""
     status: str = "planned"  # planned, running, completed, failed, cancelled
     git_sha: Optional[str] = None
     dataset_ref: Optional[str] = None

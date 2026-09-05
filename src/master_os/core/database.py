@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Iterator, Optional
 
 
 SCHEMA_SQL = """
@@ -130,7 +131,7 @@ CREATE INDEX IF NOT EXISTS idx_agent_runs_task ON agent_runs(task_id);
 CREATE TABLE IF NOT EXISTS experiments (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
-    research_repo TEXT NOT NULL DEFAULT 'routing-research',
+    research_repo TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'planned',
     git_sha TEXT,
     dataset_ref TEXT,
@@ -264,12 +265,15 @@ CREATE TABLE IF NOT EXISTS system_health (
 
 
 class MasterDatabase:
-    """Manages SQLite database connections, schema lifecycle, and queries."""
+    """Manages SQLite connections, schema lifecycle, and explicit transactions."""
 
     def __init__(self, db_path: Path) -> None:
         self.db_path = db_path.resolve()
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(str(self.db_path), autocommit=True, check_same_thread=False)
+        # Use standard DB-API transaction semantics instead of Python 3.12's
+        # autocommit-only API. This keeps Python 3.11 compatibility and makes
+        # rollback/atomic domain transitions real rather than cosmetic.
+        self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA journal_mode = WAL")
         self.conn.execute("PRAGMA foreign_keys = ON")
@@ -278,6 +282,7 @@ class MasterDatabase:
 
     def _init_schema(self) -> None:
         self.conn.executescript(SCHEMA_SQL)
+        self.conn.commit()
 
     def execute(self, sql: str, parameters: tuple[Any, ...] = ()) -> sqlite3.Cursor:
         cursor = self.conn.cursor()
@@ -301,18 +306,30 @@ class MasterDatabase:
     def rollback(self) -> None:
         self.conn.rollback()
 
+    @contextmanager
+    def transaction(self) -> Iterator[None]:
+        """Run several writes as one SQLite transaction."""
+        try:
+            yield
+            self.conn.commit()
+        except Exception:
+            self.conn.rollback()
+            raise
+
     def close(self) -> None:
         self.conn.close()
 
     def clear_materialized_state(self) -> None:
-        """Clear materialized tables for deterministic state rebuild, keeping events and sources."""
+        """Clear rebuildable tables while preserving canonical events and sources."""
         cursor = self.conn.cursor()
         cursor.execute("PRAGMA foreign_keys = OFF")
-        for table in [
-            "assertions", "meetings", "obligations", "tasks", "agent_runs",
-            "experiments", "artifacts", "findings", "failures", "decisions",
-            "approvals", "schedules", "relations", "lab_resources"
-        ]:
-            cursor.execute(f"DELETE FROM {table}")
-        cursor.execute("PRAGMA foreign_keys = ON")
-        self.conn.commit()
+        try:
+            for table in [
+                "assertions", "meetings", "obligations", "tasks", "agent_runs",
+                "experiments", "artifacts", "findings", "failures", "decisions",
+                "approvals", "schedules", "relations", "lab_resources"
+            ]:
+                cursor.execute(f"DELETE FROM {table}")
+            self.conn.commit()
+        finally:
+            cursor.execute("PRAGMA foreign_keys = ON")

@@ -2,190 +2,204 @@
 
 ## Mission
 
-Build a local-first autonomous operating system for my entire 2-year master's degree and NYCU NLP Lab life under Prof. An-Zi Yen.
+Build a local-first autonomous operating system for my entire two-year master's degree and NYCU NLP Lab life under Prof. An-Zi Yen.
 
-The ultimate goal is not a todo app or paper reader. It acts as a master's-student agent:
-observe the lab, remember research history, track obligations vs tasks, prepare meetings, coordinate local coding/research agents (Codex / Antigravity), execute authorized work in isolated worktrees, preserve evidence, prevent repeated mistakes (Failure Memory), and minimize manual operating labor.
-
-The student mainly provides judgment and approvals while the system handles the operating work.
-
-> **Note on evolution**: The previous build-time statement that this is "not a runtime AI-agent product" is now officially superseded. The existing Research OS remains intact as one specialized organ (Literature Engine) of Master OS.
+This is not a todo app and not only a paper reader. It is a master's-student operating runtime that continuously turns evidence into useful research progress while minimizing manual operating labor.
 
 ```text
-MASTER OS RUNTIME
-├── Master Cockpit (Traditional Chinese Web UI, 5 Core Questions)
-├── Intelligence Layer (Meeting Agent, Master Planner, Critic, Scheduler)
-├── Master Core (Append-only Events, Assertions, Relational State, Relations Graph)
-├── Agent Runtime (Sandboxed Git Worktrees, Failure Memory Injection, Acceptance Checks)
-└── Adapter Layer (Research OS Paper Corpus, Lab Protocol, Compute & Supervisor)
+observe → preserve evidence → interpret → plan → execute authorized work → verify → remember
 ```
 
-The architecture must support almost any professor webpage:
+The student should mainly spend time on judgment, research taste, advisor interaction, and decisions that genuinely require a human.
 
-```bash
-research-os bootstrap \
-  --professor-url <URL> \
-  --seed-file <optional PDF/slide/doc>
-```
+The original Research OS remains a first-class Literature Engine. Its crawl, paper resolution, full-text processing, corpus, provenance, and professor research-map capabilities must be preserved.
 
-The first real bootstrap is customized for:
+---
 
-- `https://azyen0522.github.io/`
-- provided `NYCU NLP Lab Intro.pdf`
+## Core laws
 
-Use the PDF as extra ground truth for research directions and paper context, but keep professor-specific hints in config, not hardcoded domain logic.
+### 1. Durable memory lives in Master OS, not model sessions
 
-## Required pipeline
+Agents are replaceable workers. Models and providers will change during the degree.
 
-### 1. Professor discovery
+Durable state includes:
 
-Given a professor/lab URL:
+- append-only source/domain events;
+- relational current state;
+- assertions with authority/confidence;
+- provenance and relation graph;
+- meetings, obligations, tasks, decisions, experiments, findings, failures;
+- artifacts and agent-run history.
 
-- crawl same-site profile, lab, project, and publication pages;
-- detect names, aliases, affiliations, ORCID/Scholar links;
-- collect titles, authors, venues, years, DOI/arXiv IDs, PDF/code/data links;
-- distinguish authored papers from merely cited or recommended papers;
-- follow relevant scholarly links with bounded depth;
-- preserve URL, timestamp, content hash, and extraction evidence.
+Important history is never silently overwritten.
 
-Use adapters so new professors do not require crawler rewrites.
+### 2. Evidence before truth
 
-### 2. Paper resolution and fetching
-
-Resolve and deduplicate through DOI/Crossref, arXiv, ACL Anthology, OpenAlex, Semantic Scholar, conference/publisher pages, and professor-hosted PDFs.
-
-Never invent papers or citations. Record unresolved, inaccessible, and paywalled items explicitly.
-
-### 3. Document processing
-
-For each fetched paper:
-
-- preserve the original PDF;
-- extract sections, references, figures, tables, and captions;
-- optionally create Traditional Chinese or bilingual reading copies;
-- preserve page-level anchors for evidence links;
-- record parser versions, configuration, and failures.
-
-### 4. Build-time paper digestion
-
-For every currently fetchable professor-authored paper, the building agent must read the full text and commit compact support docs:
+Preserve the distinction between:
 
 ```text
-research/papers/<paper-id>/
-├── metadata.yaml
-├── source.pdf
-├── README.md
-├── method.md
-├── experiments-and-results.md
-├── limitations-and-critique.md
-├── prerequisites.md
-├── seminar-questions.md
-└── diagrams/
-    ├── method.mmd
-    └── research-context.mmd
+source event ≠ interpretation
+paper claim ≠ reproduced result
+advisor wording ≠ confirmed commitment
+agent finding ≠ validated finding
+activity ≠ research progress
 ```
 
-Keep them useful, not encyclopedic. Clearly separate:
+High-impact semantic changes require explicit confirmation when evidence is ambiguous.
 
-- paper claim,
-- observed result,
-- author limitation,
-- builder interpretation,
-- unresolved question.
-
-### 5. Professor research map
-
-Generate:
+Authority precedence:
 
 ```text
-research/professor/<professor-id>/
-├── profile.md
-├── publication-index.md
-├── research-directions.md
-├── research-timeline.md
-├── method-map.md
-├── dataset-map.md
-├── reading-order.md
-└── open-questions.md
+user explicit decision/config
+    > verified source fact
+    > confirmed semantic interpretation
+    > agent interpretation
+    > heuristic/inference
 ```
 
-Connect papers through topics, methods, datasets, metrics, citations, recurring limitations, and later extensions.
+### 3. Automate toil, surface judgment
 
-### 6. Local usage
+Local, reversible, already-authorized work may run automatically.
 
-Start with CLI and files:
+The system must not silently:
 
-```bash
-research-os bootstrap --professor-url <URL>
-research-os refresh <professor-id>
-research-os papers <professor-id>
-research-os fetch <paper-id>
-research-os search "<query>"
-research-os report <professor-id>
-```
+- merge `main`;
+- send Slack/email;
+- publish externally;
+- use paid or gated compute;
+- reinterpret ambiguous advisor direction as confirmed truth.
 
-Build a web UI only after the corpus pipeline works.
+Those actions remain policy/approval gated.
 
-## Reuse these projects
+### 4. Crash-safe by design
 
-### BabelDOC
+The system is expected to run for two years on a personal machine and survive reboots, Windows Update, agent crashes, auth failures, and model/provider churn.
 
-`https://github.com/funstory-ai/BabelDOC`
+Required properties:
 
-Use it as an optional adapter for layout-preserving PDF translation/processing.
+- SQLite WAL and deterministic current-state rebuild;
+- idempotent/deduplicated event ingestion;
+- canonical event + materialization transaction boundary;
+- durable Agent Run queue;
+- isolated worktrees;
+- heartbeats and interrupted-run recovery;
+- daily verified DB snapshots;
+- system diagnostics and stale-runtime detection;
+- boot/login autostart.
 
-- isolate behind `DocumentProcessor` / `Translator` interfaces;
-- prefer its supported wrapper/entry path, not unstable internal APIs;
-- support subprocess or separate-service execution;
-- preserve the untouched original PDF;
-- keep the core pipeline functional without it;
-- test formulas, tables, figures, references, and scanned PDFs;
-- review AGPL-3.0 implications before distributing a combined service.
+---
 
-### Deep-Research-Agent
-
-`https://github.com/CYC2002tommy/Deep-Research-Agent`
-
-Use it as a **build-time reference/skill**, not a runtime dependency.
-
-Borrow:
-
-- broad discovery followed by full-text screening;
-- OpenAlex/Semantic Scholar/Scopus-style provider adapters;
-- DOI resolution checks;
-- full-text verification before writing claims;
-- separate extraction, synthesis, verification, and review stages;
-- structured research-report outputs.
-
-Do not copy rigid assumptions such as fixed paper counts, journal bans, English-only output, hardcoded folders, NotebookLM, or mandatory multi-agent execution. This project must fit computer-science conference research and remain configurable.
-
-## Minimal implementation shape
+## Runtime architecture
 
 ```text
-src/
-├── cli/
-├── config/
-├── domain/
-├── crawling/
-├── scholarly/
-├── documents/
-├── extraction/
-├── indexing/
-├── reports/
-└── providers/
+Slack / Email / Drive / Meetings / Papers / Git / Files / Experiments
+                              │
+                              ▼
+                       Source Adapters
+                              │
+                              ▼
+┌──────────────────────── MASTER CORE ────────────────────────┐
+│ Append-only Event History                                  │
+│ Assertions + Authority Resolution                          │
+│ Relational Current State                                   │
+│ Provenance / Relation Graph                                │
+│ Artifact Registry                                          │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+          ┌──────────────────┼──────────────────┐
+          ▼                  ▼                  ▼
+     Master Planner      AI Scheduler      Master Critic
+          │                  │                  │
+          └──────────────────┼──────────────────┘
+                             ▼
+                     Durable Agent Queue
+                             │
+                 Codex / Antigravity / future
+                             │
+                  isolated Git worktrees
 ```
 
-Recommended baseline:
+The Web Cockpit answers five questions:
 
-- Python 3.12+, `uv`
-- Typer/Click, Pydantic
-- SQLite
-- PyMuPDF
-- BeautifulSoup, Playwright only when required
-- Markdown and Mermaid outputs
-- optional FastAPI later
+1. What matters now?
+2. What is coming?
+3. What changed?
+4. What are agents doing?
+5. What needs me?
 
-Keep external services behind interfaces. Do not add PostgreSQL, vectors, queues, or a frontend until actual usage requires them.
+---
+
+## Agent runtime contract
+
+Every agent receives a bounded Work Packet containing only relevant task context, permissions, acceptance criteria, expected artifacts, and known failure memory.
+
+Agent execution is stateless from the model's perspective. Long-term memory belongs to Master OS.
+
+Normal autonomous local path:
+
+```text
+task
+ → durable queued Agent Run
+ → frozen Work Packet artifact
+ → isolated worktree
+ → executor
+ → checks / observed result
+ → artifact registry
+ → canonical run/task state
+```
+
+Web dispatch must return immediately with a `RUN-*` identity. Long-running agent work must not hold an HTTP request open.
+
+Interrupted runs preserve their worktree and evidence. Recovery supports inspect, resume, fresh retry, or abandon, with lineage retained.
+
+---
+
+## Scheduler contract
+
+Schedules are data, not hardcoded cron behavior.
+
+Supported trigger families include:
+
+- time/weekly schedule;
+- interval;
+- event;
+- relative-to-meeting.
+
+A scheduled routine may dispatch local autonomous work only when its autonomy policy explicitly allows it. The Supervisor pumps the durable queue independently of the Web UI.
+
+Advisor meeting schedules must remain editable and relative routines must follow the current meeting time rather than stale hardcoded dates.
+
+---
+
+## Lab workflow
+
+Machine-readable lab protocol should encode real operating rules instead of leaving PDFs passive.
+
+Examples include:
+
+- advisor meeting preparation and post-meeting Slack-summary obligation;
+- Seminar rotation/readiness;
+- OpenAI/API cost approval boundaries;
+- NCHC/H100 resource warnings and container cleanup risk.
+
+Do not invent missing graduation, course, TA, compute, or administrative requirements. Add them only from verified user/lab/university sources.
+
+---
+
+## Research OS / Literature Engine
+
+Given a professor/lab URL, Research OS should continue to:
+
+- crawl bounded professor/lab/publication sources;
+- identify professor-authored papers;
+- resolve and deduplicate scholarly metadata;
+- fetch legally accessible full text;
+- preserve PDF hashes and provenance;
+- extract/process papers;
+- generate useful reading support and research maps;
+- keep inaccessible/unresolved items explicit rather than fabricating them.
+
+The architecture should remain reusable for another professor URL, while professor-specific hints stay in configuration.
 
 Important distinctions:
 
@@ -196,38 +210,47 @@ paper statement ≠ builder interpretation
 reported result ≠ reproduced result
 ```
 
-Everything must retain provenance.
+Everything important keeps provenance.
 
-## First milestone
+---
 
-Deliver one end-to-end vertical slice:
+## Local-first deployment
 
-1. initialize repo and SQLite;
-2. import the provided NYCU lab PDF;
-3. crawl Prof. An-Zi Yen's webpage;
-4. build a verified profile and publication index;
-5. fetch every legally accessible authored paper found;
-6. process PDFs and optionally create bilingual copies with BabelDOC;
-7. have the building agent digest those papers;
-8. commit per-paper study docs and Mermaid diagrams;
-9. commit timeline, method map, and reading order;
-10. write `reports/bootstrap-an-zi-yen.md` with conflicts, missing PDFs, and failures.
+Desktop is the mothership. Phone is a remote cockpit.
 
-## Done when
+Default service bind is loopback:
 
-- a clean clone reproduces the crawl and index;
-- authored papers are separated from unrelated links;
-- metadata is deduplicated and source-backed;
-- PDFs have hashes and provenance;
-- unavailable papers and failures remain visible;
-- each fetched paper has compact reading-support docs;
-- diagrams link back to paper sections/pages;
-- the research map reflects the supplied lab PDF;
-- no runtime AI-agent dependency exists;
-- tests cover crawling, deduplication, provenance, and one full paper path.
+```bash
+uv run master-os start --host 127.0.0.1 --port 8000
+```
 
-## Builder instruction
+Use Tailscale Serve for remote access instead of exposing the service broadly on the LAN.
 
-Inspect the two referenced repositories and supplied professor material first. Then build the smallest real vertical slice, reuse proven components behind adapters, generate the initial corpus during this build, verify important claims against full text, run one real bootstrap plus tests, record exact failures, and commit each coherent unit.
+Autostart must be user-scoped and secret-free:
 
-Do not burn tokens on speculative enterprise architecture. Make the corpus useful.
+```bash
+uv run master-os autostart install
+```
+
+Current supported startup mechanisms:
+
+- Windows Scheduled Task on login;
+- Linux user systemd.
+
+---
+
+## Definition of a healthy Master OS
+
+A healthy system can:
+
+- preserve source history and rebuild current state;
+- show the current critical path and obligations;
+- ingest meeting evidence without silently promoting ambiguous semantics;
+- queue and execute authorized local agent jobs without blocking Web requests;
+- recover interrupted runs without deleting evidence;
+- keep automated snapshots fresh and integrity-checked;
+- report stale supervisor/queue/artifact/backup conditions through `master-os doctor`;
+- keep Research OS corpus functions intact;
+- survive model/provider changes because durable memory and policy live outside the agent.
+
+The optimization target is not maximum automation. It is **maximum useful research progress per unit of human judgment, without sacrificing provenance, reversibility, safety, or graduation reliability.**

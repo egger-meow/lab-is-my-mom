@@ -110,7 +110,7 @@ def test_store_migrates_absolute_artifact_paths_to_workspace_relative(tmp_path: 
     store.close()
     migrated = Store(tmp_path)
     row = migrated.db.execute("select local_path from sources where url='file:legacy.pdf'").fetchone()
-    assert row["local_path"] == "research\\paper.pdf"
+    assert row["local_path"].replace("\\", "/") == "research/paper.pdf"
     assert migrated.resolve_path(row["local_path"]) == artifact
     migrated.close()
 

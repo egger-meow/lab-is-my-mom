@@ -1,12 +1,13 @@
 """Tests for Master OS Intelligence Layer (Meeting Agent, Planner, Scheduler)."""
 from pathlib import Path
+
 import pytest
 
+from master_os.agents.critic import MasterCritic
+from master_os.core.artifacts import ArtifactRegistry
 from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
-from master_os.core.artifacts import ArtifactRegistry
 from master_os.core.relations import RelationGraph
-from master_os.agents.critic import MasterCritic
 from master_os.intelligence.meeting_agent import MeetingAgent
 from master_os.intelligence.planner import MasterPlanner
 from master_os.scheduler.engine import SchedulerEngine
@@ -14,11 +15,10 @@ from master_os.scheduler.engine import SchedulerEngine
 
 @pytest.fixture
 def intel_setup(tmp_path: Path):
-    db_path = tmp_path / "test_intel.db"
-    db = MasterDatabase(db_path)
+    db = MasterDatabase(tmp_path / "test_intel.db")
     store = EventStore(db)
-    artifacts = ArtifactRegistry(db, repo_root=tmp_path)
-    relations = RelationGraph(db)
+    artifacts = ArtifactRegistry(db, repo_root=tmp_path, events=store)
+    relations = RelationGraph(db, events=store)
     critic = MasterCritic(db)
     meeting_agent = MeetingAgent(db, store, artifacts, relations, repo_root=tmp_path)
     planner = MasterPlanner(db)
@@ -27,94 +27,108 @@ def intel_setup(tmp_path: Path):
     db.close()
 
 
-def test_meeting_agent_transcript_ingestion(intel_setup):
-    db, _, _, relations, agent, _, _ = intel_setup
-
-    sample_transcript = """
-    Prof: 上週你看的 paper 怎麼樣？
-    Student: 我看了 selective router 的架構，想先用 VDAR 當 baseline。
-    Prof: VDAR 可以先當 baseline，那下次 meeting 記得把比較的表格帶過來，包含 accuracy 跟 cost。
-    Student: 好的，我這週會把 baseline 跑出來並驗證測試。
+def test_meeting_agent_transcript_ingestion_queues_semantics_for_confirmation(intel_setup):
+    db, _, _, _, agent, _, _ = intel_setup
+    transcript = """
+    Prof: VDAR 可以先當 baseline。下次 meeting 記得把比較表格帶過來，包含 accuracy 跟 cost。
+    Student: 好，我這週會把 baseline 跑出來並驗證測試。
     """
 
-    res = agent.ingest_transcript("M-20260910", sample_transcript)
-    assert res["transcript_artifact_id"].startswith("A-")
+    result = agent.ingest_transcript("M-20260910", transcript)
+    assert result["transcript_artifact_id"].startswith("A-")
+    assert result["semantic_approval_ids"]
 
-    # Check decisions
-    decisions = db.fetchall("SELECT * FROM decisions")
-    assert len(decisions) >= 1
-    assert "VDAR" in decisions[0]["statement"]
+    # Tier-2 meanings are not silently promoted to research truth.
+    assert db.fetchone("SELECT COUNT(*) AS n FROM decisions")["n"] == 0
+    assert db.fetchone("SELECT COUNT(*) AS n FROM obligations")["n"] == 0
+    assert db.fetchone("SELECT COUNT(*) AS n FROM tasks")["n"] == 0
 
-    # Check obligations
-    obs = db.fetchall("SELECT * FROM obligations")
-    assert len(obs) >= 1
-    assert "VDAR baseline 比較表格" in obs[0]["title"]
-    assert obs[0]["severity"] == "critical"
-
-    # Check tasks created from obligation
-    tasks = db.fetchall("SELECT * FROM tasks")
-    assert len(tasks) >= 2
-    assert any("實作 VDAR baseline" in t["title"] for t in tasks)
-
-    # Check relations graph
-    m_edges = relations.get_out_relations("meeting", "M-20260910")
-    assert len(m_edges) >= 1
-    assert m_edges[0].relation == "created"
+    approvals = db.fetchall("SELECT * FROM approvals WHERE action_type='confirm_semantic_change'")
+    assert len(approvals) >= 2
 
 
-def test_meeting_pack_generation(intel_setup):
+def test_approved_meeting_semantic_materializes_once(intel_setup):
+    db, store, _, relations, agent, _, _ = intel_setup
+    result = agent.ingest_transcript(
+        "M-20260910",
+        "Prof: 下次 meeting 請準備好 VDAR baseline 數據。",
+    )
+    approval_id = result["semantic_approval_ids"][0]
+
+    event = store.record_event(
+        "approval.decided",
+        store.register_source("user", "test user", "test-user").id,
+        {"id": approval_id, "status": "approved", "decision_note": "confirmed"},
+        created_by="user_explicit",
+    )
+    from master_os.core.reducer import apply_event
+    apply_event(db, event)
+
+    entity_id = agent.apply_semantic_approval(approval_id)
+    assert entity_id and entity_id.startswith("O-")
+    assert db.fetchone("SELECT COUNT(*) AS n FROM obligations")["n"] == 1
+    assert agent.apply_semantic_approval(approval_id) == entity_id
+    assert db.fetchone("SELECT COUNT(*) AS n FROM obligations")["n"] == 1
+    assert relations.get_out_relations("approval", approval_id, "materialized_as")
+
+
+def test_meeting_pack_never_invents_demo_metrics(intel_setup):
     _, _, _, _, agent, _, _ = intel_setup
-    sample_transcript = "Prof: 下次 meeting 請準備好 VDAR baseline 數據。"
-    agent.ingest_transcript("M-20260910", sample_transcript)
-
-    pack_md = agent.generate_meeting_pack("M-20260917")
-    assert "# 個人 Meeting 報告簡報大綱 (Meeting Pack)" in pack_md
-    assert "第一階段：進度與承諾回顧" in pack_md
-    assert "第二階段：今日討論事項" in pack_md
-    assert "第三階段：實驗進度與 Findings 報告" in pack_md
-    assert "VDAR" in pack_md
+    pack = agent.generate_meeting_pack("M-20260917")
+    assert "第一階段：進度與承諾回顧" in pack
+    assert "第二階段：今日討論事項" in pack
+    assert "第三階段：實驗進度與 Findings 報告" in pack
+    assert "尚無可引用 Finding" in pack
+    assert "86.4" not in pack
+    assert "17.8" not in pack
 
 
 def test_post_meeting_slack_approval(intel_setup):
     db, _, _, _, agent, _, _ = intel_setup
-    ap_id = agent.create_post_meeting_slack_approval(
+    approval_id = agent.create_post_meeting_slack_approval(
         meeting_id="M-20260910",
         meeting_title="個人 Meeting",
         date_str="2026-09-10",
-        discussion_points=["確立 VDAR baseline 評估標準", "討論 cost drift 模擬環境"],
-        next_commitments=["完成 baseline 測試程式", "產出 metrics 表格"],
+        discussion_points=["確立評估標準"],
+        next_commitments=["完成測試"],
     )
-
-    assert ap_id.startswith("AP-")
-    ap_row = db.fetchone("SELECT * FROM approvals WHERE id = ?", (ap_id,))
-    assert ap_row["action_type"] == "send_slack"
-    assert ap_row["status"] == "pending"
-    assert "實驗室需知規定" in ap_row["reason"]
+    row = db.fetchone("SELECT * FROM approvals WHERE id = ?", (approval_id,))
+    assert row["action_type"] == "send_slack"
+    assert row["status"] == "pending"
 
 
-def test_master_planner_critical_path(intel_setup):
-    _, _, _, _, agent, planner, _ = intel_setup
-    sample_transcript = "Prof: 下次 meeting 把 baseline 跑出來。"
-    agent.ingest_transcript("M-20260910", sample_transcript)
+def test_master_planner_prioritizes_confirmed_obligation(intel_setup):
+    db, store, _, _, _, planner, _ = intel_setup
+    from master_os.core.reducer import apply_event
+
+    source = store.register_source("user", "test", "planner-test")
+    ob = store.record_event(
+        "obligation.created",
+        source.id,
+        {"id": "O-critical", "title": "Bring evidence to advisor", "severity": "critical"},
+    )
+    apply_event(db, ob)
+    task = store.record_event(
+        "task.created",
+        source.id,
+        {"id": "T-critical", "title": "Prepare evidence", "priority": "critical", "obligation_id": "O-critical"},
+    )
+    apply_event(db, task)
 
     plan = planner.get_plan()
-    assert plan.focus_action.task_id is not None
-    assert "實作 VDAR baseline" in plan.focus_action.title
-    assert "Priority: CRITICAL" in plan.focus_action.why
-    assert len(plan.critical_obligations) >= 1
+    assert plan.focus_action.task_id == "T-critical"
+    assert plan.focus_action.linked_obligation_id == "O-critical"
 
 
 def test_scheduler_engine_default_routines(intel_setup):
     _, _, _, _, _, _, scheduler = intel_setup
     schedules = scheduler.list_schedules()
     assert len(schedules) >= 5
-
     names = [s["name"] for s in schedules]
     assert "Weekly Seminar Readiness" in names
     assert "Advisor Pre-Meeting Readiness & Pack" in names
     assert "NCHC & API Resource Burn Watchdog" in names
 
-    # Trigger critic routine
-    res = scheduler.trigger_routine("Weekly Research Progress & Critic")
-    assert res["status"] == "ok"
-    assert "health_report" in res
+    result = scheduler.trigger_routine("Weekly Research Progress & Critic")
+    assert result["status"] == "ok"
+    assert "health_report" in result

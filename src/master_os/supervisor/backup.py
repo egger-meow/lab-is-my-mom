@@ -25,7 +25,6 @@ class BackupManager:
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         backup_file = self.backup_dir / f"master_snapshot_{timestamp}.db"
 
-        # Use SQLite's online backup API for ACID safety
         dest_conn = sqlite3.connect(str(backup_file))
         try:
             self.db.conn.backup(dest_conn)
@@ -52,17 +51,17 @@ class BackupManager:
             conn.close()
 
     def restore_from_snapshot(self, snapshot_path: Path) -> None:
-        """Restore Master DB from an existing snapshot."""
+        """Restore Master DB from an existing snapshot and restore connection policy."""
         if not snapshot_path.exists():
             raise FileNotFoundError(f"Snapshot not found: {snapshot_path}")
 
         self.db.close()
         shutil.copy2(snapshot_path, self.db.db_path)
-        # Re-open database
-        self.db.conn = sqlite3.connect(str(self.db.db_path), autocommit=True, check_same_thread=False)
+        self.db.conn = sqlite3.connect(str(self.db.db_path), check_same_thread=False)
         self.db.conn.row_factory = sqlite3.Row
         self.db.conn.execute("PRAGMA journal_mode = WAL")
         self.db.conn.execute("PRAGMA foreign_keys = ON")
+        self.db.conn.execute("PRAGMA busy_timeout = 5000")
 
     def rebuild_current_state(self) -> int:
         """Rebuild all current state tables deterministically from canonical event history."""
