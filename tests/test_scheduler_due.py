@@ -64,7 +64,9 @@ def test_legacy_default_advisor_schedule_is_migrated_canonically(tmp_path: Path)
         )
         assert schedule["trigger_type"] == "relative_meeting"
         assert schedule["trigger_spec"] == {"meeting_kind": "advisor", "offset_minutes": -720}
-        assert db.fetchone("SELECT COUNT(*) AS n FROM events WHERE event_type='schedule.updated'")["n"] == 1
+        assert db.fetchone(
+            "SELECT COUNT(*) AS n FROM events WHERE dedup_key='schedule-migration:advisor-premeeting-relative:v1'"
+        )["n"] == 1
 
         rebuild_state(db)
         replayed = next(
