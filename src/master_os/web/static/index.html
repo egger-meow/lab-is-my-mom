@@ -151,7 +151,7 @@
   <div class="container">
     <header>
       <div class="brand">
-        lab-is-my-mom <span>Master OS v0.3</span>
+        lab-is-my-mom <span>Master OS v0.4</span>
       </div>
       <div class="header-actions">
         <button onclick="refreshData()">重新整頓</button>
@@ -445,7 +445,8 @@
       try {
         const res = await fetch(`/api/tasks/${currentFocusTaskId}/dispatch`, { method: 'POST' });
         const result = await readJsonResponse(res);
-        alert(`Codex 在 Worktree 中執行完成！\nRun ID: ${result.run_id}\n狀態: ${result.status}\n產出 Artifacts: ${(result.artifacts || []).join(', ')}`);
+        const submitText = result.submitted ? '已送進背景 worker' : '已可靠排隊，Supervisor 會接手';
+        alert(`Codex 任務已排隊。\nRun ID: ${result.run_id}\n狀態: ${result.status}\n${submitText}\n\n完成後會自動出現在 Agent 執行動態，不需要把這個頁面開著。`);
         refreshData();
       } catch (e) {
         alert('派工失敗：' + e.message);
