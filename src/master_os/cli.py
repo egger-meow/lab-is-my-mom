@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import Any, Callable, Optional
 
 from master_os.agents.critic import MasterCritic
 from master_os.agents.executors import build_local_executors
@@ -16,6 +17,7 @@ from master_os.core.relations import RelationGraph
 from master_os.intelligence.meeting_agent import MeetingAgent
 from master_os.intelligence.planner import MasterPlanner
 from master_os.supervisor.backup import BackupManager
+from master_os.supervisor.bootstrap import build_supervisor
 from master_os.supervisor.doctor import MasterDoctor
 from master_os.web.api import create_app
 
@@ -26,11 +28,49 @@ def get_paths() -> tuple[Path, Path]:
     return repo_root, db_path
 
 
+def run_start(
+    web_db: MasterDatabase,
+    repo_root: Path,
+    *,
+    host: str,
+    port: int,
+    supervisor_builder: Callable[..., Any] = build_supervisor,
+    app_builder: Callable[..., Any] = create_app,
+    executor_builder: Callable[[], dict[str, Any]] = build_local_executors,
+    server_runner: Optional[Callable[..., Any]] = None,
+) -> None:
+    """Run the Web Cockpit and supervisor as one local process.
+
+    The web server and supervisor deliberately use separate SQLite connections.
+    WAL coordinates them safely while avoiding concurrent threads sharing one
+    ``sqlite3.Connection`` object.
+    """
+    if server_runner is None:
+        import uvicorn
+
+        server_runner = uvicorn.run
+
+    root = repo_root.resolve()
+    supervisor_db = MasterDatabase(web_db.db_path)
+    supervisor = None
+    started = False
+    try:
+        supervisor = supervisor_builder(supervisor_db, root)
+        app = app_builder(web_db, root, agent_executors=executor_builder())
+        supervisor.start()
+        started = True
+        server_runner(app, host=host, port=port)
+    finally:
+        if supervisor is not None and started:
+            supervisor.stop()
+        supervisor_db.close()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="master-os", description="Master OS: Local-First Autonomous Runtime for NYCU NLP Lab")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    p_start = subparsers.add_parser("start", help="Start the Master OS local server and Web Cockpit")
+    p_start = subparsers.add_parser("start", help="Start the Master OS local server, supervisor, and Web Cockpit")
     p_start.add_argument(
         "--host",
         default="127.0.0.1",
@@ -60,14 +100,12 @@ def main() -> None:
 
     try:
         if args.command == "start":
-            import uvicorn
-
             print(f"啟動 Master OS 本地 Mothership ({args.host}:{args.port})...")
             print(f"Web Cockpit: http://127.0.0.1:{args.port}")
+            print("Supervisor: scheduler + configured source collectors will run in-process.")
             if args.host == "127.0.0.1":
                 print("外出連線建議使用 Tailscale Serve 代理此 loopback 服務，不需暴露整個 LAN。")
-            app = create_app(db, repo_root, agent_executors=build_local_executors())
-            uvicorn.run(app, host=args.host, port=args.port)
+            run_start(db, repo_root, host=args.host, port=args.port)
 
         elif args.command == "status":
             planner = MasterPlanner(db)
@@ -165,6 +203,4 @@ def main() -> None:
             if result.get("error"):
                 print(f"錯誤: {result['error']}", file=sys.stderr)
     finally:
-        # uvicorn owns the app lifetime while running; close for normal CLI paths.
-        if args.command != "start":
-            db.close()
+        db.close()
