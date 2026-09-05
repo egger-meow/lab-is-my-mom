@@ -16,7 +16,31 @@ The durable brain is local state and evidence. Agents are replaceable workers. I
 uv sync
 ```
 
-### 2. 啟動本地 Mothership
+### 2. 第一次使用先跑 Live Bootstrap
+
+```bash
+uv run master-os-setup
+```
+
+它會一次檢查 / 準備：
+
+- Master SQLite integrity
+- 第一份 verified backup
+- Codex CLI 是否可用
+- Tailscale 是否可用
+- Slack scoped ingestion 是否 disabled / ready / misconfigured
+- autostart 是否已安裝
+- `master-os doctor` 整體健康度
+
+Setup 不會把 Slack token 或其他 secrets 寫進 repo / event history。
+
+要直接安裝登入自啟：
+
+```bash
+uv run master-os-setup --install-autostart
+```
+
+### 3. 啟動本地 Mothership
 
 ```bash
 uv run master-os start --host 127.0.0.1 --port 8000
@@ -32,7 +56,7 @@ Web Cockpit 集中回答五件事：
 4. **What are agents doing?** queued / running / completed / interrupted Agent Runs。
 5. **What needs me?** 高影響語意確認、外部動作、成本與 interrupted-run recovery。
 
-### 3. 設成開機 / 登入自動啟動
+### 4. 開機 / 登入自動啟動
 
 ```bash
 uv run master-os autostart install
@@ -52,7 +76,7 @@ uv run master-os autostart status
 uv run master-os autostart uninstall
 ```
 
-### 4. 命令列診斷與管理
+### 5. 命令列診斷與管理
 
 ```bash
 # 研究進展、Critical Path、Master Health
@@ -76,6 +100,17 @@ uv run master-os meeting pack M-20260917
 # CLI 直接執行一個已授權 autonomous task
 uv run master-os dispatch T-193
 ```
+
+### Slack scoped ingestion
+
+Slack collector 只有在兩個設定都存在時才會啟用：
+
+```text
+SLACK_BOT_TOKEN=<credential provided outside the repo>
+MASTER_OS_SLACK_CONVERSATIONS=C123:lab-general,D456:advisor-dm
+```
+
+如果只設定其中一個，Master OS 會明確報 misconfigured，不會偷偷假裝 Slack 正常。
 
 ---
 
