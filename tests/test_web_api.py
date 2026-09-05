@@ -48,14 +48,25 @@ def test_cockpit_five_questions_aggregation(api_client):
     assert "research_velocity" in data["what_matters_now"]
 
 
+def test_unknown_transcript_occurrence_requires_real_time(api_client):
+    client, _ = api_client
+    response = client.post(
+        "/api/meetings/ingest",
+        json={"meeting_id": "M-UNKNOWN", "transcript_text": "Prof: test"},
+    )
+    assert response.status_code == 409
+    assert "will not invent" in response.json()["detail"]
+
+
 def test_end_to_end_web_flow_uses_confirmed_state_and_injected_executor(api_client):
     client, db = api_client
 
-    # 1. Transcript creates semantic proposals, not automatic Tier-2 truth.
     ingest = client.post(
         "/api/meetings/ingest",
         json={
             "meeting_id": "M-20260910",
+            "scheduled_at": "2026-09-10T14:00:00+08:00",
+            "kind": "advisor",
             "transcript_text": "Prof: 下次 meeting 請準備 baseline 結果。",
         },
     )
@@ -63,7 +74,6 @@ def test_end_to_end_web_flow_uses_confirmed_state_and_injected_executor(api_clie
     approval_ids = ingest.json()["semantic_approval_ids"]
     assert approval_ids
 
-    # 2. User explicitly confirms the obligation proposal.
     decided = client.post(
         f"/api/approvals/{approval_ids[0]}/decide",
         json={"status": "approved", "note": "確認是下次 meeting obligation"},
@@ -71,7 +81,6 @@ def test_end_to_end_web_flow_uses_confirmed_state_and_injected_executor(api_clie
     assert decided.status_code == 200
     assert decided.json()["materialized_entity_id"].startswith("O-")
 
-    # 3. Create an executable task from confirmed workflow state.
     from master_os.core.events import EventStore
     from master_os.core.reducer import apply_event
 
@@ -95,7 +104,6 @@ def test_end_to_end_web_flow_uses_confirmed_state_and_injected_executor(api_clie
     cockpit = client.get("/api/cockpit").json()
     assert cockpit["what_matters_now"]["focus_action"]["task_id"] == "T-web-e2e"
 
-    # 4. Web request only durably queues/submits work. It must not wait for Codex.
     dispatch = client.post("/api/tasks/T-web-e2e/dispatch")
     assert dispatch.status_code == 202
     dispatch_data = dispatch.json()
@@ -112,7 +120,6 @@ def test_end_to_end_web_flow_uses_confirmed_state_and_injected_executor(api_clie
     assert row["status"] == "completed"
     assert row["result_artifact_id"] is not None
 
-    # 5. Meeting pack is generated from stored state only.
     pack = client.post("/api/meetings/M-20260917/pack")
     assert pack.status_code == 200
     assert "Meeting Pack" in pack.json()["meeting_pack"]
