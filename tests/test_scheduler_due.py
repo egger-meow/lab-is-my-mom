@@ -1,4 +1,5 @@
 """Regression tests for durable scheduler timing semantics."""
+from datetime import datetime, timezone
 from pathlib import Path
 
 from master_os.agents.critic import MasterCritic
@@ -77,3 +78,49 @@ def test_legacy_default_advisor_schedule_is_migrated_canonically(tmp_path: Path)
         assert replayed["trigger_spec"] == {"meeting_kind": "advisor", "offset_minutes": -720}
     finally:
         db.close()
+
+
+def test_relative_meeting_schedule_becomes_due_once_for_next_advisor_meeting(tmp_path: Path):
+    db = MasterDatabase(tmp_path / "master.db")
+    try:
+        events = EventStore(db)
+        scheduler = SchedulerEngine(db, events, MasterCritic(db))
+        source = events.register_source("test", "test", "meeting-due")
+        meeting = events.record_event(
+            "meeting.scheduled",
+            source.id,
+            {
+                "id": "M-NEXT",
+                "kind": "advisor",
+                "title": "Advisor meeting",
+                "scheduled_at": "2026-09-10T10:00:00+00:00",
+            },
+            occurred_at="2026-09-05T00:00:00+00:00",
+        )
+        apply_event(db, meeting)
+
+        before = datetime(2026, 9, 9, 21, 59, tzinfo=timezone.utc)
+        due_at = datetime(2026, 9, 9, 22, 0, tzinfo=timezone.utc)
+        assert _advisor_due(scheduler.due_schedules(before)) == []
+
+        due = _advisor_due(scheduler.due_schedules(due_at))
+        assert len(due) == 1
+        assert due[0]["trigger_at"] == "2026-09-09T22:00:00+00:00"
+        assert due[0]["context"]["meeting_id"] == "M-NEXT"
+
+        schedule_id = due[0]["id"]
+        scheduler_source = events.register_source("scheduler", "Master Scheduler", "master-os-scheduler")
+        triggered = events.record_event(
+            "schedule.triggered",
+            scheduler_source.id,
+            {"id": schedule_id, "last_run_at": due_at.isoformat()},
+            occurred_at=due_at.isoformat(),
+        )
+        apply_event(db, triggered)
+        assert _advisor_due(scheduler.due_schedules(due_at)) == []
+    finally:
+        db.close()
+
+
+def _advisor_due(items: list[dict]) -> list[dict]:
+    return [item for item in items if item["name"] == "Advisor Pre-Meeting Readiness & Pack"]
