@@ -1,25 +1,32 @@
-"""Sandboxed Agent Runtime for autonomous local execution."""
+"""Agent Runtime for authorized local execution in isolated workspaces."""
 from __future__ import annotations
 
-import json
-import os
-import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+from master_os.agents.packet import AgentJobPacket
+from master_os.core.artifacts import ArtifactRegistry
 from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
+from master_os.core.models import generate_id
 from master_os.core.reducer import apply_event
-from master_os.core.artifacts import ArtifactRegistry
-from master_os.core.models import generate_id, utc_now
-from master_os.agents.packet import AgentJobPacket
 
 
 class AgentRuntime:
-    """Manages worktree sandboxes, agent dispatches, and acceptance verification."""
+    """Manage isolated agent runs and deterministic post-run checks.
 
-    def __init__(self, db: MasterDatabase, event_store: EventStore, artifact_registry: ArtifactRegistry, repo_root: Path) -> None:
+    A missing executor is a configuration error, never a successful dry-run.
+    Production must inject an actual Codex/Antigravity adapter.
+    """
+
+    def __init__(
+        self,
+        db: MasterDatabase,
+        event_store: EventStore,
+        artifact_registry: ArtifactRegistry,
+        repo_root: Path,
+    ) -> None:
         self.db = db
         self.events = event_store
         self.artifacts = artifact_registry
@@ -27,43 +34,28 @@ class AgentRuntime:
         self.worktrees_dir = self.repo_root / ".master-os" / "worktrees"
         self.worktrees_dir.mkdir(parents=True, exist_ok=True)
 
-    def create_worktree(self, branch_name: str) -> Path:
-        """Create an isolated worktree directory for agent execution."""
-        safe_branch = branch_name.replace("/", "-")
-        worktree_path = self.worktrees_dir / safe_branch
+    def _prepare_workspace(self, packet: AgentJobPacket) -> Path:
+        """Prepare the requested workspace without silently degrading isolation."""
+        path = Path(packet.workspace_path).resolve()
+        if path.exists() and any(path.iterdir()):
+            # Existing non-empty workspaces may contain interrupted work. Never delete
+            # them implicitly because that destroys recovery evidence.
+            raise RuntimeError(f"Agent workspace already exists and is non-empty: {path}")
 
-        # If worktree already exists, remove it first
-        if worktree_path.exists():
-            shutil.rmtree(worktree_path, ignore_errors=True)
-
-        try:
-            # Try git worktree add if this is a git repo
-            subprocess.run(
-                ["git", "worktree", "add", "-b", branch_name, str(worktree_path), "HEAD"],
+        if (self.repo_root / ".git").exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            result = subprocess.run(
+                ["git", "worktree", "add", "-b", packet.branch, str(path), "HEAD"],
                 cwd=self.repo_root,
-                check=True,
                 capture_output=True,
+                text=True,
             )
-        except Exception:
-            # Fallback to local copy directory sandbox if git worktree fails (e.g. detached HEAD or branch exists)
-            worktree_path.mkdir(parents=True, exist_ok=True)
-
-        return worktree_path
-
-    def cleanup_worktree(self, worktree_path: Path, branch_name: str) -> None:
-        """Prune and clean up finished worktree."""
-        try:
-            subprocess.run(
-                ["git", "worktree", "remove", "--force", str(worktree_path)],
-                cwd=self.repo_root,
-                check=False,
-                capture_output=True,
-            )
-        except Exception:
-            pass
-
-        if worktree_path.exists():
-            shutil.rmtree(worktree_path, ignore_errors=True)
+            if result.returncode != 0:
+                raise RuntimeError(f"git worktree creation failed: {result.stderr.strip()}")
+        else:
+            # Non-git sandboxes are allowed for tests/local tools only.
+            path.mkdir(parents=True, exist_ok=True)
+        return path
 
     def dispatch_autonomous_job(
         self,
@@ -71,11 +63,15 @@ class AgentRuntime:
         agent_type: str = "codex",
         executor_func: Optional[Callable[[Path, AgentJobPacket], dict[str, Any]]] = None,
     ) -> dict[str, Any]:
-        """Execute an authorized agent job in an isolated worktree with independent verification."""
+        """Execute an authorized job and record only observed results."""
+        if executor_func is None:
+            raise RuntimeError(f"No real executor configured for agent type: {agent_type}")
+
         source = self.events.register_source("agent_runner", f"{agent_type}_runner", f"runner-{agent_type}")
         run_id = generate_id("RUN-")
+        workspace = self._prepare_workspace(packet)
+        base_sha = self._get_head_sha(workspace) or self._get_head_sha(self.repo_root)
 
-        # 1. Emit agent_run.started event
         start_event = self.events.record_event(
             event_type="agent_run.started",
             source_id=source.id,
@@ -84,96 +80,69 @@ class AgentRuntime:
                 "agent_type": agent_type,
                 "job_type": "implementation",
                 "task_id": packet.task_id,
-                "workspace": packet.workspace_path,
+                "workspace": str(workspace),
                 "branch": packet.branch,
-                "base_git_sha": self._get_head_sha(),
+                "base_git_sha": base_sha,
                 "packet_artifact_id": None,
             },
         )
         apply_event(self.db, start_event)
 
-        worktree_path = Path(packet.workspace_path)
-        worktree_path.mkdir(parents=True, exist_ok=True)
-
-        exit_code = 0
-        error_msg = None
+        exit_code = 1
+        error_msg: Optional[str] = None
         produced_artifacts: list[str] = []
         findings: list[dict[str, Any]] = []
 
         try:
-            # 2. Execute the work in sandbox
-            if executor_func:
-                exec_result = executor_func(worktree_path, packet)
-                exit_code = exec_result.get("exit_code", 0)
-                produced_artifacts = exec_result.get("artifacts", [])
-                findings = exec_result.get("findings", [])
-            else:
-                # Default mock executor for tests / dry-runs
-                exit_code = 0
+            result = executor_func(workspace, packet)
+            exit_code = int(result.get("exit_code", 1))
+            produced_artifacts = list(result.get("artifacts", []))
+            findings = list(result.get("findings", []))
 
-            # 3. Independent acceptance criteria verification: Agent says 'done' != Task completed
-            criteria_passed = True
-            for expected in packet.expected_artifacts:
-                art_path = worktree_path / expected
-                if not art_path.exists():
-                    criteria_passed = False
-                    error_msg = f"Missing expected artifact: {expected}"
-                    exit_code = 1
-                    break
+            missing = [rel for rel in packet.expected_artifacts if not (workspace / rel).exists()]
+            if missing:
+                exit_code = 1
+                error_msg = f"Missing expected artifacts: {', '.join(missing)}"
 
-            if criteria_passed and exit_code == 0:
-                task_status = "completed"
-                run_status = "completed"
-            else:
-                task_status = "failed"
-                run_status = "failed"
-
-        except Exception as e:
+            run_status = "completed" if exit_code == 0 else "failed"
+            # Task model has no 'failed' status. A failed/unfinished agent run leaves
+            # work blocked for repair or user inspection rather than inventing a state.
+            task_status = "completed" if exit_code == 0 else "blocked"
+        except Exception as exc:
             exit_code = 1
-            error_msg = str(e)
+            error_msg = str(exc)
             run_status = "failed"
-            task_status = "failed"
+            task_status = "blocked"
 
-        # 4. Register artifacts
-        registered_artifact_ids = []
+        registered_artifact_ids: list[str] = []
         for rel_art in produced_artifacts:
-            art_file = worktree_path / rel_art
-            if art_file.exists():
-                art = self.artifacts.register_file(
-                    file_path=art_file,
-                    artifact_type="experiment_metrics" if rel_art.endswith(".csv") else "document",
-                    created_by_agent_run=run_id,
-                )
-                registered_artifact_ids.append(art.id)
-                art_event = self.events.record_event(
-                    event_type="artifact.created",
-                    source_id=source.id,
-                    payload={
-                        "id": art.id,
-                        "artifact_type": art.artifact_type,
-                        "path": art.path,
-                        "content_hash": art.content_hash,
-                        "created_by_agent_run": run_id,
-                    },
-                )
-                apply_event(self.db, art_event)
+            art_file = workspace / rel_art
+            if not art_file.exists():
+                continue
+            artifact = self.artifacts.register_file(
+                file_path=art_file,
+                artifact_type="experiment_metrics" if rel_art.endswith(".csv") else "document",
+                git_sha=self._get_head_sha(workspace),
+                created_by_agent_run=run_id,
+            )
+            registered_artifact_ids.append(artifact.id)
 
-        # 5. Record findings if any
-        for f in findings:
-            find_id = generate_id("FIND-")
+        # Agent findings are always candidates. They are not silently validated.
+        for finding in findings:
+            if not finding.get("statement"):
+                continue
             find_event = self.events.record_event(
                 event_type="finding.recorded",
                 source_id=source.id,
                 payload={
-                    "id": find_id,
-                    "statement": f["statement"],
+                    "id": generate_id("FIND-"),
+                    "statement": finding["statement"],
                     "status": "candidate",
-                    "confidence": f.get("confidence", 0.85),
+                    "confidence": finding.get("confidence", 0.5),
                 },
             )
             apply_event(self.db, find_event)
 
-        # 6. Complete agent run & update task status
         complete_event = self.events.record_event(
             event_type="agent_run.completed",
             source_id=source.id,
@@ -181,9 +150,9 @@ class AgentRuntime:
                 "id": run_id,
                 "status": run_status,
                 "exit_code": exit_code,
-                "result_git_sha": self._get_head_sha(),
+                "result_git_sha": self._get_head_sha(workspace),
                 "result_artifact_id": registered_artifact_ids[0] if registered_artifact_ids else None,
-                "failure_id": None if exit_code == 0 else "F-GENERIC",
+                "failure_id": None,
             },
         )
         apply_event(self.db, complete_event)
@@ -204,15 +173,16 @@ class AgentRuntime:
             "artifacts": registered_artifact_ids,
         }
 
-    def _get_head_sha(self) -> Optional[str]:
+    @staticmethod
+    def _get_head_sha(path: Path) -> Optional[str]:
         try:
-            res = subprocess.run(
+            result = subprocess.run(
                 ["git", "rev-parse", "HEAD"],
-                cwd=self.repo_root,
+                cwd=path,
                 capture_output=True,
                 text=True,
                 check=True,
             )
-            return res.stdout.strip()
+            return result.stdout.strip()
         except Exception:
             return None
