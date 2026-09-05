@@ -14,8 +14,8 @@ CommandRunner = Callable[..., Any]
 class AutostartManager:
     """Install/remove a user-scoped login service without embedding credentials."""
 
-    TASK_NAME = "MasterOS"
     SERVICE_NAME = "master-os.service"
+    WINDOWS_STARTUP_FILE = "master-os.cmd"
 
     def __init__(
         self,
@@ -43,11 +43,38 @@ class AutostartManager:
     def _service_command(self) -> str:
         return f'"{self.executable}" start --host 127.0.0.1 --port {self.port}'
 
+    def _windows_startup_path(self) -> Path:
+        return (
+            self.home
+            / "AppData"
+            / "Roaming"
+            / "Microsoft"
+            / "Windows"
+            / "Start Menu"
+            / "Programs"
+            / "Startup"
+            / self.WINDOWS_STARTUP_FILE
+        )
+
     def plan(self) -> dict[str, Any]:
         if self.platform_name.startswith("win"):
+            startup_path = self._windows_startup_path()
+            # The per-user Startup folder is intentionally used instead of Task
+            # Scheduler. Creating/replacing scheduled tasks can be denied by local
+            # Windows policy even for LIMITED tasks, while the Startup folder is
+            # explicitly user-scoped and requires no elevation.
+            content = "\r\n".join(
+                [
+                    "@echo off",
+                    f'cd /d "{self.repo_root}"',
+                    f'start "" /min {self._service_command()}',
+                    "",
+                ]
+            )
             return {
-                "kind": "windows-scheduled-task",
-                "task_name": self.TASK_NAME,
+                "kind": "windows-startup-folder",
+                "startup_path": str(startup_path),
+                "content": content,
                 "task_command": self._service_command(),
             }
 
@@ -92,22 +119,9 @@ class AutostartManager:
             self._run(["systemctl", "--user", "enable", "--now", self.SERVICE_NAME])
             return {**plan, "installed": True}
 
-        task_command = plan["task_command"]
-        self._run(
-            [
-                "schtasks",
-                "/Create",
-                "/SC",
-                "ONLOGON",
-                "/TN",
-                self.TASK_NAME,
-                "/TR",
-                task_command,
-                "/F",
-                "/RL",
-                "LIMITED",
-            ]
-        )
+        startup_path = Path(plan["startup_path"])
+        startup_path.parent.mkdir(parents=True, exist_ok=True)
+        startup_path.write_text(plan["content"], encoding="utf-8", newline="")
         return {**plan, "installed": True}
 
     def uninstall(self) -> dict[str, Any]:
@@ -122,7 +136,8 @@ class AutostartManager:
             self._run(["systemctl", "--user", "daemon-reload"])
             return {**plan, "installed": False}
 
-        self._run(["schtasks", "/Delete", "/TN", self.TASK_NAME, "/F"], check=False)
+        startup_path = Path(plan["startup_path"])
+        startup_path.unlink(missing_ok=True)
         return {**plan, "installed": False}
 
     def status(self) -> dict[str, Any]:
@@ -130,18 +145,7 @@ class AutostartManager:
         if plan["kind"] == "systemd-user":
             path = Path(plan["service_path"])
             return {**plan, "installed": path.exists()}
-        # Query is intentionally read-only and does not expose environment/secrets.
-        try:
-            result = self.runner(
-                ["schtasks", "/Query", "/TN", self.TASK_NAME],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            installed = getattr(result, "returncode", 1) == 0
-        except (FileNotFoundError, OSError):
-            installed = False
-        return {**plan, "installed": installed}
+        return {**plan, "installed": Path(plan["startup_path"]).exists()}
 
     def _run(self, command: list[str], *, check: bool = True) -> Any:
         try:
