@@ -1,0 +1,539 @@
+const PAGE_TITLES = {
+  today: 'Today · 今日總覽',
+  tasks: 'Tasks · 工作與義務',
+  meetings: 'Meetings · 會議節奏',
+  research: 'Research · 研究證據鏈',
+  papers: 'Papers · 論文庫',
+  agents: 'Agents · 背景執行',
+  system: 'System · Mothership 狀態',
+  help: '使用說明 · Master OS',
+};
+
+const state = {
+  page: 'today',
+  cockpit: null,
+  onboarding: null,
+  tasks: null,
+  meetings: null,
+  research: null,
+  papers: null,
+  agents: null,
+  system: null,
+  currentFocusTaskId: null,
+  loading: false,
+};
+
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+function esc(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function safeUrl(value) {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function fmtDate(value) {
+  if (!value) return '未設定';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return new Intl.DateTimeFormat('zh-TW', {
+    month: 'numeric', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit',
+  }).format(d);
+}
+
+function fmtFullDate(value) {
+  if (!value) return '未設定';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return new Intl.DateTimeFormat('zh-TW', {
+    year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short', hour: '2-digit', minute: '2-digit',
+  }).format(d);
+}
+
+function localInputValue(value) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function badge(value, tone = '') {
+  return `<span class="badge ${tone}">${esc(value)}</span>`;
+}
+
+function empty(text) {
+  return `<div class="empty">${esc(text)}</div>`;
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(path, options);
+  let body = {};
+  try { body = await res.json(); } catch (_) {}
+  if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+  return body;
+}
+
+let toastTimer = null;
+function toast(message, isError = false) {
+  const el = $('#toast');
+  el.textContent = message;
+  el.className = `toast show${isError ? ' error' : ''}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast'; }, 3400);
+}
+
+function openModal(id) { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+function showTextModal(title, body) {
+  $('#text-modal-title').textContent = title;
+  $('#text-modal-body').textContent = body;
+  openModal('text-modal');
+}
+
+function priorityTone(value) {
+  if (value === 'critical') return 'red';
+  if (value === 'high') return 'yellow';
+  if (value === 'low') return '';
+  return 'blue';
+}
+
+function statusTone(value) {
+  if (['completed', 'validated', 'satisfied', 'healthy', 'ready'].includes(value)) return 'green';
+  if (['blocked', 'interrupted', 'failed', 'invalid'].includes(value)) return 'red';
+  if (['running', 'in_progress', 'queued', 'pending', 'under_review'].includes(value)) return 'yellow';
+  return 'blue';
+}
+
+function navigate(page, updateHash = true) {
+  if (!PAGE_TITLES[page]) page = 'today';
+  state.page = page;
+  $$('.page').forEach((el) => el.classList.toggle('active', el.dataset.page === page));
+  $$('[data-nav]').forEach((el) => el.classList.toggle('active', el.dataset.nav === page));
+  $('#top-title').textContent = PAGE_TITLES[page];
+  if (updateHash) history.replaceState(null, '', `#${page}`);
+  refreshPage(page);
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+async function refreshPage(page = state.page) {
+  if (state.loading) return;
+  state.loading = true;
+  $('#refresh-btn')?.setAttribute('disabled', 'disabled');
+  try {
+    if (page === 'today') await loadToday();
+    else if (page === 'tasks') await loadTasks();
+    else if (page === 'meetings') await loadMeetings();
+    else if (page === 'research') await loadResearch();
+    else if (page === 'papers') await loadPapers();
+    else if (page === 'agents') await loadAgents();
+    else if (page === 'system') await loadSystem();
+  } catch (err) {
+    console.error(err);
+    toast(`讀取 ${PAGE_TITLES[page]} 失敗：${err.message}`, true);
+  } finally {
+    state.loading = false;
+    $('#refresh-btn')?.removeAttribute('disabled');
+  }
+}
+
+async function loadToday() {
+  const [cockpit, onboarding] = await Promise.all([api('/api/cockpit'), api('/api/onboarding')]);
+  state.cockpit = cockpit;
+  state.onboarding = onboarding;
+  renderOnboarding(onboarding);
+  renderToday(cockpit, onboarding);
+}
+
+function renderOnboarding(data) {
+  const panel = $('#onboarding-panel');
+  panel.classList.toggle('show', !data.complete);
+  if (data.complete) return;
+  const actionMap = {
+    advisor_meeting: ['meetings', '設定'],
+    research_topic: ['research', '填寫'],
+    meeting_transcript: ['transcript', '匯入'],
+    slack: ['system', '查看'],
+  };
+  $('#onboarding-steps').innerHTML = data.steps.map((step) => {
+    const [target, label] = actionMap[step.id] || ['today', '處理'];
+    return `<div class="step ${step.done ? 'done' : ''}">
+      <div class="step-title">${step.done ? '✓ ' : ''}${esc(step.label)}</div>
+      <div class="step-state">${step.done ? '已完成' : (step.optional ? '選用，可稍後' : '尚未完成')}</div>
+      ${step.done ? '' : `<button class="btn small ghost" data-onboard="${esc(target)}" style="margin-top:7px">${esc(label)}</button>`}
+    </div>`;
+  }).join('');
+}
+
+function renderToday(data, onboarding) {
+  const now = data.what_matters_now;
+  const fa = now.focus_action || {};
+  const needsSetup = !onboarding.complete;
+  state.currentFocusTaskId = needsSetup ? null : fa.task_id;
+  $('#hero-title').textContent = needsSetup ? '先把真實研究狀態餵進來，Planner 才不會對著空 DB 猜方向' : (fa.title || '目前沒有可執行的焦點 Task');
+  $('#hero-why').textContent = needsSetup
+    ? '完成上方 3 個必要 anchor：下次 meeting、研究主軸、最近 meeting 紀錄。'
+    : `${fa.why || 'Planner 尚未找到下一個動作'}${fa.suggested_agent ? ` · 建議代理：${String(fa.suggested_agent).toUpperCase()}` : ''}`;
+  $('#hero-est').textContent = needsSetup ? 'First run' : `預估 ~${fa.estimated_minutes ?? '?'} 分鐘`;
+  $('#dispatch-focus').classList.toggle('hide', !state.currentFocusTaskId);
+
+  const alert = $('#critic-alert');
+  alert.classList.toggle('show', Boolean(now.fake_progress_warning));
+  alert.textContent = now.warning_message || '';
+
+  const coming = [];
+  (data.what_is_coming.upcoming_meetings || []).slice(0, 4).forEach((m) => {
+    coming.push(`<div class="item"><div class="item-title">${esc(m.title)}</div><div class="item-meta">${badge('Meeting','blue')} ${fmtFullDate(m.scheduled_at)} · ${esc(m.id)}</div></div>`);
+  });
+  (data.what_is_coming.deadlines || []).slice(0, 5).forEach((d) => {
+    coming.push(`<div class="item"><div class="item-title">${esc(d.title || d.name || d.id || 'Deadline')}</div><div class="item-meta">${badge(d.severity || 'deadline','red')} ${fmtDate(d.due_at || d.deadline)}</div></div>`);
+  });
+  $('#today-coming').innerHTML = coming.join('') || empty('目前 DB 沒有 upcoming meeting 或 deadline。');
+
+  const approvals = data.what_needs_me.pending_approvals || [];
+  $('#today-approval-count').textContent = String(approvals.length);
+  $('#today-approvals').innerHTML = approvals.length ? approvals.slice(0, 8).map((ap) => {
+    const preview = ap.action_payload?.text || ap.reason || ap.action_type;
+    return `<div class="item"><div class="item-title">${esc(ap.reason || ap.action_type)}</div><div class="item-meta">${esc(String(preview).slice(0, 180))}</div><div class="item-actions"><button class="btn small primary" data-approval="${esc(ap.id)}" data-decision="approved">核准</button><button class="btn small danger" data-approval="${esc(ap.id)}" data-decision="rejected">駁回</button></div></div>`;
+  }).join('') : empty('目前沒有需要你裁量的項目。');
+
+  const changed = [];
+  (data.what_changed.recent_findings || []).slice(0, 4).forEach((f) => {
+    changed.push(`<div class="item"><div class="item-title">${esc(f.statement)}</div><div class="item-meta">${badge(f.status,statusTone(f.status))} confidence ${esc(f.confidence)}</div></div>`);
+  });
+  (data.what_changed.recent_artifacts || []).slice(0, 3).forEach((a) => {
+    changed.push(`<div class="item"><div class="item-title">${esc(a.artifact_type)}</div><div class="artifact-path">${esc(a.path)}</div></div>`);
+  });
+  $('#today-changed').innerHTML = changed.join('') || empty('尚未有 Experiment / Finding / Artifact 變化。');
+
+  const runs = data.what_are_agents_doing.recent_runs || [];
+  $('#today-agents').innerHTML = runs.length ? runs.slice(0, 6).map(runCard).join('') : empty('Agent 全部 idle，沒有歷史 run。');
+}
+
+async function loadTasks() {
+  const data = await api('/api/tasks');
+  state.tasks = data;
+  renderTasks(data);
+}
+
+function renderTasks(data) {
+  const tasks = data.tasks || [];
+  const active = tasks.filter((t) => ['todo','in_progress','blocked'].includes(t.status));
+  const autonomous = active.filter((t) => t.agentability === 'autonomous');
+  const critical = active.filter((t) => t.priority === 'critical');
+  $('#task-stats').innerHTML = [
+    ['Active tasks', active.length], ['Critical', critical.length], ['Agent-ready', autonomous.length], ['Obligations', (data.obligations || []).filter((o) => !['satisfied','cancelled'].includes(o.status)).length],
+  ].map(([label, value]) => `<div class="stat"><strong>${value}</strong><span>${label}</span></div>`).join('');
+
+  $('#tasks-list').innerHTML = tasks.length ? tasks.map((t) => {
+    const criteria = t.acceptance_criteria?.length ? `<div class="item-meta">Done when: ${esc(t.acceptance_criteria.join(' · '))}</div>` : '';
+    return `<div class="item task-row">
+      <div><div class="item-title">${esc(t.title)}</div><div class="item-meta">${badge(t.priority,priorityTone(t.priority))} ${badge(t.status,statusTone(t.status))} ${t.due_at ? ` · due ${fmtDate(t.due_at)}` : ''}</div>${t.description ? `<div class="item-meta">${esc(t.description)}</div>` : ''}${t.obligation_title ? `<div class="item-meta">↳ ${esc(t.obligation_title)}</div>` : ''}${criteria}</div>
+      <div class="task-controls"><select data-task-status="${esc(t.id)}">${['todo','in_progress','blocked','completed','cancelled'].map((s) => `<option value="${s}" ${s===t.status?'selected':''}>${s}</option>`).join('')}</select>${t.agentability==='autonomous' && !['completed','cancelled'].includes(t.status) ? `<button class="btn small primary" data-dispatch="${esc(t.id)}">派 ${esc(t.preferred_agent || 'codex')}</button>` : ''}</div>
+    </div>`;
+  }).join('') : empty('還沒有 Task。Meeting transcript 確認後，或 planner 建立工作時會出現在這裡。');
+
+  const obligations = data.obligations || [];
+  $('#obligations-list').innerHTML = obligations.length ? obligations.map((o) => `<div class="item"><div class="item-title">${esc(o.title)}</div><div class="item-meta">${badge(o.severity,priorityTone(o.severity))} ${badge(o.status,statusTone(o.status))}${o.due_at ? ` · due ${fmtFullDate(o.due_at)}` : ''}</div>${o.description ? `<div class="item-meta">${esc(o.description)}</div>` : ''}${o.meeting_id ? `<div class="item-meta">來源 meeting: ${esc(o.meeting_id)}</div>` : ''}</div>`).join('') : empty('還沒有 confirmed obligation。這是好事，至少目前沒有 AI 偷幫你發誓。');
+}
+
+async function loadMeetings() {
+  const data = await api('/api/meetings');
+  state.meetings = data;
+  renderMeetings(data);
+}
+
+function meetingCard(m, historical = false) {
+  return `<div class="item"><div class="item-title">${esc(m.title)}</div><div class="item-meta">${badge(m.kind,'blue')} ${badge(m.status,statusTone(m.status))} · ${fmtFullDate(m.scheduled_at)} · <code>${esc(m.id)}</code></div><div class="item-actions">${historical ? '' : `<button class="btn small" data-meeting-edit="${esc(m.id)}">改時間</button>`}<button class="btn small" data-meeting-ingest="${esc(m.id)}">匯入 transcript</button><button class="btn small accent" data-meeting-pack="${esc(m.id)}">Meeting Pack</button></div></div>`;
+}
+
+function renderMeetings(data) {
+  const upcoming = data.upcoming || [];
+  const history = data.history || [];
+  $('#meeting-upcoming-count').textContent = String(upcoming.length);
+  $('#meetings-upcoming').innerHTML = upcoming.length ? upcoming.map((m) => meetingCard(m)).join('') : empty('還沒設定下一次 meeting。請左邊直接填時間，這會成為 scheduler 的 anchor。');
+  $('#meetings-history').innerHTML = history.length ? history.map((m) => meetingCard(m, true)).join('') : empty('目前沒有 meeting history。');
+}
+
+async function saveMeeting(event) {
+  event.preventDefault();
+  const localTime = $('#meeting-time').value;
+  if (!localTime) return toast('請先填 meeting 時間', true);
+  const d = new Date(localTime);
+  if (Number.isNaN(d.getTime())) return toast('Meeting 時間格式不正確', true);
+  const payload = {
+    meeting_id: $('#meeting-id').value.trim() || null,
+    title: $('#meeting-title').value.trim() || null,
+    kind: $('#meeting-kind').value,
+    scheduled_at: d.toISOString(),
+  };
+  try {
+    const result = await api('/api/meetings/schedule', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    toast(`Meeting 已儲存：${result.meeting_id}`);
+    clearMeetingForm();
+    await loadMeetings();
+  } catch (err) { toast(`Meeting 儲存失敗：${err.message}`, true); }
+}
+
+function clearMeetingForm() {
+  $('#meeting-form').reset();
+  $('#meeting-id').value = '';
+}
+
+function editMeeting(id) {
+  const m = (state.meetings?.upcoming || []).find((x) => x.id === id);
+  if (!m) return;
+  $('#meeting-id').value = m.id;
+  $('#meeting-title').value = m.title || '';
+  $('#meeting-kind').value = m.kind || 'advisor';
+  $('#meeting-time').value = localInputValue(m.scheduled_at);
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function openTranscript(meetingId = '') {
+  $('#transcript-mid').value = meetingId || '';
+  $('#transcript-text').value = '';
+  openModal('transcript-modal');
+  setTimeout(() => (meetingId ? $('#transcript-text') : $('#transcript-mid')).focus(), 40);
+}
+
+async function submitTranscript() {
+  const meetingId = $('#transcript-mid').value.trim();
+  const text = $('#transcript-text').value.trim();
+  if (!meetingId || !text) return toast('Meeting ID 和 transcript 都要填', true);
+  try {
+    const result = await api('/api/meetings/ingest', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({meeting_id: meetingId, transcript_text: text}) });
+    closeModal('transcript-modal');
+    const count = (result.semantic_approval_ids || []).length;
+    toast(`Meeting 已匯入。${count ? `${count} 個高影響候選進 Needs You。` : '沒有需要你確認的高影響候選。'}`);
+    if (state.page === 'meetings') await loadMeetings();
+    else if (state.page === 'today') await loadToday();
+  } catch (err) { toast(`匯入失敗：${err.message}`, true); }
+}
+
+async function generatePack(meetingId) {
+  try {
+    const result = await api(`/api/meetings/${encodeURIComponent(meetingId)}/pack`, {method:'POST'});
+    showTextModal(`Meeting Pack · ${meetingId}`, result.meeting_pack || '(empty)');
+    toast('Meeting Pack 已生成並進 Artifact Registry');
+  } catch (err) { toast(`Meeting Pack 失敗：${err.message}`, true); }
+}
+
+async function loadResearch() {
+  const data = await api('/api/research');
+  state.research = data;
+  renderResearch(data);
+}
+
+function renderResearch(data) {
+  $('#research-topic').value = data.topic || '';
+  $('#research-exp-count').textContent = String(data.experiments?.length || 0);
+  $('#research-find-count').textContent = String(data.findings?.length || 0);
+  $('#research-decision-count').textContent = String(data.decisions?.length || 0);
+  $('#research-artifact-count').textContent = String(data.artifacts?.length || 0);
+
+  $('#research-experiments').innerHTML = data.experiments?.length ? data.experiments.map((e) => `<div class="item"><div class="item-title">${esc(e.title)}</div><div class="item-meta">${badge(e.status,statusTone(e.status))} ${badge(e.validity_status,statusTone(e.validity_status))} · compute ${esc(e.compute_backend)}${e.research_repo ? ` · ${esc(e.research_repo)}` : ''}</div>${e.git_sha ? `<div class="artifact-path">git ${esc(e.git_sha)}</div>` : ''}</div>`).join('') : empty('還沒有 experiment。');
+  $('#research-findings').innerHTML = data.findings?.length ? data.findings.map((f) => `<div class="item"><div class="item-title">${esc(f.statement)}</div><div class="item-meta">${badge(f.status,statusTone(f.status))} · confidence ${esc(f.confidence)}${f.experiment_id ? ` · ${esc(f.experiment_id)}` : ''}</div></div>`).join('') : empty('還沒有 finding。Agent 產的 candidate 不等於 validated science。');
+  $('#research-decisions').innerHTML = data.decisions?.length ? data.decisions.map((d) => `<div class="item"><div class="item-title">${esc(d.statement)}</div><div class="item-meta">${badge(d.status,statusTone(d.status))} · ${fmtDate(d.decided_at)}</div>${d.rationale ? `<div class="item-meta">${esc(d.rationale)}</div>` : ''}</div>`).join('') : empty('還沒有正式 research decision。');
+  $('#research-artifacts').innerHTML = data.artifacts?.length ? data.artifacts.map((a) => `<div class="item"><div class="item-title">${esc(a.artifact_type)}</div><div class="artifact-path">${esc(a.path)}</div><div class="item-meta">${fmtDate(a.created_at)}${a.git_sha ? ` · git ${esc(a.git_sha)}` : ''}</div></div>`).join('') : empty('還沒有 canonical artifact。');
+}
+
+async function saveResearchTopic(event) {
+  event.preventDefault();
+  const topic = $('#research-topic').value.trim();
+  if (!topic) return toast('研究主軸不能空白', true);
+  try {
+    await api('/api/research/context', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({topic})});
+    toast('研究主軸已以 User explicit assertion 儲存');
+    await loadResearch();
+  } catch (err) { toast(`儲存失敗：${err.message}`, true); }
+}
+
+async function loadPapers() {
+  const data = await api('/api/papers');
+  state.papers = data;
+  renderPapers(data);
+}
+
+function renderPapers(data) {
+  $('#paper-stats').innerHTML = [
+    ['Corpus', data.count || 0], ['Full text', data.fulltext_count || 0], ['Processed', data.processed_count || 0], ['Status', data.available ? 'ready' : 'missing'],
+  ].map(([label, value]) => `<div class="stat"><strong>${esc(value)}</strong><span>${esc(label)}</span></div>`).join('');
+  filterPapers();
+}
+
+function filterPapers() {
+  const data = state.papers || {papers:[]};
+  const q = ($('#paper-search')?.value || '').trim().toLowerCase();
+  const papers = (data.papers || []).filter((p) => !q || [p.title,p.authors,p.venue,p.category,String(p.year||'')].join(' ').toLowerCase().includes(q));
+  $('#paper-visible-count').textContent = `${papers.length} / ${data.count || 0}`;
+  if (!data.available) {
+    $('#papers-list').innerHTML = empty(data.error ? `Research OS DB 無法讀取：${data.error}` : '找不到 .research-os/research.db。');
+    return;
+  }
+  $('#papers-list').innerHTML = papers.length ? papers.map((p) => {
+    const source = safeUrl(p.arxiv_id ? `https://arxiv.org/abs/${p.arxiv_id}` : p.source_url);
+    return `<div class="paper"><div class="paper-year">${esc(p.year || '—')}</div><div><div class="paper-title">${esc(p.title)}</div><div class="paper-authors">${esc(p.authors || '')}${p.venue ? ` · ${esc(p.venue)}` : ''}</div><div class="item-meta">${badge(p.category || 'paper','blue')} ${badge(p.fulltext_status || 'unresolved', p.fulltext_status==='fetched'?'green':'')}</div></div><div class="paper-actions">${source ? `<a class="btn small ghost" href="${esc(source)}" target="_blank" rel="noopener">來源 ↗</a>` : ''}</div></div>`;
+  }).join('') : empty('沒有符合搜尋條件的 paper。');
+}
+
+async function loadAgents() {
+  const data = await api('/api/agents');
+  state.agents = data;
+  renderAgents(data);
+}
+
+function runCard(r) {
+  return `<div class="item"><div class="item-title">${esc(String(r.agent_type || 'agent').toUpperCase())} · ${esc(r.job_type || 'job')}</div><div class="item-meta">${badge(r.status,statusTone(r.status))}${r.task_id ? ` · ${esc(r.task_id)}` : ''}${r.branch ? ` · ${esc(r.branch)}` : ''}</div></div>`;
+}
+
+function renderAgents(data) {
+  const runs = data.runs || [];
+  const counts = (name) => runs.filter((r) => r.status === name).length;
+  $('#agent-stats').innerHTML = [
+    ['Queued', counts('queued')], ['Running', counts('running')], ['Interrupted', (data.interrupted || []).length], ['Completed', counts('completed')],
+  ].map(([label, value]) => `<div class="stat"><strong>${value}</strong><span>${label}</span></div>`).join('');
+  const live = runs.filter((r) => ['queued','running'].includes(r.status));
+  $('#agents-live').innerHTML = live.length ? live.map(runCard).join('') : empty('目前沒有 queued / running agent。');
+  const interrupted = data.interrupted || [];
+  $('#agent-interrupted-count').textContent = String(interrupted.length);
+  $('#agents-interrupted').innerHTML = interrupted.length ? interrupted.map((r) => `<div class="item"><div class="item-title">${esc(r.id)} · ${esc(r.task_title || r.task_id || 'Task')}</div><div class="item-meta">${badge('interrupted','red')} · 建議 ${esc(r.recommended_action || 'inspect')} · Worktree ${r.workspace_exists ? '保留' : '遺失'}</div><div class="item-actions"><button class="btn small" data-recovery="inspect" data-run="${esc(r.id)}">查看</button><button class="btn small primary" data-recovery="resume" data-run="${esc(r.id)}">Resume</button><button class="btn small" data-recovery="retry_fresh" data-run="${esc(r.id)}">Fresh retry</button><button class="btn small danger" data-recovery="abandon" data-run="${esc(r.id)}">Abandon</button></div></div>`).join('') : empty('沒有中斷 run。');
+  $('#agents-history').innerHTML = runs.length ? runs.slice(0,100).map(runCard).join('') : empty('還沒有 agent run history。');
+}
+
+async function recoverRun(runId, action) {
+  if (action === 'inspect') {
+    try {
+      const data = await api(`/api/agent-runs/${encodeURIComponent(runId)}/inspect`);
+      const files = (data.workspace_files || []).slice(0,100).join('\n') || '(沒有可列出的檔案)';
+      showTextModal(`Interrupted run · ${runId}`, `Worktree: ${data.run?.workspace || '(none)'}\nRecommended: ${data.recommended_action}\n\nFiles:\n${files}`);
+    } catch (err) { toast(`Inspect 失敗：${err.message}`, true); }
+    return;
+  }
+  const label = {resume:'Resume 原 worktree',retry_fresh:'乾淨重跑',abandon:'放棄 run'}[action] || action;
+  if (!confirm(`${label}：${runId}？\n原 worktree 不會被系統偷偷刪除。`)) return;
+  try {
+    const result = await api(`/api/agent-runs/${encodeURIComponent(runId)}/recover`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action})});
+    toast(`${label} 已受理${result.new_run_id ? ` · ${result.new_run_id}` : ''}`);
+    await loadAgents();
+  } catch (err) { toast(`Recovery 失敗：${err.message}`, true); }
+}
+
+async function loadSystem() {
+  const data = await api('/api/system');
+  state.system = data;
+  renderSystem(data);
+}
+
+function renderSystem(data) {
+  const doctorStatus = data.doctor?.status || 'unknown';
+  $('#system-summary').innerHTML = [
+    ['Doctor', doctorStatus], ['Sources', data.sources?.length || 0], ['Schedules', data.schedules?.length || 0], ['Resources', data.resources?.length || 0],
+  ].map(([label, value]) => `<div class="stat"><strong>${esc(value)}</strong><span>${esc(label)}</span></div>`).join('');
+
+  const checks = data.doctor?.checks || {};
+  const healthBlocks = Object.entries(checks).map(([name, detail]) => {
+    const status = detail?.status || (detail?.integrity_ok === true ? 'healthy' : 'check');
+    const short = Object.entries(detail || {}).filter(([k]) => !['path','details'].includes(k)).slice(0,4).map(([k,v]) => `${k}: ${typeof v==='object' ? JSON.stringify(v) : v}`).join(' · ');
+    return `<div class="health"><strong>${esc(name)}</strong><div class="item-meta">${badge(status,statusTone(status))}</div>${short ? `<div class="item-meta">${esc(short)}</div>` : ''}</div>`;
+  });
+  (data.health || []).forEach((h) => healthBlocks.push(`<div class="health"><strong>${esc(h.subsystem)}</strong><div class="item-meta">${badge(h.status,statusTone(h.status))} · ${fmtDate(h.last_heartbeat)}</div>${h.message ? `<div class="item-meta">${esc(h.message)}</div>` : ''}</div>`));
+  $('#system-health').innerHTML = healthBlocks.join('') || empty('Doctor 尚未回報 health checks。');
+
+  $('#system-sources').innerHTML = data.sources?.length ? data.sources.map((s) => `<div class="item"><div class="item-title">${esc(s.name)}</div><div class="item-meta">${badge(s.type,'blue')} · scope ${esc(s.scope)} · ${s.enabled ? 'enabled' : 'disabled'}${s.last_synced_at ? ` · sync ${fmtDate(s.last_synced_at)}` : ''}</div></div>`).join('') : empty('還沒有 source。Slack 尚未設定也沒關係。');
+
+  $('#system-schedules').innerHTML = data.schedules?.length ? data.schedules.map((s) => `<div class="item"><div class="item-title">${esc(s.name)}</div><div class="item-meta">${badge(s.trigger_type,'purple')} · ${s.enabled ? 'enabled' : 'disabled'}${s.next_run_at ? ` · next ${fmtDate(s.next_run_at)}` : ''}</div></div>`).join('') : empty('沒有 scheduler configuration。');
+
+  $('#system-resources').innerHTML = data.resources?.length ? data.resources.map((r) => `<div class="item"><div class="item-title">${esc(r.name)}</div><div class="item-meta">${badge(r.status,statusTone(r.status))} · ${esc(r.resource_type)} · quota ${esc(r.quota_used)}/${esc(r.quota_limit)} · cost ${esc(r.cost_estimate)}</div>${r.active_containers?.length ? `<div class="item-meta">Active containers: ${esc(r.active_containers.join(', '))}</div>` : ''}</div>`).join('') : empty('目前沒有登記 compute resource。');
+  $('#system-paths').innerHTML = `<div class="path-box">Master DB: ${esc(data.master_database || '')}</div><div class="path-box">Research OS DB: ${esc(data.research_os_database || '')}</div><div class="item-meta" style="margin-top:10px">遠端手機入口請使用 Tailscale Serve。Master OS 本身仍只綁 127.0.0.1。</div>`;
+}
+
+async function dispatchTask(taskId) {
+  try {
+    const result = await api(`/api/tasks/${encodeURIComponent(taskId)}/dispatch`, {method:'POST'});
+    toast(`已排隊：${result.run_id}${result.submitted ? ' · worker 已接手' : ' · Supervisor 會接手'}`);
+    if (state.page === 'tasks') await loadTasks();
+    if (state.page === 'today') await loadToday();
+  } catch (err) { toast(`派工失敗：${err.message}`, true); }
+}
+
+async function changeTaskStatus(taskId, status) {
+  try {
+    await api(`/api/tasks/${encodeURIComponent(taskId)}/status`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status})});
+    toast(`${taskId} → ${status}`);
+    await loadTasks();
+  } catch (err) { toast(`狀態更新失敗：${err.message}`, true); await loadTasks(); }
+}
+
+async function decideApproval(id, decision) {
+  try {
+    await api(`/api/approvals/${encodeURIComponent(id)}/decide`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:decision})});
+    toast(decision === 'approved' ? '已核准' : '已駁回');
+    await loadToday();
+  } catch (err) { toast(`Approval 失敗：${err.message}`, true); }
+}
+
+function bindEvents() {
+  document.addEventListener('click', (event) => {
+    const nav = event.target.closest('[data-nav]');
+    if (nav) { navigate(nav.dataset.nav); return; }
+    const close = event.target.closest('[data-close]');
+    if (close) { closeModal(close.dataset.close); return; }
+    const onboard = event.target.closest('[data-onboard]');
+    if (onboard) {
+      if (onboard.dataset.onboard === 'transcript') openTranscript();
+      else navigate(onboard.dataset.onboard);
+      return;
+    }
+    const dispatch = event.target.closest('[data-dispatch]');
+    if (dispatch) { dispatchTask(dispatch.dataset.dispatch); return; }
+    const approval = event.target.closest('[data-approval]');
+    if (approval) { decideApproval(approval.dataset.approval, approval.dataset.decision); return; }
+    const edit = event.target.closest('[data-meeting-edit]');
+    if (edit) { editMeeting(edit.dataset.meetingEdit); return; }
+    const ingest = event.target.closest('[data-meeting-ingest]');
+    if (ingest) { openTranscript(ingest.dataset.meetingIngest); return; }
+    const pack = event.target.closest('[data-meeting-pack]');
+    if (pack) { generatePack(pack.dataset.meetingPack); return; }
+    const recovery = event.target.closest('[data-recovery]');
+    if (recovery) { recoverRun(recovery.dataset.run, recovery.dataset.recovery); return; }
+    if (event.target.classList.contains('modal-backdrop')) closeModal(event.target.id);
+  });
+
+  document.addEventListener('change', (event) => {
+    if (event.target.matches('[data-task-status]')) changeTaskStatus(event.target.dataset.taskStatus, event.target.value);
+  });
+
+  $('#refresh-btn').addEventListener('click', () => refreshPage());
+  $('#quick-ingest').addEventListener('click', () => openTranscript());
+  $('#hero-ingest').addEventListener('click', () => openTranscript());
+  $('#meeting-ingest-top').addEventListener('click', () => openTranscript());
+  $('#dispatch-focus').addEventListener('click', () => state.currentFocusTaskId && dispatchTask(state.currentFocusTaskId));
+  $('#submit-transcript').addEventListener('click', submitTranscript);
+  $('#meeting-form').addEventListener('submit', saveMeeting);
+  $('#meeting-form-clear').addEventListener('click', clearMeetingForm);
+  $('#research-topic-form').addEventListener('submit', saveResearchTopic);
+  $('#paper-search').addEventListener('input', filterPapers);
+  window.addEventListener('hashchange', () => navigate(location.hash.slice(1) || 'today', false));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') $$('.modal-backdrop.open').forEach((el) => closeModal(el.id));
+  });
+}
+
+bindEvents();
+navigate(location.hash.slice(1) || 'today', false);
+setInterval(() => {
+  if (document.hidden) return;
+  if (state.page === 'today' || state.page === 'agents') refreshPage(state.page);
+}, 12000);
