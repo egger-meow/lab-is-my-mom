@@ -116,12 +116,31 @@ def apply_event(db: MasterDatabase, event: Event, *, commit: bool = True) -> Non
     elif etype == "task.status_changed":
         db.execute("UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?", (p["status"], now, p["id"]))
 
+    elif etype == "agent_run.queued":
+        db.execute(
+            """INSERT INTO agent_runs (id, agent_type, job_type, task_id, status, workspace, branch,
+                                      base_git_sha, packet_artifact_id, created_at)
+               VALUES (?, ?, ?, ?, 'queued', ?, ?, ?, ?, ?)
+               ON CONFLICT(id) DO UPDATE SET
+               status='queued', agent_type=excluded.agent_type, job_type=excluded.job_type,
+               task_id=excluded.task_id, workspace=excluded.workspace, branch=excluded.branch,
+               base_git_sha=excluded.base_git_sha, packet_artifact_id=excluded.packet_artifact_id""",
+            (p["id"], p["agent_type"], p.get("job_type", "implementation"), p.get("task_id"),
+             p.get("workspace"), p.get("branch"), p.get("base_git_sha"), p.get("packet_artifact_id"),
+             p.get("created_at", now)),
+        )
+
     elif etype == "agent_run.started":
         db.execute(
             """INSERT INTO agent_runs (id, agent_type, job_type, task_id, status, started_at,
                                       workspace, branch, base_git_sha, packet_artifact_id, created_at)
                VALUES (?, ?, ?, ?, 'running', ?, ?, ?, ?, ?, ?)
-               ON CONFLICT(id) DO UPDATE SET status='running', started_at=excluded.started_at""",
+               ON CONFLICT(id) DO UPDATE SET
+               status='running', started_at=excluded.started_at,
+               workspace=COALESCE(excluded.workspace, agent_runs.workspace),
+               branch=COALESCE(excluded.branch, agent_runs.branch),
+               base_git_sha=COALESCE(excluded.base_git_sha, agent_runs.base_git_sha),
+               packet_artifact_id=COALESCE(excluded.packet_artifact_id, agent_runs.packet_artifact_id)""",
             (p["id"], p["agent_type"], p["job_type"], p.get("task_id"), now, p.get("workspace"),
              p.get("branch"), p.get("base_git_sha"), p.get("packet_artifact_id"), p.get("created_at", now)),
         )
