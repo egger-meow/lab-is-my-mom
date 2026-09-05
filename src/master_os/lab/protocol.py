@@ -1,8 +1,8 @@
 """Machine-readable protocol and operational rules for NYCU NLP Lab (Prof. An-Zi Yen)."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -68,10 +68,10 @@ def create_default_lab_schedules() -> list[dict[str, Any]]:
         },
         {
             "name": "Advisor Pre-Meeting Readiness & Pack",
-            "trigger_type": "time_cron",
-            "trigger_spec": {"day_of_week": "wed", "hour": 20, "minute": 0},
+            "trigger_type": "relative_meeting",
+            "trigger_spec": {"meeting_kind": "advisor", "offset_minutes": -720},
             "agent_role": "meeting_agent",
-            "prompt_template": "計算 Meeting Readiness，依據實驗結果與 Findings 產出個人 Meeting 簡報大綱與數據表格 (Excel/Markdown)",
+            "prompt_template": "依下一場 advisor meeting 的實際時間計算 readiness，根據實驗結果與 Findings 產出個人 Meeting 簡報大綱與數據表格 (Excel/Markdown)",
             "autonomy_policy": {"dispatch_local": True, "external_actions": "approval"},
         },
         {
