@@ -1,0 +1,239 @@
+--- Page 1 ---
+實驗室通訊錄建立
+請於下方表單填寫學號、身分證字號、連絡電話(住宅)、連絡電話(手機)、通訊地址、
+戶籍地址、出生年月日、常用email、郵局局號、郵局帳號，以便建立實驗室通訊錄。
+通訊錄填寫表單： https://forms.gle/jdK46y6fkVEjtkQe8
+1
+
+
+--- Page 2 ---
+實驗室使用的即時通訊方式 － Slack
+實驗室同學的 meeting 順序會透過 Slack 通知，例如前一位同學結束討論，我會在 
+Slack 傳訊息通知下一位同學到教室
+其他須即時聯絡到同學的情況，也都會使用 Slack，所以請同學開啟通知
+請使用 NYCU email 註冊 Slack 帳號，註冊完成之後通知我一聲，以便將你加入實驗
+室的 Slack
+2
+
+
+--- Page 3 ---
+聯絡注意事項
+留意 Email 收信
+正式的資訊或消息會透過 Email 發送
+緊急或是需要與多位同學一起討論的事項會透過 Slack 通知，也請留意 Slack 訊息
+因為 Slack 不會有已讀，當收到訊息時，請回訊息，讓我知道你已讀
+P.S. 近期發現 Slack 偶爾不會有通知，所以請同學們如果有緊急事情要和我聯絡時，
+先使用 Slack，若發現我過了一段時間都尚未回覆，請寄 email 給我
+3
+
+
+--- Page 4 ---
+實驗室線上會議連結
+如需線上報告、討論，統一使用以下連結
+https://meet.google.com/jrh-oceu-hpu
+4
+
+
+--- Page 5 ---
+研究議題
+我會將大家研究議題規劃放在這個雲端硬碟 (NYCU 帳號可查看)
+https://drive.google.com/drive/folders/1j3pMvCeAlL8gikpskaJV4Gtm7DA1sY9O?u
+sp=sharing
+每位同學會有屬於自己的資料夾，請大家留意雲端硬碟中的相關資料
+也請大家將當天報告用的簡報和相關資料整理上傳到個別的資料夾底下
+5
+
+
+--- Page 6 ---
+因為實驗室同學人數眾多，需要有效率的討論模式，以下是建議準備報告的方式：
+個人 meeting 報告注意事項
+實驗數據請整理在 excel；畫簡易的圖(框架圖、流程圖)會更有助於理解與溝通
+把目前的實驗數據自行整理並解讀，根據數據條列你的 findings (and/or 對應的範例 
+e.g., model output)，我們以後主要針對整理出來的資訊進行討論
+如果實驗表格很大張，也可以另外整理出小表格放在報告的簡報
+當天 meeting 結束，請將討論的內容整理條列後，透過 Slack 傳給我
+6
+時間
+內容
+1~2 分鐘
+簡要回顧上週進度
+1~2 分鐘
+說明這週這週要討論的事項
+5~25分鐘
+報告和討論這週進度
+Tips: 實驗數據表格製作方式可
+依循幾個原則，每一列是一個方
+法，每一行是某個評估指標(如 
+accuracy)，這樣建立表格的好
+處是我們可以從上到下比較出
+誰是最好的方法。
+
+
+--- Page 7 ---
+Lab Seminar
+●
+實驗室固定時間會舉辦 lab seminar
+●
+進行方式：
+○
+每週一 由 1 位同學報告論文
+○
+時間：13:30~14:10 (以 Google Meet 線上會議方式進行)
+○
+每位同學請準備 30 分鐘的報告
+○
+新生加入實驗室的第二個學期將被排入報告順序當中
+●
+請大家自行查看以下表單的順序，並填入相關資訊，如遇到假期或當週無法報告
+，請自行與其他同學交換報告順序，並且自行修改。
+●
+報告順序 (NYCU帳號可編輯)
+：https://docs.google.com/spreadsheets/d/1oipua0MV9SDuHFPc7R8NREcT8
+723yjy_vky5OcS5v-s/edit?usp=sharing
+●
+為了讓大家練習報告、提問、回答的技巧，在報告結束後有 QA 環節，我會請下
+一次預定要報告的同學提問，以及隨機點名兩位同學提問
+7
+
+
+--- Page 8 ---
+Lab Seminar 報告準備
+報告分為兩種形式：
+●
+survey 類型：針對特定主題，分享 5 篇以上論文，實驗結果不用過多著墨，著重
+介紹論文研究動機、方法框架、使用的資料集，並且總結 5 篇論文目前已完成的
+議題探討
+●
+深入研讀類型：選定一篇長篇文章，仔細介紹研究動機、方法、資料集、實驗結果
+(快要輪到自己的順序時，請先跟我確認採哪種形式的報告)
+報告中需包含自己的看法，請著重對方法或實驗內容進行討論：
+●
+總結這篇論文的優點與缺點
+●
+對於這篇論文，有什麼問題想對作者提出的？
+●
+延續前一個問題，你自己會如何解決這些問題？
+8
+
+
+--- Page 9 ---
+自然語言處理相關國際會議
+●
+自然語言處理
+○
+https://aclanthology.org
+○
+Annual Meeting of Association for Computational Linguistics (ACL)
+○
+EMNLP, NAACL , EACL, AACL, COLING
+●
+資訊檢索與擷取
+○
+SIGIR, CIKM
+●
+Web
+○
+WWW (TheWebConf), WSDM
+●
+人工智慧
+○
+AAAI, IJCAI, ICML, NeurIPS, ICLR
+○
+AAAI proceedings: https://ojs.aaai.org/index.php/AAAI/index
+閱讀論文是做研究很重要的一環
+找論文時，請優先參考上述這些會議的論文
+9
+
+
+--- Page 10 ---
+實驗室 OpenAI 共用額度
+實驗室有支持同學們使用 OpenAI API 服務進行研究，請用 nycu 帳號註冊，註冊完
+成之後通知我一聲，以便將你加入實驗室的組織，與同學們共用額度
+使用說明：
+- 如要使用實驗室共用額度，在 OpenAI 的 API Keys 切換組織成 NYCU NLP Lab
+- 切換回自己的額度，則將組織切換為 Personal
+10
+
+
+--- Page 11 ---
+實驗室 OpenAI 共用帳號額度使用規定
+因為不少實驗室有發生 OpenAPI 共用帳號額度濫用問題，這邊也提醒我們實驗室的
+同學
+為了避免不必要的經費支出，請同學們使用 API 的時候要謹慎，
+跑大規模實驗之前請先評估使用 API 的必要性，
+事先跟我說明如何使用、大約多少 requests、成本是多少
+我同意後，再請同學們使用 API
+使用 API 期間，請不時確認輸出格式沒有問題，一有問題請立刻停止
+謝謝
+11
+
+
+--- Page 12 ---
+為方便管理，實驗室 OpenAI API 使用方式如下：
+- Default project API key (也就是目前使用的 API key) 已經先行關閉，請使用各自 Project 的 API key。
+- 我會為每位同學在 OpenAI Platform 建立各自 Project，請同學之後改使用 Project 建立 API key。
+- 每個 Project 有限制每月上限，請同學在執行程式時要記得 handle 超過上限的狀況。
+- 如需跑超過上限，請估算使用金額並跟我說一聲，我再幫同學調整上限至估算金額。
+- 同學可以透過以下方式重新創建 API key：選擇自己帳號的 Project，到 API Keys 頁面生成。
+12
+
+
+--- Page 13 ---
+國網中心機器使用
+實驗室也有支持同學們使用國網中心的運算資源進行研究，一樣請用 nycu 帳號註冊
+，註冊完成之後通知我一聲，以便將你加入實驗室的計畫中，使用國網中心的機器
+相關細節說明請看下一頁
+13
+
+
+--- Page 14 ---
+實驗室國網運算資源說明
+請查看以下兩個教學了解國網使用步驟：
+https://docs.google.com/document/d/17X3wRAennN7idqeittHfcZfFKe7MqY5l/edit?usp=sharing&ouid=110
+999004570127572506&rtpof=true&sd=true
+https://docs.google.com/document/d/1oHshllMKwwBag4buhO-5E0DFMf9b2Xmd/edit?usp=share_link&oui
+d=110999004570127572506&rtpof=true&sd=true
+將註冊帳號給網管，由網管統整後交給我，我將分配點數給同學
+實驗跑完記得刪除容器，否則會一直扣錢
+實驗跑完記得刪除容器，否則會一直扣錢
+實驗跑完記得刪除容器，否則會一直扣錢
+很重要，所以說三次
+14
+
+
+--- Page 15 ---
+國網 H100 使用說明
+實驗室有申請可以開更高運算資源的計畫，如需使用 H100，使用前請跟先跟我確認
+是哪個計畫
+開 H100 需要用不同方式，以下是操作說明：
+https://docs.google.com/document/d/1lLYMU2vFVwZHfJM3tlmQgpS1Uc5PjQr1Pk
+KcwqEFQw0/edit?usp=sharing
+現在需付費使用
+15
+
+
+--- Page 16 ---
+國網使用注意事項
+額度會一直扣，扣款不會停止在個人額度被扣為 0，也不會停止在母錢包 0 元
+最後被扣到幾十萬元也是有可能的
+所以一定要小心使用，定期監控子錢包餘額
+16
+
+
+--- Page 17 ---
+新生需要先了解的事情
+Deep learning for NLP (台大資工陳縕儂老師)
+https://www.youtube.com/watch?v=RwRZVd9rLxE&list=PLOAQYZPRn2V7gGW7bEjGnHD3BVQepF82o
+請尚不熟悉深度學習與自然語言處理的同學自行安排時間看陳縕儂老師的課程
+機器學習 2021 (台大電機李宏毅老師)
+https://www.youtube.com/watch?v=Ye018rCVvOo&list=PLJV_el3uVTsMhtt7_Y6sgTHGHp1Vb2P2J
+論文閱讀、寫作技巧
+https://drive.google.com/file/d/1j1UjEItK4Tk4HS4AkcgEOV-1Mh7XPp4t/view?usp=sharing
+17
+
+
+--- Page 18 ---
+做自然語言處理的基本知識 (?)
+什麼是 prompt engineering?
+https://www.promptingguide.ai
+18

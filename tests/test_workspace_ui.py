@@ -25,6 +25,8 @@ def test_workspace_navigation_is_served(tmp_path: Path):
         assert "臨時 / 額外 Meeting" in html
         assert "Research" in html
         assert "Papers" in html
+        assert "Documents & Presentations" in html
+        assert "document-upload-form" in html
         assert "Agents" in html
         assert "使用說明" in html
         assert "/static/app.css" in html

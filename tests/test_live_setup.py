@@ -9,7 +9,7 @@ def test_setup_creates_verified_backup_and_tolerates_optional_tools(tmp_path: Pa
     db = MasterDatabase(tmp_path / ".master-os" / "master.db")
     monkeypatch.setattr("master_os.supervisor.setup.shutil.which", lambda _name: None)
     try:
-        result = SetupManager(db, tmp_path, env={}).run()
+        result = SetupManager(db, tmp_path, env={}, home=tmp_path / "home").run()
     finally:
         db.close()
 

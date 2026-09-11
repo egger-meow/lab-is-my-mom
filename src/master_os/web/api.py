@@ -7,10 +7,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+from master_os.documents import (
+    generate_document_agent_prompt,
+    ingest_document_to_db,
+    list_documents,
+    save_document,
+)
 
 from master_os.agents.critic import MasterCritic
 from master_os.agents.dispatcher import AgentDispatcher
@@ -438,6 +445,54 @@ def create_app(
     @app.get("/api/papers")
     def list_papers():
         return paper_snapshot()
+
+    @app.get("/api/documents")
+    def get_documents():
+        return list_documents(repo_root, db=db)
+
+    @app.post("/api/documents/upload")
+    async def upload_document(
+        request: Request,
+        filename: Optional[str] = None,
+        date: Optional[str] = None,
+    ):
+        file_name = request.headers.get("x-filename") or filename or "document.pdf"
+        date_str = request.headers.get("x-date") or date
+        content = await request.body()
+        if not content:
+            raise HTTPException(status_code=400, detail="Empty document payload")
+        return save_document(
+            repo_root,
+            file_name=file_name,
+            content=content,
+            date_str=date_str,
+            artifacts=artifacts,
+        )
+
+    @app.get("/api/documents/download/{filename}")
+    def download_document(filename: str):
+        safe_name = Path(filename).name
+        target = repo_root / "data" / "documents" / safe_name
+        if not target.exists() or not target.is_file():
+            raise HTTPException(status_code=404, detail="Document not found")
+        return FileResponse(str(target), filename=safe_name)
+
+    @app.get("/api/documents/prompt/{filename}")
+    def get_document_prompt(filename: str):
+        try:
+            prompt = generate_document_agent_prompt(repo_root, filename)
+            return {"filename": filename, "prompt": prompt}
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.post("/api/documents/ingest/{filename}")
+    def ingest_document_endpoint(filename: str):
+        try:
+            return ingest_document_to_db(repo_root, filename, db=db, events=events)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Ingestion failed: {exc}") from exc
 
     @app.get("/api/agents")
     def agent_workspace():

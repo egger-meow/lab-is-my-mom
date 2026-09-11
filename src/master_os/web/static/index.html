@@ -18,6 +18,7 @@
         <button class="nav-btn" data-nav="meetings"><span class="nav-icon">◷</span>Meetings</button>
         <button class="nav-btn" data-nav="research"><span class="nav-icon">⌁</span>Research</button>
         <button class="nav-btn" data-nav="papers"><span class="nav-icon">▤</span>Papers</button>
+        <button class="nav-btn" data-nav="documents"><span class="nav-icon">📁</span>Documents</button>
         <button class="nav-btn" data-nav="agents"><span class="nav-icon">⌘</span>Agents</button>
         <button class="nav-btn" data-nav="system"><span class="nav-icon">⚙</span>System</button>
         <button class="nav-btn" data-nav="help"><span class="nav-icon">?</span>使用說明</button>
@@ -141,6 +142,37 @@
           <div class="card"><div class="paper-toolbar"><input id="paper-search" type="search" placeholder="搜尋 title / author / venue..."><span id="paper-visible-count" class="badge blue"></span></div><div id="papers-list" class="paper-list"></div></div>
         </section>
 
+        <section class="page" data-page="documents">
+          <div class="page-head">
+            <div>
+              <h2>Documents & Presentations</h2>
+              <p>儲存給老師報告的簡報、老師給的教材與實驗室文件，標記日期以供未來檢索與 Agent 閱讀。</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><span>上傳文件 / 簡報 (PDF)</span><span class="badge blue">Upload</span></div>
+            <form id="document-upload-form">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="doc-date">日期 (預設今天)</label>
+                  <input id="doc-date" type="date" required>
+                </div>
+                <div class="field full">
+                  <label for="doc-file">選擇檔案 (.pdf, etc.)</label>
+                  <input id="doc-file" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md" required>
+                </div>
+              </div>
+              <div class="form-actions" style="margin-top:14px">
+                <button type="submit" class="btn primary" id="doc-upload-btn">上傳並存檔</button>
+              </div>
+            </form>
+          </div>
+          <div class="card mt">
+            <div class="card-title"><span>已存檔文件與簡報</span><span id="doc-count" class="badge">0</span></div>
+            <div id="documents-list" class="list"></div>
+          </div>
+        </section>
+
         <section class="page" data-page="agents">
           <div class="page-head"><div><h2>Agents</h2><p>所有 queued、running、completed、interrupted 都留痕，不讓背景 agent 變幽靈。</p></div></div>
           <div id="agent-stats" class="stats"></div>
@@ -211,7 +243,7 @@
   </div>
 
   <nav class="mobile-nav" aria-label="Mobile navigation">
-    <button data-nav="today"><span class="mi">⌂</span>Today</button><button data-nav="tasks"><span class="mi">✓</span>Tasks</button><button data-nav="meetings"><span class="mi">◷</span>Meet</button><button data-nav="research"><span class="mi">⌁</span>Research</button><button data-nav="papers"><span class="mi">▤</span>Papers</button><button data-nav="agents"><span class="mi">⌘</span>Agents</button><button data-nav="system"><span class="mi">⚙</span>System</button><button data-nav="help"><span class="mi">?</span>Help</button>
+    <button data-nav="today"><span class="mi">⌂</span>Today</button><button data-nav="tasks"><span class="mi">✓</span>Tasks</button><button data-nav="meetings"><span class="mi">◷</span>Meet</button><button data-nav="research"><span class="mi">⌁</span>Research</button><button data-nav="papers"><span class="mi">▤</span>Papers</button><button data-nav="documents"><span class="mi">📁</span>Docs</button><button data-nav="agents"><span class="mi">⌘</span>Agents</button><button data-nav="system"><span class="mi">⚙</span>System</button><button data-nav="help"><span class="mi">?</span>Help</button>
   </nav>
 
   <div id="transcript-modal" class="modal-backdrop" role="dialog" aria-modal="true">
@@ -229,7 +261,15 @@
   </div>
 
   <div id="text-modal" class="modal-backdrop" role="dialog" aria-modal="true">
-    <div class="modal"><h3 id="text-modal-title">內容</h3><pre id="text-modal-body"></pre><div class="modal-actions"><button class="btn" data-close="text-modal">關閉</button></div></div>
+    <div class="modal">
+      <h3 id="text-modal-title">內容</h3>
+      <pre id="text-modal-body" style="max-height: 60vh; overflow-y: auto; user-select: all; white-space: pre-wrap; word-break: break-word; font-family: SFMono-Regular, Consolas, monospace; font-size: 0.86rem; background: var(--panel-3); padding: 12px; border-radius: 6px; border: 1px solid var(--border-soft);"></pre>
+      <div class="modal-actions">
+        <button class="btn accent" id="modal-ingest-btn" style="display:none">🚀 立即派遣 Agent 更新本地 DB</button>
+        <button class="btn primary" id="copy-modal-text-btn">📋 複製全部 Prompt</button>
+        <button class="btn" data-close="text-modal">關閉</button>
+      </div>
+    </div>
   </div>
 
   <div id="toast" class="toast"></div>

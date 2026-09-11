@@ -98,6 +98,18 @@ def main() -> None:
     p_pack = meeting_sub.add_parser("pack", help="Generate meeting presentation pack")
     p_pack.add_argument("meeting_id", help="Target meeting ID (e.g. M-20260917)")
 
+    p_document = subparsers.add_parser("document", help="Document and presentation management")
+    doc_sub = p_document.add_subparsers(dest="doc_cmd", required=True)
+    p_doc_add = doc_sub.add_parser("add", help="Add/store a document or presentation")
+    p_doc_add.add_argument("file_path", type=Path, help="Path to PDF or document file")
+    p_doc_add.add_argument("--date", help="Date in YYYY-MM-DD format (defaults to today or filename prefix)")
+    p_doc_add.add_argument("--ingest", action="store_true", help="Immediately ingest and update local DB with extracted obligations and tasks")
+    p_doc_list = doc_sub.add_parser("list", help="List stored documents and presentations")
+    p_doc_prompt = doc_sub.add_parser("prompt", help="Generate ready-to-copy Agent Prompt for a document")
+    p_doc_prompt.add_argument("filename", help="Filename of the stored document")
+    p_doc_ingest = doc_sub.add_parser("ingest", help="Ingest document: extract text via PyMuPDF C++, parse obligations & tasks, and update local DB")
+    p_doc_ingest.add_argument("filename", help="Filename of the stored document")
+
     p_dispatch = subparsers.add_parser("dispatch", help="Dispatch a confirmed autonomous task to the local Codex CLI")
     p_dispatch.add_argument("task_id", help="Task ID (e.g. T-193)")
 
@@ -197,6 +209,69 @@ def main() -> None:
                 pack = agent.generate_meeting_pack(args.meeting_id)
                 print(f"成功產出 {args.meeting_id} Meeting Pack：\n")
                 print(pack[:500] + "...\n(完整檔案位於 data/meeting_packs/)")
+
+        elif args.command == "document":
+            from master_os.documents import ingest_document_to_db, list_documents, save_document
+            events = EventStore(db)
+            artifacts = ArtifactRegistry(db, repo_root, events=events)
+            if args.doc_cmd == "add":
+                src = args.file_path.resolve()
+                if not src.exists():
+                    print(f"檔案不存在: {args.file_path}", file=sys.stderr)
+                    sys.exit(1)
+                content = src.read_bytes()
+                res = save_document(repo_root, src.name, content, date_str=args.date, artifacts=artifacts)
+                print(f"成功儲存文件: {res['filename']} ({res['size_bytes']} bytes)")
+                print(f"路徑: {res['path']}")
+                if res.get("engine"):
+                    print(f"解析引擎: {res['engine']} ({res.get('pages', 1)} 頁, {res.get('chars', 0)} 字)")
+                if res.get("artifact_id"):
+                    print(f"Artifact ID: {res['artifact_id']}")
+                if getattr(args, "ingest", False):
+                    print(f"\n🚀 自動派遣 Agent 解析並更新 Master OS 本地資料庫...")
+                    ingest_res = ingest_document_to_db(repo_root, res["filename"], db=db, events=events)
+                    print(f"   建立 {ingest_res['obligations_created']} 個 Obligations、{ingest_res['tasks_created']} 個 Tasks")
+                    print(f"   Agent Run 紀錄: {ingest_res['run_id']}")
+                    print("✅ 本地資料庫更新完成！")
+                else:
+                    print(f"\n💡 產生 Agent 派工 Prompt：\n  uv run master-os document prompt \"{res['filename']}\"")
+                    print(f"💡 或直接由本地 Agent 解析更新 DB：\n  uv run master-os document ingest \"{res['filename']}\"")
+            elif args.doc_cmd == "ingest":
+                try:
+                    print(f"🚀 開始 Ingest 文件: {args.filename}")
+                    print(f"[1/4] 讀取儲存文件 data/documents/{args.filename}...")
+                    res = ingest_document_to_db(repo_root, args.filename, db=db, events=events)
+                    print(f"[2/4] PyMuPDF C++ 解析完成：{res['pages']} 頁、{res['chars']} 字 ({res['engine']})")
+                    print(f"[3/4] 提取義務與任務：已建立 {res['obligations_created']} 個 Obligations、{res['tasks_created']} 個 Tasks")
+                    for ob in res.get("obligations", []):
+                        print(f"      + Obligation: {ob['title']} ({ob['id']})")
+                    for t in res.get("tasks", []):
+                        print(f"      + Task: {t['title']} ({t['id']})")
+                    print(f"[4/4] 寫入本地 DB (.master-os/master.db) 並記錄 Agent Run: {res['run_id']}")
+                    print("\n✅ Master OS 本地狀態已成功更新！可在 Cockpit (http://127.0.0.1:8765) 查看 Tasks 與 Obligations。")
+                except FileNotFoundError as exc:
+                    print(f"錯誤: {exc}", file=sys.stderr)
+                    sys.exit(1)
+            elif args.doc_cmd == "list":
+                docs = list_documents(repo_root, db=db)
+                if not docs:
+                    print("目前沒有儲存的文件或簡報。")
+                else:
+                    print("==================================================")
+                    print("          MASTER OS · DOCUMENTS & PRESENTATIONS   ")
+                    print("==================================================")
+                    for d in docs:
+                        art = f" [{d['artifact_id']}]" if d.get("artifact_id") else ""
+                        ext = f" · {d['pages']}頁/{d['chars']}字" if d.get('pages') else ""
+                        print(f"• [{d['date']}] {d['filename']} ({d['size_bytes']} bytes){ext}{art}")
+            elif args.doc_cmd == "prompt":
+                from master_os.documents import generate_document_agent_prompt
+                try:
+                    prompt = generate_document_agent_prompt(repo_root, args.filename)
+                    print(prompt)
+                except FileNotFoundError as exc:
+                    print(f"錯誤: {exc}", file=sys.stderr)
+                    sys.exit(1)
 
         elif args.command == "dispatch":
             task = db.fetchone("SELECT * FROM tasks WHERE id = ?", (args.task_id,))

@@ -30,10 +30,13 @@ class AutostartManager:
         self.platform_name = (platform_name or sys.platform).lower()
         self.repo_root = repo_root.resolve()
         raw_executable = Path(executable) if executable is not None else Path(sys.argv[0])
-        # Do not resolve a Windows path while generating a plan on a Linux CI host.
-        # Target-platform path semantics belong to the target OS, not the machine that
-        # happens to render/test the plan.
-        self.executable = raw_executable if self.platform_name.startswith("win") else raw_executable.resolve()
+        # Do not resolve across different target platform path semantics (e.g. Linux on Windows or vice versa).
+        if executable is not None:
+            self.executable = raw_executable
+        elif self.platform_name.startswith("win"):
+            self.executable = raw_executable
+        else:
+            self.executable = raw_executable.resolve()
         self.home = (home or Path.home()).resolve()
         self.runner = runner
         self.port = int(port)
@@ -80,8 +83,8 @@ class AutostartManager:
 
         if self.platform_name.startswith("linux"):
             service_path = self.home / ".config" / "systemd" / "user" / self.SERVICE_NAME
-            working_dir = str(self.repo_root).replace('"', '\\"')
-            executable = str(self.executable).replace('"', '\\"')
+            working_dir = self.repo_root.as_posix().replace('"', '\\"')
+            executable = self.executable.as_posix().replace('"', '\\"')
             content = "\n".join(
                 [
                     "[Unit]",

@@ -1,0 +1,213 @@
+--- Page 1 ---
+NYCU NLP Lab
+顏安孜
+azyen@nycu.edu.tw
+
+
+--- Page 2 ---
+Outline
+●
+Research Achievements
+●
+Ongoing Research Topics
+●
+Lab FAQ
+2
+
+
+--- Page 3 ---
+Research Achievements
+
+
+--- Page 4 ---
+LLMs and the Future of Mathematics Education (EMNLP 2023 Findings)
+- Explores LLMs' ability to provide 
+adaptive feedback in math learning
+- Tests LLMs' problem-solving and error 
+correction on MathQA
+- 66% accuracy; providing rationales 
+misleads model (only 10% correctly 
+identifies correct answers), struggles 
+with mathematical equations
+4
+https://youtu.be/QaeCrZThyeU
+
+
+--- Page 5 ---
+Cross-Domain Fact-Checking (COLING 2024)
+5
+https://youtu.be/Hit4pBRYOGs
+- Cross-domain fact-checking faces evidence extraction and verification challenges
+- MAGIC uses multi-argument generation and self-refinement to reconstruct evidence
+- Performs well on out-of-domain and partially true/false claims; self-refinement effective
+
+
+--- Page 6 ---
+How We Refute Claims: Automatic Fact-Checking through 
+Flaw Identification and Explanation (WWW 2024)
+6
+https://youtu.be/hLgLXMZczYo
+- Existing fact-checking lacks flaw 
+identification and deep explanation for 
+false claims
+- We propose RefuteClaim framework 
+defining 7 flaw types with aspect and 
+justification generation
+- Our model performs well in classifying 
+and explaining false claims; best with all 
+flaws considered
+
+
+--- Page 7 ---
+Course Content Question Forecasting Given the course content, is it possible to predict the 
+questions students may ask?
+Lecture 5 - GDA & Naive Bayes | Stanford CS229: Machine Learning Andrew Ng 
+(Autumn 2018)
+7
+
+
+--- Page 8 ---
+Educational Lecture Abstract-based Question Generation System 
+(IJCAI 2024 Demo)
+- The need for anticipating student questions helps reduce lecture preparation effort
+- The E-QGen system uses lecture abstracts with multitask LoRA-tuned LLMs to generate student-like question
+- E-QGen achieves higher similarity and diversity than GPT-4
+8
+https://youtu.be/SuiroLobtEU
+
+
+--- Page 9 ---
+Vocabulary Test Distractor Generation (ACML 2025)
+- Distractor design is time-consuming and 
+existing methods generate invalid options
+- ISSR uses LLM iterative selection with 
+self-review to avoid multiple correct 
+answers
+- Self-review effectively filters invalid 
+options, challenges advanced learners
+9
+https://youtu.be/u9apI9MoHF8
+
+
+--- Page 10 ---
+Refining Financial Consumer Complaints
+- Financial consumer complaints often lack 
+legal formality and persuasiveness
+- The MSMI framework combines a 
+classifier and LLMs for iterative legal text 
+refinement
+- MSMI significantly outperforms 
+single-pass generation in success rate and 
+robustness
+10
+https://youtu.be/KdIrrJAmspQ
+
+
+--- Page 11 ---
+Ongoing Research Topics
+
+
+--- Page 12 ---
+How to Build Effective LLM Judges with 
+Minimal Human Cost?
+- Minimal human annotation
+- Automatic evaluation guideline construction
+- LLM confidence assessment
+Effective Design of LLM Judges
+12
+https://aclanthology.org/2025.acl-industry.67.pdf
+Related Work
+
+
+--- Page 13 ---
+Confidence-Driven Multi-Scale Model Selection
+As LLMs continue to scale, always using the largest model for inference becomes 
+cost-prohibitive, motivating methods that balance accuracy and computational cost
+How can LLM confidence estimates be used to reduce inference cost while 
+maintaining accuracy? 
+13
+
+
+--- Page 14 ---
+Task-Oriented Theory-of-Mind
+- How to enable agents to accomplish 
+given tasks in simulated environments 
+(e.g., what to pick up, where to go)?
+- How far has research progressed on 
+hallucination issues in planning tasks?
+14
+https://arxiv.org/pdf/2310.03051
+Related Work
+
+
+--- Page 15 ---
+Is Generated Content Unsafe?
+Current image moderation focuses on explicit harms but fails to capture subtle 
+affective and unsettling visual risks in real and AI-generated images
+This motivates a systematic evaluation of VLMs' ability to understand affect, 
+context, and visual discomfort
+15
+Safe?
+Safe?
+Safe?
+
+
+--- Page 16 ---
+Tool Calling
+Can LLMs autonomously decide when to use tools, and correctly select among 
+multiple available tools?
+16
+https://arxiv.org/pdf/2310.03128
+Related Work
+
+
+--- Page 17 ---
+Routing
+As LLMs vary widely in capability and cost, routing all queries to large models is 
+not cost-effective in practice
+This motivates routing queries to appropriate LLMs to balance output quality and 
+inference cost
+17
+https://arxiv.org/abs/2503.05641
+Related Work
+
+
+--- Page 18 ---
+Towards Adaptive Feedback for Student Mathematical Problem-Solving
+- Evaluating LLMs on real student 
+problem-solving processes
+- LLM capability for providing adaptive 
+feedback
+- Collection of real student solutions 
+with teacher annotations
+18
+https://arxiv.org/html/2505.18056v1
+
+
+--- Page 19 ---
+Lab FAQ
+
+
+--- Page 20 ---
+FAQ
+問題1：實驗室需要值班嗎？
+答：不需要，但是實驗室提供每位同學固定座位。
+問題2：實驗室有國科會或是業界的計畫嗎？
+答：實驗室有正在執行的國科會計畫與產學合作計畫。同學的研究津貼也從這些計劃提供。
+問題3：需要自己找研究題目，還是老師會指定?
+答：我會提供研究主題，如果同學有自己感興趣的研究題目，也可以和我討論。
+20
+
+
+--- Page 21 ---
+FAQ
+問題4：實驗室是否有固定的seminar或個人meeting?
+答：每週安排一次個人meeting，跟我討論研究進度，會議以實體方式進行為主。另外，每週也安排一次seminar，由同學
+輪流報告論文，學習論文閱讀、報告、和回答技巧。
+問題5：實驗室運算資源？
+答：實驗室有支援高速運算與實驗之機架式工作站級設備，可以處理大量的資料及運算，進行大規模實驗。
+問題6：平均都幾年畢業？
+答：碩士生基本畢業時間為2年。
+問題7：需要學生擔任助教？
+答：需要。
+21

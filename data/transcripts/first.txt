@@ -1,0 +1,127 @@
+# Advisor Meeting — 2026-09-08
+
+Source type: reconstructed notes from memory
+Recording/transcript: unavailable
+Evidence confidence: medium
+Meeting type: first individual advisor meeting
+
+## Confirmed / high-confidence recall
+
+- Advisor explained that the research-direction PDF provided to each student
+  is intended as an initial research direction / seed.
+pdf content:
+模型行為異常偵測與修復
+模型行為異常偵測，給定一個不知道訓練歷史的模型，我們能不能診斷它是否已經學
+到異常的 reward-seeking / reward-hacking tendency；若偵測到，能不能在不破壞正
+常能力的情況下把這個 tendency 移除？
+Can We Repair a Reward-Hacked Language Model?
+https://alignment.anthropic.com/2026/reward-seeker/
+現成的 reward-hacked 模型
+https://arxiv.org/abs/2508.17511
+用 SFT 在無害任務上教會模型 reward hacking，模型與資料集都公開（Qwen、
+Llama 等 base 都有），而且驗證過會 generalize 到沒看過的作弊情境
+https://arxiv.org/abs/2502.17424
+可使用公開 checkpoint (嚴格來說算是廣義行為異常而非 reward hacking)
+行為評測環境
+把現成模型丟進可作弊的環境收軌跡
+https://arxiv.org/abs/2503.11926
+文獻閱讀工具
+https://www.alphaxiv.org/
+4
+- Students are not strictly required to use the provided direction.
+- Student-proposed research topics can also be discussed with advisor.
+- My assigned seed concerns model behavior anomaly detection and repair,
+  specifically latent reward-seeking / reward-hacking tendencies.
+
+## Important non-decisions
+
+- No thesis topic was committed to during this meeting.
+- Do NOT interpret the advisor-provided reward-hacking seed as a mandatory thesis assignment.
+- No confirmed advisor preference between my previous routing ideas and the reward-hacking direction was recorded.
+- Because there is no recording, uncertain wording must remain unconfirmed.
+
+## Current student-side research candidates
+
+### H1 — Uncertainty-Aware Selective Routing
+Previous V2 direction:
+estimate uncertainty/reliability of retrieval-based routing evidence;
+allow abstention/escalation when routing evidence is unreliable.
+
+Current status:
+- VDAR-Router reading is still in progress.
+- V2 has not yet been deeply re-reviewed.
+- Novelty must be re-evaluated against post-V2 literature.
+
+### H2 — Latent Reward-Hacking Diagnosis
+Advisor-provided seed.
+
+Current interpretation:
+the interesting problem may be diagnosis rather than immediate repair:
+can finite diagnostic evidence reveal a model-level reward-hacking
+disposition that generalizes to unseen specification gaps?
+
+Open subquestions:
+- behavior detection vs disposition detection
+- unseen environment generalization
+- how to operationalize ground-truth propensity
+- behavioral suppression vs genuine repair
+- finite diagnostic probe budget
+- uncertainty / abstention in diagnosis
+
+### H3 — Frozen / Restricted Enterprise Model Reliability
+Motivating scenario:
+security / deployment constraints may prevent closed enterprise environments
+from continuously adopting frontier models, while tasks and environments change.
+
+Current interpretation:
+do not frame this broadly as "catching up with frontier models".
+A potentially sharper question is how to detect when a frozen model fleet's
+historical capability estimates are no longer trustworthy under drift.
+
+Status:
+exploration / deployment motivation only.
+
+## Cross-direction observation
+
+All three candidate directions may share a broader research theme:
+
+finite or imperfect evidence
+→ estimate reliability / uncertainty
+→ decide whether to act, route, abstain, escalate, or retrain.
+
+Possible long-term theme:
+Reliable AI decision-making under uncertainty, distribution shift,
+and imperfect objectives.
+
+This is NOT yet a thesis title.
+
+## Immediate novelty threats / papers to inspect
+
+1. VDAR-Router — finish full understanding.
+2. LENS: Latent Precision Inference in Multi-LLM Routing (UAI 2026)
+   - potential overlap with uncertainty / drift motivation in V2.
+3. HackProbe (arXiv 2609.04665)
+   - black-box reward-hacking diagnosis with finite probe budget.
+4. TRACE — Is it Thinking or Cheating? (ICLR 2026)
+   - implicit reward-hacking detection via reasoning effort.
+5. Hack-Verifiable Environments (arXiv 2605.20744)
+   - scalable ground-truth reward-hacking evaluation environments.
+
+## Current decision
+
+NO THESIS TOPIC SELECTION YET.
+
+Run a short research-direction kill-screen before committing.
+
+## Next decision questions
+
+For each candidate determine:
+
+1. What exact scientific claim would the thesis make?
+2. What existing paper is closest to that claim?
+3. What remains genuinely unsolved?
+4. What is the smallest convincing experiment?
+5. What data / checkpoints / code already exist?
+6. What advisor/lab resources are available?
+7. What result would kill the idea early?
+8. Would stronger future models eliminate the underlying problem?

@@ -27,10 +27,12 @@ class SetupManager:
         repo_root: Path,
         *,
         env: Optional[Mapping[str, str]] = None,
+        home: Optional[Path] = None,
     ) -> None:
         self.db = db
         self.repo_root = repo_root.resolve()
         self.env: Mapping[str, str] = os.environ if env is None else env
+        self.home = home
         self.backups = BackupManager(db, self.repo_root)
         self.doctor = MasterDoctor(db, self.repo_root)
 
@@ -67,6 +69,7 @@ class SetupManager:
             self.repo_root,
             executable=Path(master_os_executable) if master_os_executable else None,
             port=port,
+            home=self.home,
         )
         if install_autostart:
             checks["autostart"] = autostart.install()

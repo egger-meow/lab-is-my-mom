@@ -20,7 +20,7 @@ def test_linux_systemd_unit_restarts_master_os_and_stays_loopback(tmp_path: Path
     plan = manager.plan()
 
     assert plan["kind"] == "systemd-user"
-    assert plan["service_path"].endswith(".config/systemd/user/master-os.service")
+    assert plan["service_path"].replace("\\", "/").endswith(".config/systemd/user/master-os.service")
     unit = plan["content"]
     assert "Restart=on-failure" in unit
     assert "RestartSec=5" in unit
@@ -42,7 +42,7 @@ def test_windows_plan_uses_per_user_startup_folder_without_embedding_secrets(tmp
     plan = manager.plan()
 
     assert plan["kind"] == "windows-startup-folder"
-    assert plan["startup_path"].endswith("Startup/master-os.cmd")
+    assert plan["startup_path"].replace("\\", "/").endswith("Startup/master-os.cmd")
     command = plan["task_command"]
     assert '"C:\\Users\\me\\venv\\Scripts\\master-os.exe" start --host 127.0.0.1 --port 8000' == command
     assert "SLACK_BOT_TOKEN" not in plan["content"]

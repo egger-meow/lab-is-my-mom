@@ -138,6 +138,7 @@ def test_weekly_time_cron_is_evaluated_in_taipei_timezone(tmp_path: Path):
     db, scheduler = _scheduler(tmp_path)
     try:
         name = "Weekly Research Progress & Critic"
+        db.execute("UPDATE schedules SET created_at = '2026-09-01T00:00:00+00:00' WHERE name = ?", (name,))
         before = datetime(2026, 9, 6, 11, 59, tzinfo=timezone.utc)
         occurrence = datetime(2026, 9, 6, 12, 0, tzinfo=timezone.utc)  # Sunday 20:00 Asia/Taipei
 

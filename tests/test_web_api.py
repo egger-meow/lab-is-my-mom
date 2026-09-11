@@ -124,3 +124,49 @@ def test_end_to_end_web_flow_uses_confirmed_state_and_injected_executor(api_clie
     assert pack.status_code == 200
     assert "Meeting Pack" in pack.json()["meeting_pack"]
     assert "86.4" not in pack.json()["meeting_pack"]
+
+
+def test_documents_endpoints(api_client):
+    client, _ = api_client
+
+    # Initially empty list
+    get_res = client.get("/api/documents")
+    assert get_res.status_code == 200
+    assert get_res.json() == []
+
+    # Upload a document
+    file_bytes = b"%PDF-1.4 sample presentation content"
+    post_res = client.post(
+        "/api/documents/upload?filename=weekly_slides.pdf&date=2026-09-11",
+        content=file_bytes,
+        headers={"Content-Type": "application/pdf"},
+    )
+    assert post_res.status_code == 200
+    uploaded = post_res.json()
+    assert uploaded["filename"] == "2026-09-11_weekly_slides.pdf"
+    assert uploaded["date"] == "2026-09-11"
+    assert uploaded["size_bytes"] == len(file_bytes)
+    assert uploaded["artifact_id"] is not None
+
+    # List documents again
+    docs_res = client.get("/api/documents")
+    assert docs_res.status_code == 200
+    docs = docs_res.json()
+    assert len(docs) == 1
+    assert docs[0]["filename"] == "2026-09-11_weekly_slides.pdf"
+    assert docs[0]["date"] == "2026-09-11"
+    assert docs[0]["artifact_id"] == uploaded["artifact_id"]
+
+    # Get document prompt
+    prompt_res = client.get("/api/documents/prompt/2026-09-11_weekly_slides.pdf")
+    assert prompt_res.status_code == 200
+    assert "Master OS" in prompt_res.json()["prompt"]
+
+    # Ingest document
+    ingest_res = client.post("/api/documents/ingest/2026-09-11_weekly_slides.pdf")
+    assert ingest_res.status_code == 200
+    ingest_data = ingest_res.json()
+    assert ingest_data["filename"] == "2026-09-11_weekly_slides.pdf"
+    assert "run_id" in ingest_data
+
+

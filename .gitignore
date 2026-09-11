@@ -7,5 +7,6 @@ __pycache__/
 .pytest-tmp*/
 *.py[cod]
 .master-os/
+data/backups/
 
 
