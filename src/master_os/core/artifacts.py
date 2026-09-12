@@ -89,10 +89,24 @@ class ArtifactRegistry:
         row = self.db.fetchone("SELECT * FROM artifacts WHERE id = ?", (aid,))
         if not row:
             # A deduplicated event may point to a pre-existing artifact id.
+            target_id = event.payload.get("id") if hasattr(event, "payload") and isinstance(event.payload, dict) else aid
+            row = self.db.fetchone("SELECT * FROM artifacts WHERE id = ?", (target_id,))
+        if not row:
             row = self.db.fetchone(
                 "SELECT * FROM artifacts WHERE path = ? AND content_hash = ? ORDER BY created_at DESC LIMIT 1",
                 (rel_path, content_hash),
             )
+        if not row:
+            from master_os.core.reducer import apply_event
+            apply_event(self.db, event)
+            self.db.commit()
+            target_id = event.payload.get("id") if hasattr(event, "payload") and isinstance(event.payload, dict) else aid
+            row = self.db.fetchone("SELECT * FROM artifacts WHERE id = ?", (target_id,))
+            if not row:
+                row = self.db.fetchone(
+                    "SELECT * FROM artifacts WHERE path = ? AND content_hash = ? ORDER BY created_at DESC LIMIT 1",
+                    (rel_path, content_hash),
+                )
         if not row:
             raise RuntimeError(f"Artifact event {event.id} did not materialize {rel_path}")
         return self._row_to_artifact(row)

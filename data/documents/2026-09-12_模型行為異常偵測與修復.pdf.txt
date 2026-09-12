@@ -1,0 +1,28 @@
+--- Page 1 ---
+模型行為異常偵測與修復
+模型行為異常偵測，給定一個不知道訓練歷史的模型，我們能不能診斷它是否已經學
+到異常的 reward-seeking / reward-hacking tendency；若偵測到，能不能在不破壞正
+常能力的情況下把這個 tendency 移除？
+Can We Repair a Reward-Hacked Language Model?
+https://alignment.anthropic.com/2026/reward-seeker/
+
+
+--- Page 2 ---
+現成的 reward-hacked 模型
+https://arxiv.org/abs/2508.17511
+用 SFT 在無害任務上教會模型 reward hacking，模型與資料集都公開（Qwen、
+Llama 等 base 都有），而且驗證過會 generalize 到沒看過的作弊情境
+https://arxiv.org/abs/2502.17424
+可使用公開 checkpoint (嚴格來說算是廣義行為異常而非 reward hacking)
+
+
+--- Page 3 ---
+行為評測環境
+把現成模型丟進可作弊的環境收軌跡
+https://arxiv.org/abs/2503.11926
+
+
+--- Page 4 ---
+文獻閱讀工具
+https://www.alphaxiv.org/
+4
