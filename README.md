@@ -56,6 +56,10 @@ Web Cockpit 集中回答五件事：
 4. **What are agents doing?** queued / running / completed / interrupted Agent Runs。
 5. **What needs me?** 高影響語意確認、外部動作、成本與 interrupted-run recovery。
 
+Today 的「今天做了什麼」可保存自由文字進度；只有明確勾選的任務會完成。按「現在整理 OS」會由本地 Codex 讀取會議筆記、參考文件、進度及既有任務，產生含研究問題、查證方法、交付物、依賴、日期和時間估計的研究安排。原始文件是證據，不會因出現 seminar 或註冊等字眼就自動變成待辦。
+
+每日整理可在 Today 啟用及調整時間。預設六、日、一各 240 分鐘，其餘日 60 分鐘，作為可修改的工作量上限。Supervisor 必須運作、電腦必須開機，錯過時間會於當天啟動後補跑。每天及有新回報時整理一次；失敗可手動重試。GPT 規劃不會自行訓練模型或啟用付費算力，研究任務另由「派 Codex」執行並保存產出。
+
 ### 4. 開機 / 登入自動啟動
 
 ```bash

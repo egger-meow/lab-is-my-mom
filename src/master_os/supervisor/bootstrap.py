@@ -18,6 +18,7 @@ from master_os.core.events import EventStore
 from master_os.core.relations import RelationGraph
 from master_os.intelligence.meeting_agent import MeetingAgent
 from master_os.intelligence.planner import MasterPlanner
+from master_os.intelligence.daily_research import DailyResearchPlanner
 from master_os.scheduler.engine import SchedulerEngine
 from master_os.supervisor.backup import BackupManager
 from master_os.supervisor.runtime import MasterSupervisor
@@ -106,6 +107,7 @@ def build_supervisor(
         executors=agent_executors if agent_executors is not None else build_local_executors(),
     )
     backups = BackupManager(db, repo_root)
+    daily_planner = DailyResearchPlanner(db, repo_root)
 
     def handle_meeting_routine(item: dict[str, Any]) -> dict[str, Any]:
         name = item.get("name")
@@ -156,6 +158,10 @@ def build_supervisor(
         queued = dispatcher.enqueue_task(focus.task_id)
         return {"status": "queued", **queued}
 
+    def handle_seminar_routine(item: dict[str, Any]) -> dict[str, Any]:
+        # Attendance recurrence is not a personal presentation assignment.
+        return {"status": "needs_assignment", "reason": "Seminar presentation preparation requires an explicit personal assignment and date."}
+
     def maintain_backup(current: datetime) -> dict[str, Any]:
         snapshots = sorted(
             backups.backup_dir.glob("master_snapshot_*.db"),
@@ -197,11 +203,12 @@ def build_supervisor(
         routine_handlers={
             "meeting_agent": handle_meeting_routine,
             "agent_dispatcher": handle_agent_dispatch_routine,
+            "seminar_agent": handle_seminar_routine,
         },
         source_syncers=source_syncers,
         recovery_handler=recovery.recover_stale_runs,
         agent_pump=dispatcher.pump_once,
-        maintenance_handlers={"daily_backup": maintain_backup},
+        maintenance_handlers={"daily_backup": maintain_backup, "daily_research": lambda current: daily_planner.tick(current, dispatcher)},
         poll_seconds=poll_seconds,
     )
 

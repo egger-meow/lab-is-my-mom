@@ -121,7 +121,7 @@ def test_agent_runtime_acceptance_verification(test_setup, tmp_path: Path):
     assert "VDAR achieves 86%" in findings[0]["statement"]
 
 
-def test_master_critic_detects_fake_progress(test_setup):
+def test_master_critic_does_not_infer_fake_progress_from_generic_task_counts(test_setup):
     db, store, _, _, critic = test_setup
     source = store.register_source("system", "Test", "test")
 
@@ -141,5 +141,4 @@ def test_master_critic_detects_fake_progress(test_setup):
         apply_event(db, e_comp)
 
     report = critic.evaluate_health()
-    assert report.fake_progress_warning is True
-    assert "Activity high, research progress low" in report.warning_message
+    assert report.fake_progress_warning is False

@@ -45,7 +45,7 @@ class AgentDispatcher:
         self.executors = dict(executors or {})
         self.max_workers = int(max_workers)
         self.events = EventStore(db)
-        self.packet_builder = WorkPacketBuilder(db)
+        self.packet_builder = WorkPacketBuilder(db, self.repo_root)
         self.pool = ThreadPoolExecutor(max_workers=self.max_workers, thread_name_prefix="master-os-agent")
         self._lock = threading.Lock()
         self._futures: dict[str, Future[Any]] = {}
@@ -65,6 +65,12 @@ class AgentDispatcher:
             raise ValueError(f"Task not found: {task_id}")
         if task["agentability"] != "autonomous":
             raise RuntimeError(f"Task {task_id} is not authorized for autonomous execution")
+        if task["status"] not in ("todo", "in_progress"):
+            raise RuntimeError(f"Task {task_id} is {task['status']}, not executable")
+        from master_os.intelligence.planner import MasterPlanner
+        schedule = MasterPlanner(self.db).task_schedule(task_id)
+        if schedule["waiting_for"]:
+            raise RuntimeError(f"Task {task_id} is waiting for dependencies: {schedule['waiting_for']}")
 
         run_id = generate_id("RUN-")
         workspace = self.repo_root / ".master-os" / "worktrees" / f"run-{run_id.lower()}"
@@ -126,7 +132,7 @@ class AgentDispatcher:
                 {
                     "id": run_id,
                     "agent_type": task["preferred_agent"] or "codex",
-                    "job_type": "implementation",
+                    "job_type": schedule.get("kind", "implementation"),
                     "task_id": task_id,
                     "workspace": str(workspace.resolve()),
                     "branch": branch,

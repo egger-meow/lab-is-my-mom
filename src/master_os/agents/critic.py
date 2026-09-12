@@ -58,19 +58,23 @@ class MasterCritic:
                 overdue_obs += 1
 
         # 3. Check tasks completed
-        tasks_row = self.db.fetchone("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'completed'")
+        tasks_row = self.db.fetchone("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'completed' AND preferred_agent != 'research_planner'")
         completed_tasks = tasks_row["cnt"] if tasks_row else 0
 
         # 4. Check for fake progress trap: High task activity but 0 experimental evidence
         fake_progress = False
         warning_msg = "研究節奏良好，持續產生可驗證的證據與進展。"
 
-        if completed_tasks >= 3 and (findings_count == 0 and completed_exps == 0):
+        # Planning, reading and administrative completion do not imply that an
+        # experiment should already exist. Only inspect actual analysis tasks.
+        from master_os.intelligence.daily_research import task_work
+        analyses = sum(task_work(self.db, row["id"]).get("kind") == "local_analysis"
+                       for row in self.db.fetchall("SELECT id FROM tasks WHERE status='completed'"))
+        if analyses >= 3 and (findings_count == 0 and completed_exps == 0):
             fake_progress = True
             warning_msg = (
-                "⚠ 警報：活動量高，但研究實質進度偏低 (Activity high, research progress low)！"
-                f"已完成 {completed_tasks} 個任務，但尚未產出任何驗證的實驗數據或 Findings。"
-                "請警惕陷入繁瑣程式碼或閱讀筆記，優先鎖定關鍵 Baseline 實驗與 Hypothesis 驗證！"
+                f"已完成 {analyses} 項分析工作，但尚未登錄實驗或 Findings。"
+                "請確認產出是否已保存；這不代表研究沒有進展。"
             )
 
         # 5. Calculate velocity score

@@ -44,6 +44,28 @@
             <div id="onboarding-steps" class="onboarding-steps"></div>
           </div>
           <div id="critic-alert" class="alert"></div>
+          <div class="card mt">
+            <div class="card-title"><span>今天做了什麼／卡在哪裡</span><span class="badge blue">進度回報</span></div>
+            <form id="progress-form">
+              <div class="field"><label for="progress-text">用自己的話說，系統會保存並重新安排研究工作</label><textarea id="progress-text" maxlength="12000" required placeholder="例如：今天讀到 AuditBench 的實驗，還沒看懂評估方式；VDAR 讀到第 3 節。明天有 4 小時，想先釐清能力與作弊傾向。"></textarea></div>
+              <div id="progress-completions" class="item-meta"></div>
+              <div class="form-actions"><button class="btn primary" type="submit">保存進度並重新整理</button><button id="plan-now" class="btn" type="button">現在整理 OS</button></div>
+            </form>
+            <p id="planning-state" class="item-meta"></p>
+            <div id="progress-history" class="list"></div>
+            <details class="mt"><summary>每日整理與工作量</summary>
+              <form id="planning-preferences-form">
+                <div class="form-grid">
+                  <div class="field"><label for="planner-enabled">本機 GPT 每日整理</label><select id="planner-enabled"><option value="true">啟用</option><option value="false">暫停</option></select></div>
+                  <div class="field"><label for="planner-time">台北時間（電腦需開著）</label><input id="planner-time" type="time" value="09:00" required></div>
+                  <div class="field"><label for="planner-heavy">週六、日、一：每日規劃分鐘</label><input id="planner-heavy" type="number" min="15" max="720" value="240" required></div>
+                  <div class="field"><label for="planner-light">其他日：每日規劃分鐘</label><input id="planner-light" type="number" min="15" max="720" value="60" required></div>
+                </div><p class="item-meta">分鐘是可調的規劃上限，不代表你已承諾這些時間。沿用本機 Codex 登入；未開機時下次啟動補一次。</p>
+                <div class="form-actions"><button class="btn" type="submit">儲存節奏</button></div>
+              </form>
+            </details>
+          </div>
+          <div class="card mt"><div class="card-title"><span>今天的研究工作</span><span id="today-work-total" class="badge yellow"></span></div><div id="today-research-tasks" class="list"></div></div>
           <div class="card hero">
             <div class="card-title"><span>現在最值得做的一件事</span><span id="hero-est" class="badge yellow">計算中</span></div>
             <h2 id="hero-title">讀取 Master Planner...</h2>

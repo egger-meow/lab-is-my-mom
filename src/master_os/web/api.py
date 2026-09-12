@@ -33,6 +33,7 @@ from master_os.core.models import AuthorityLevel, generate_id
 from master_os.core.relations import RelationGraph
 from master_os.intelligence.meeting_agent import MeetingAgent
 from master_os.intelligence.planner import MasterPlanner
+from master_os.intelligence.daily_research import DailyResearchPlanner
 from master_os.lab.cadence import resolved_weekly_spec, routine_occurrence, validate_weekly_spec
 from master_os.lab.protocol import SEMINAR_WEEKLY_SPEC
 from master_os.scheduler.engine import SchedulerEngine
@@ -68,6 +69,20 @@ class ResearchContextRequest(BaseModel):
 
 class TaskStatusRequest(BaseModel):
     status: str
+
+
+class ProgressRequest(BaseModel):
+    text: str
+    completed_task_ids: list[str] = []
+
+
+class WorkPreferencesRequest(BaseModel):
+    enabled: bool = True
+    daily_time: str = "09:00"
+    timezone: str = "Asia/Taipei"
+    heavy_days: list[str] = ["sat", "sun", "mon"]
+    heavy_minutes: int = 240
+    light_minutes: int = 60
 
 
 class DecideApprovalRequest(BaseModel):
@@ -127,6 +142,7 @@ def create_app(
     recovery_actions = AgentRecoveryActions(db, events, runtime, packet_builder, relations, repo_root)
     meeting_agent = MeetingAgent(db, events, artifacts, relations, repo_root=repo_root)
     planner = MasterPlanner(db)
+    daily_planner = DailyResearchPlanner(db, repo_root)
     scheduler = SchedulerEngine(db, events, critic)
     doctor = MasterDoctor(db, repo_root=repo_root)
 
@@ -232,6 +248,8 @@ def create_app(
             "research_velocity": health_report.research_velocity,
             "fake_progress_warning": health_report.fake_progress_warning,
             "warning_message": health_report.warning_message,
+            "research_planning": daily_planner.status(),
+            "today_tasks": [{**dict(t), "work": planner.task_schedule(t["id"])} for t in db.fetchall("SELECT * FROM tasks WHERE status IN ('todo','in_progress','blocked') AND preferred_agent != 'research_planner'") if planner.task_schedule(t["id"])["ready_today"]],
         }
         what_is_coming = {"upcoming_meetings": upcoming_meetings()[:5], "deadlines": plan.imminent_deadlines}
         findings_rows = db.fetchall("SELECT * FROM findings ORDER BY created_at DESC LIMIT 5")
@@ -268,6 +286,33 @@ def create_app(
             "what_needs_me": what_needs_me,
         }
 
+    @app.get("/api/research/planning")
+    def planning_status():
+        return daily_planner.status()
+
+    @app.post("/api/research/planning/preferences")
+    def planning_preferences(req: WorkPreferencesRequest):
+        try:
+            return daily_planner.configure(req.model_dump())
+        except (ValueError, KeyError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/research/planning/run")
+    def plan_now():
+        result = daily_planner.request_plan(reason="manual", dispatcher=dispatcher)
+        dispatcher.pump_once()
+        return result
+
+    @app.post("/api/research/progress")
+    def report_progress(req: ProgressRequest):
+        try:
+            result = daily_planner.check_in(req.text, req.completed_task_ids)
+            result["planning"] = daily_planner.request_plan(reason="checkin", dispatcher=dispatcher)
+            dispatcher.pump_once()
+            return result
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.get("/api/onboarding")
     def onboarding():
         routines = meeting_routines()
@@ -277,7 +322,7 @@ def create_app(
         topic = research_topic()
         steps = [
             {"id": "advisor_meeting", "label": "設定每週 Advisor Meeting 固定時間", "done": bool(advisor["weekly_spec"])},
-            {"id": "research_topic", "label": "填入目前研究題目 / Hypothesis", "done": bool(topic)},
+            {"id": "research_topic", "label": "填入目前研究題目 / Hypothesis", "done": bool(topic), "optional": True},
             {"id": "meeting_transcript", "label": "匯入最近一次 Meeting transcript / 筆記", "done": int(transcript_count) > 0},
             {"id": "slack", "label": "設定 Lab Slack scope（可稍後）", "done": int(slack_count) > 0, "optional": True},
         ]
@@ -303,7 +348,9 @@ def create_app(
         for row in task_rows:
             item = dict(row)
             item["acceptance_criteria"] = _parse_json_field(item.get("acceptance_criteria_json"), [])
+            item["work"] = planner.task_schedule(item["id"])
             tasks.append(item)
+        tasks.sort(key=lambda t: (0 if t["status"] in ("todo", "in_progress") and t["work"]["ready_today"] else 1 if t["status"] in ("todo", "in_progress", "blocked") else 2, t["work"].get("scheduled_for", "9999")))
         obligation_rows = db.fetchall(
             "SELECT * FROM obligations ORDER BY CASE status WHEN 'pending' THEN 0 WHEN 'active' THEN 1 ELSE 2 END, due_at IS NULL,due_at,created_at DESC"
         )
@@ -408,7 +455,10 @@ def create_app(
                 },
                 created_by="user_explicit",
             )
-        return meeting_agent.ingest_transcript(req.meeting_id, req.transcript_text)
+        result = meeting_agent.ingest_transcript(req.meeting_id, req.transcript_text)
+        if daily_planner.preferences()["enabled"]:
+            result["planning"] = daily_planner.request_plan(reason="meeting", dispatcher=dispatcher)
+        return result
 
     @app.post("/api/meetings/{meeting_id}/pack")
     def generate_meeting_pack(meeting_id: str):
@@ -525,7 +575,10 @@ def create_app(
     @app.post("/api/documents/ingest/{filename}")
     def ingest_document_endpoint(filename: str):
         try:
-            return ingest_document_to_db(repo_root, filename, db=db, events=events)
+            result = ingest_document_to_db(repo_root, filename, db=db, events=events)
+            if daily_planner.preferences()["enabled"]:
+                result["planning"] = daily_planner.request_plan(reason="document", dispatcher=dispatcher)
+            return result
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except Exception as exc:

@@ -250,13 +250,26 @@ class AgentRuntime:
                 workspace = self._prepare_workspace(packet)
             result = executor_func(workspace, packet)
             exit_code = int(result.get("exit_code", 1))
+            error_msg = result.get("error")
             produced_artifacts = list(result.get("artifacts", []))
             findings = list(result.get("findings", []))
 
             missing = [rel for rel in packet.expected_artifacts if not (workspace / rel).exists()]
             if missing:
                 exit_code = 1
-                error_msg = f"Missing expected artifacts: {', '.join(missing)}"
+                error_msg = error_msg or f"Missing expected artifacts: {', '.join(missing)}"
+
+            if exit_code == 0 and agent_type == "research_planner":
+                from master_os.intelligence.daily_research import DailyResearchPlanner, PLAN_FILE
+                import json
+                context = json.loads(packet.context_notes[0])["research_work"]["context"]
+                plan_path = (workspace / PLAN_FILE).resolve()
+                if not plan_path.is_relative_to(workspace.resolve()) or plan_path.stat().st_size > 100000:
+                    raise ValueError("invalid research plan artifact")
+                plan = json.loads(plan_path.read_text(encoding="utf-8"))
+                DailyResearchPlanner(self.db, self.repo_root).apply_plan(plan, context=context, run_id=run_id)
+                if PLAN_FILE not in produced_artifacts:
+                    produced_artifacts.append(PLAN_FILE)
 
             run_status = "completed" if exit_code == 0 else "failed"
             task_status = "completed" if exit_code == 0 else "blocked"
@@ -270,6 +283,8 @@ class AgentRuntime:
             heartbeat_thread.join(timeout=max(1.0, self.heartbeat_interval_seconds * 2))
 
         registered_artifact_ids: list[str] = []
+        if error_msg and agent_type == "research_planner":
+            self.commands.emit("research.plan.failed", source.id, {"run_id": run_id, "error": error_msg})
         for rel_art in produced_artifacts:
             art_file = workspace / rel_art
             if not art_file.exists():

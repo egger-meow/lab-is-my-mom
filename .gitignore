@@ -5,8 +5,8 @@ __pycache__/
 .research-os/cache/
 .venv/
 .pytest-tmp*/
+.test-tmp/
 *.py[cod]
 .master-os/
 data/backups/
-
 

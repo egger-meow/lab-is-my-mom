@@ -113,6 +113,24 @@ def apply_event(db: MasterDatabase, event: Event, *, commit: bool = True) -> Non
              p.get("preferred_agent", "codex"), crit_json, p.get("created_at", now), now),
         )
 
+    elif etype == "research.plan.applied":
+        # The validated plan is one atomic, replayable event. Research proposals
+        # cannot finish tasks, create obligations or promote advisor decisions.
+        for item in p.get("tasks", []):
+            spec, work = item["task"], item["work"]
+            existing = db.fetchone("SELECT status FROM tasks WHERE id=?", (spec["id"],))
+            if existing and existing["status"] in ("completed", "cancelled"):
+                continue
+            if not existing:
+                apply_event(db, Event(id=event.id, event_type="task.created", source_id=event.source_id, occurred_at=now, payload=spec), commit=False)
+            else:
+                for field in ("title", "description", "due_at", "acceptance_criteria_json", "agentability"):
+                    value = json.dumps(spec["acceptance_criteria"], ensure_ascii=False) if field == "acceptance_criteria_json" else spec[field]
+                    apply_event(db, Event(id=event.id, event_type="assertion.recorded", source_id=event.source_id, occurred_at=now,
+                        payload={"id": f"AS-{event.id}-{spec['id']}-{field}", "subject_type": "task", "subject_id": spec["id"], "field": field, "value": value, "authority": 200}), commit=False)
+            apply_event(db, Event(id=event.id, event_type="assertion.recorded", source_id=event.source_id, occurred_at=now,
+                payload={"id": f"AS-{event.id}-{spec['id']}", "subject_type": "task", "subject_id": spec["id"], "field": "research_work", "value": work, "authority": 200}), commit=False)
+
     elif etype == "task.status_changed":
         db.execute("UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?", (p["status"], now, p["id"]))
 

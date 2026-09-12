@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from typing import Any, Optional
 
 from master_os.core.database import MasterDatabase
+from master_os.intelligence.daily_research import task_work
 
 
 @dataclass
@@ -33,7 +36,22 @@ class MasterPlanner:
     def __init__(self, db: MasterDatabase) -> None:
         self.db = db
 
-    def get_plan(self) -> PlannerState:
+    def task_schedule(self, task_id: str, now=None) -> dict[str, Any]:
+        current = now or datetime.now(timezone.utc)
+        from master_os.core.assertions import AssertionResolver
+        pref = AssertionResolver(self.db).resolve_field("research_profile", "current", "work_preferences")
+        zone = ZoneInfo(pref.value.get("timezone", "Asia/Taipei") if pref else "Asia/Taipei")
+        today = current.astimezone(zone).date().isoformat()
+        work = task_work(self.db, task_id)
+        pending = []
+        for dep in work.get("dependencies", []):
+            row = self.db.fetchone("SELECT status FROM tasks WHERE id=?", (dep,))
+            if not row or row["status"] != "completed":
+                pending.append(dep)
+        scheduled = work.get("scheduled_for")
+        return {**work, "waiting_for": pending, "ready_today": bool(scheduled and scheduled <= today and not pending), "future": bool(scheduled and scheduled > today)}
+
+    def get_plan(self, now=None) -> PlannerState:
         # 1. Fetch critical obligations
         obs = self.db.fetchall(
             """SELECT * FROM obligations 
@@ -68,6 +86,12 @@ class MasterPlanner:
         blocked_row = self.db.fetchone("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'blocked'")
         blocked_count = blocked_row["cnt"] if blocked_row else 0
 
+        # A dated research assignment outranks undated onboarding. Dependencies
+        # and future work must not be offered as today's executable focus.
+        schedules = {t["id"]: self.task_schedule(t["id"], now) for t in tasks}
+        tasks = [t for t in tasks if not schedules[t["id"]]["future"] and not schedules[t["id"]]["waiting_for"] and t["preferred_agent"] != "research_planner"]
+        tasks.sort(key=lambda t: (0 if t["due_at"] and t["priority"] == "critical" else 1 if schedules[t["id"]]["ready_today"] else 2,
+                                  schedules[t["id"]].get("scheduled_for", "9999")))
         # 3. Determine single next focus action
         if tasks:
             top_task = tasks[0]
@@ -77,6 +101,10 @@ class MasterPlanner:
 
             # Estimated time: shorter for review/decision, longer for implementation
             est_time = 8 if top_task["agentability"] == "autonomous" else 45
+            work = schedules[top_task["id"]]
+            if work.get("scheduled_for"):
+                est_time = work.get("estimated_minutes", est_time)
+                why_text = f"安排 {work['scheduled_for']} · 準備 {work.get('meeting_id', '個人 meeting')} · {work.get('question', '')}"
 
             focus = FocusAction(
                 task_id=top_task["id"],

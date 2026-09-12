@@ -132,7 +132,7 @@ def test_save_document_extracts_text_and_generates_agent_prompt(tmp_path: Path):
     assert "obligations" in prompt.lower()
 
 
-def test_ingest_document_to_db_creates_obligations_and_tasks(tmp_path: Path):
+def test_ingest_document_preserves_evidence_without_inventing_tasks_or_runs(tmp_path: Path):
     from master_os.documents import ingest_document_to_db
     import pymupdf
 
@@ -151,19 +151,20 @@ def test_ingest_document_to_db_creates_obligations_and_tasks(tmp_path: Path):
     pdf.close()
 
     res = ingest_document_to_db(tmp_path, "2026-09-11_rules.pdf", db=db)
-    assert res["obligations_created"] >= 2
-    assert res["tasks_created"] >= 2
-    assert res["run_id"].startswith("RUN-")
+    assert res["obligations_created"] == 0
+    assert res["tasks_created"] == 0
+    assert res["run_id"] is None
+    assert res["event_id"]
 
     # Verify obligations and tasks exist in database
     obs = db.fetchall("SELECT * FROM obligations")
     tasks = db.fetchall("SELECT * FROM tasks")
     runs = db.fetchall("SELECT * FROM agent_runs")
 
-    assert len(obs) >= 2
-    assert len(tasks) >= 2
-    assert len(runs) >= 1
-    assert runs[0]["status"] == "completed"
+    assert not obs
+    assert not tasks
+    assert not runs
+    assert db.fetchone("SELECT id FROM events WHERE event_type='research.document_imported'")
 
     db.close()
 
@@ -195,6 +196,5 @@ def test_cli_document_ingest(tmp_path: Path, monkeypatch, capsys):
     assert "PyMuPDF C++ 解析完成" in out
     assert "寫入本地 DB" in out
     assert "成功更新" in out
-
 
 
