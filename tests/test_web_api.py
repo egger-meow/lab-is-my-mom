@@ -170,3 +170,26 @@ def test_documents_endpoints(api_client):
     assert "run_id" in ingest_data
 
 
+def test_documents_import_absolute_path(api_client, tmp_path):
+    client, _ = api_client
+    sample_file = tmp_path / "local_lecture.pdf"
+    sample_file.write_bytes(b"%PDF-1.4 sample local presentation content")
+
+    # Import by absolute path with Windows quotes
+    res = client.post(
+        "/api/documents/import-path",
+        json={"path": f'"{sample_file.resolve()}"', "date": "2026-09-12"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["filename"] == "2026-09-12_local_lecture.pdf"
+    assert data["date"] == "2026-09-12"
+    assert data["size_bytes"] == len(b"%PDF-1.4 sample local presentation content")
+
+    # Import non-existent path
+    err_res = client.post(
+        "/api/documents/import-path",
+        json={"path": str(tmp_path / "non_existent.pdf")},
+    )
+    assert err_res.status_code == 404
+    assert "找不到" in err_res.json()["detail"]

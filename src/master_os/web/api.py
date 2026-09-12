@@ -80,6 +80,11 @@ class RecoverAgentRunRequest(BaseModel):
     note: Optional[str] = None
 
 
+class ImportDocumentPathRequest(BaseModel):
+    path: str
+    date: Optional[str] = None
+
+
 def _parse_json_field(value: Optional[str], fallback: Any) -> Any:
     if not value:
         return fallback
@@ -466,6 +471,38 @@ def create_app(
             file_name=file_name,
             content=content,
             date_str=date_str,
+            artifacts=artifacts,
+        )
+
+    @app.post("/api/documents/import-path")
+    def import_document_path(req: ImportDocumentPathRequest):
+        raw_path = req.path.strip().strip('"\'')
+        if not raw_path:
+            raise HTTPException(status_code=400, detail="請提供檔案路徑")
+        target_path = Path(raw_path)
+        if not target_path.is_absolute():
+            target_path = (repo_root / target_path).resolve()
+        else:
+            target_path = target_path.resolve()
+
+        if not target_path.exists():
+            raise HTTPException(status_code=404, detail=f"本機找不到指定的檔案：{target_path}")
+        if not target_path.is_file():
+            raise HTTPException(status_code=400, detail=f"指定的路徑不是檔案：{target_path}")
+
+        try:
+            content = target_path.read_bytes()
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"讀取檔案失敗：{exc}") from exc
+
+        if not content:
+            raise HTTPException(status_code=400, detail="檔案內容為空")
+
+        return save_document(
+            repo_root,
+            file_name=target_path.name,
+            content=content,
+            date_str=req.date,
             artifacts=artifacts,
         )
 
