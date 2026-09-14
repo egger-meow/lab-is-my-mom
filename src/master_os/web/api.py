@@ -22,6 +22,7 @@ from master_os.documents import (
 from master_os.agents.critic import MasterCritic
 from master_os.agents.dispatcher import AgentDispatcher
 from master_os.agents.packet import AgentJobPacket, WorkPacketBuilder
+from dataclasses import asdict
 from master_os.agents.recovery_actions import AgentRecoveryActions
 from master_os.agents.runtime import AgentRuntime
 from master_os.core.artifacts import ArtifactRegistry
@@ -29,8 +30,14 @@ from master_os.core.assertions import AssertionResolver
 from master_os.core.commands import DomainCommandBus
 from master_os.core.database import MasterDatabase
 from master_os.core.events import EventStore
-from master_os.core.models import AuthorityLevel, generate_id
+from master_os.core.models import AuthorityLevel, Topic, generate_id
 from master_os.core.relations import RelationGraph
+from master_os.core.topics import (
+    TopicCommandService,
+    ConcurrencyConflictError,
+    InvalidTransitionError,
+    PermissionDeniedError,
+)
 from master_os.intelligence.meeting_agent import MeetingAgent
 from master_os.intelligence.planner import MasterPlanner
 from master_os.intelligence.daily_research import DailyResearchPlanner
@@ -40,6 +47,67 @@ from master_os.scheduler.engine import SchedulerEngine
 from master_os.supervisor.doctor import MasterDoctor
 
 AgentExecutor = Callable[[Path, AgentJobPacket], dict[str, Any]]
+
+
+class CreateTopicRequest(BaseModel):
+    title: str
+    research_question: str
+    source_refs: Optional[list[str]] = None
+    actor: str = "user"
+
+
+class CreateHypothesisRequest(BaseModel):
+    statement: str
+    scope: str = ""
+    assumptions: list[str] = []
+    source_refs: list[str] = []
+    supersedes_id: Optional[str] = None
+    actor: str = "user"
+
+
+class ActivateHypothesisRequest(BaseModel):
+    expected_revision: int
+    actor: str = "user"
+
+
+class RevisePolicyRequest(BaseModel):
+    hypothesis_version_id: str
+    min_viable_checks: list[str] = []
+    falsification_conditions: list[dict[str, Any]] = []
+    stop_conditions: list[dict[str, Any]] = []
+    budget_caps: dict[str, Any] = {}
+    actor: str = "user"
+
+
+class TransitionTopicRequest(BaseModel):
+    target_status: str
+    expected_revision: int
+    actor: str = "user"
+    rationale: str = ""
+    restart_conditions: str = ""
+
+
+class LinkEvidenceRequest(BaseModel):
+    hypothesis_version_id: str
+    stance: str = "inconclusive"
+    validation_status: str = "under_review"
+    limitations: str = ""
+    reason: str = ""
+    source_refs: list[str] = []
+    finding_id: Optional[str] = None
+    attempt_id: Optional[str] = None
+    supersedes_id: Optional[str] = None
+    actor: str = "user"
+
+
+class ReviewEvidenceRequest(BaseModel):
+    validation_status: str
+    reason: str = ""
+    actor: str = "user"
+
+
+class SetPrimaryTopicRequest(BaseModel):
+    actor: str = "user"
 
 
 class IngestTranscriptRequest(BaseModel):
@@ -145,6 +213,36 @@ def create_app(
     daily_planner = DailyResearchPlanner(db, repo_root)
     scheduler = SchedulerEngine(db, events, critic)
     doctor = MasterDoctor(db, repo_root=repo_root)
+    topic_service = TopicCommandService(db, commands, events)
+
+    def _enrich_topic(topic: Topic) -> dict[str, Any]:
+        data = asdict(topic)
+        if topic.current_hypothesis_version_id:
+            hyp = db.fetchone("SELECT * FROM hypothesis_versions WHERE id = ?", (topic.current_hypothesis_version_id,))
+            if hyp:
+                data["current_hypothesis"] = {
+                    "id": hyp["id"],
+                    "version": hyp["version"],
+                    "statement": hyp["statement"],
+                    "scope": hyp["scope"],
+                    "assumptions": json.loads(hyp["assumptions_json"]),
+                    "source_refs": json.loads(hyp["source_refs_json"]),
+                }
+            else:
+                data["current_hypothesis"] = None
+        else:
+            data["current_hypothesis"] = None
+
+        counts = {"supports": 0, "contradicts": 0, "inconclusive": 0}
+        rows = db.fetchall(
+            "SELECT stance, COUNT(*) as cnt FROM evidence_links WHERE topic_id = ? GROUP BY stance",
+            (topic.id,),
+        )
+        for r in rows:
+            if r["stance"] in counts:
+                counts[r["stance"]] = r["cnt"]
+        data["evidence_counts"] = counts
+        return data
 
     def user_source():
         return events.register_source("user", "User Cockpit", "cockpit-ui", authority_class="user_explicit")
@@ -478,8 +576,20 @@ def create_app(
             item = dict(row)
             item["metadata"] = _parse_json_field(item.get("metadata_json"), {})
             artifact_items.append(item)
+
+        primary_row = db.fetchone("SELECT * FROM topics WHERE is_primary=1 LIMIT 1")
+        primary_topic = None
+        if primary_row:
+            t = topic_service.get_topic(primary_row["id"])
+            if t:
+                primary_topic = _enrich_topic(t)
+
+        legacy_topic = research_topic()
+        effective_topic = primary_topic["title"] if primary_topic else legacy_topic
+
         return {
-            "topic": research_topic(),
+            "topic": effective_topic,
+            "primary_topic": primary_topic,
             "experiments": experiments,
             "findings": findings,
             "decisions": decisions,
@@ -496,6 +606,201 @@ def create_app(
             authority=AuthorityLevel.USER_EXPLICIT, confidence=1.0,
         )
         return {"topic": topic, "assertion_id": assertion.id}
+
+    @app.get("/api/research/topics")
+    def list_topics():
+        topics = topic_service.list_topics()
+        return {"topics": [_enrich_topic(t) for t in topics]}
+
+    @app.post("/api/research/topics")
+    def create_topic(req: CreateTopicRequest):
+        if not req.title.strip():
+            raise HTTPException(status_code=400, detail="Title cannot be empty")
+        topic = topic_service.create_topic_seed(
+            title=req.title,
+            research_question=req.research_question,
+            source_refs=req.source_refs,
+            actor=req.actor,
+        )
+        return {"topic": _enrich_topic(topic)}
+
+    @app.get("/api/research/topics/{topic_id}")
+    def get_topic_detail(topic_id: str):
+        topic = topic_service.get_topic(topic_id)
+        if not topic:
+            raise HTTPException(status_code=404, detail="Topic not found")
+
+        hyp_rows = db.fetchall(
+            "SELECT * FROM hypothesis_versions WHERE topic_id = ? ORDER BY version DESC",
+            (topic_id,),
+        )
+        hypotheses = []
+        for r in hyp_rows:
+            hypotheses.append({
+                "id": r["id"],
+                "topic_id": r["topic_id"],
+                "version": r["version"],
+                "statement": r["statement"],
+                "scope": r["scope"],
+                "assumptions": json.loads(r["assumptions_json"]),
+                "source_refs": json.loads(r["source_refs_json"]),
+                "created_at": r["created_at"],
+            })
+
+        policy = None
+        if topic.current_hypothesis_version_id:
+            pol_row = db.fetchone(
+                "SELECT * FROM exploration_policies WHERE topic_id = ? AND hypothesis_version_id = ? ORDER BY version DESC LIMIT 1",
+                (topic_id, topic.current_hypothesis_version_id),
+            )
+            if pol_row:
+                policy = {
+                    "id": pol_row["id"],
+                    "version": pol_row["version"],
+                    "min_viable_checks": json.loads(pol_row["min_viable_checks_json"]),
+                    "falsification_conditions": json.loads(pol_row["falsification_conditions_json"]),
+                    "stop_conditions": json.loads(pol_row["stop_conditions_json"]),
+                    "budget_caps": json.loads(pol_row["budget_caps_json"]),
+                    "created_at": pol_row["created_at"],
+                }
+
+        ev_rows = db.fetchall(
+            "SELECT * FROM evidence_links WHERE topic_id = ? ORDER BY created_at DESC",
+            (topic_id,),
+        )
+        evidence_links = []
+        for r in ev_rows:
+            evidence_links.append({
+                "id": r["id"],
+                "topic_id": r["topic_id"],
+                "hypothesis_version_id": r["hypothesis_version_id"],
+                "source_refs": json.loads(r["source_refs_json"]),
+                "finding_id": r["finding_id"],
+                "attempt_id": r["attempt_id"],
+                "stance": r["stance"],
+                "validation_status": r["validation_status"],
+                "limitations": r["limitations"],
+                "reason": r["reason"],
+                "created_at": r["created_at"],
+            })
+
+        return {
+            "topic": _enrich_topic(topic),
+            "hypotheses": hypotheses,
+            "current_policy": policy,
+            "evidence_links": evidence_links,
+        }
+
+    @app.post("/api/research/topics/{topic_id}/hypotheses")
+    def add_hypothesis(topic_id: str, req: CreateHypothesisRequest):
+        try:
+            hyp = topic_service.add_hypothesis_version(
+                topic_id=topic_id,
+                statement=req.statement,
+                scope=req.scope,
+                assumptions=req.assumptions,
+                source_refs=req.source_refs,
+                supersedes_id=req.supersedes_id,
+                actor=req.actor,
+            )
+            return {"hypothesis": asdict(hyp)}
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+
+    @app.post("/api/research/topics/{topic_id}/hypotheses/{version_id}/activate")
+    def activate_hypothesis(topic_id: str, version_id: str, req: ActivateHypothesisRequest):
+        try:
+            topic = topic_service.activate_hypothesis_version(
+                topic_id=topic_id,
+                version_id=version_id,
+                expected_revision=req.expected_revision,
+                actor=req.actor,
+            )
+            return {"topic": _enrich_topic(topic)}
+        except ConcurrencyConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        except PermissionDeniedError as exc:
+            raise HTTPException(status_code=403, detail=str(exc))
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+
+    @app.post("/api/research/topics/{topic_id}/policy")
+    def revise_policy(topic_id: str, req: RevisePolicyRequest):
+        try:
+            pol = topic_service.revise_policy(
+                topic_id=topic_id,
+                hypothesis_version_id=req.hypothesis_version_id,
+                min_viable_checks=req.min_viable_checks,
+                falsification_conditions=req.falsification_conditions,
+                stop_conditions=req.stop_conditions,
+                budget_caps=req.budget_caps,
+                actor=req.actor,
+            )
+            return {"policy": asdict(pol)}
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+
+    @app.post("/api/research/topics/{topic_id}/transition")
+    def transition_topic(topic_id: str, req: TransitionTopicRequest):
+        try:
+            topic = topic_service.transition_status(
+                topic_id=topic_id,
+                target_status=req.target_status,
+                expected_revision=req.expected_revision,
+                actor=req.actor,
+                rationale=req.rationale,
+                restart_conditions=req.restart_conditions,
+            )
+            return {"topic": _enrich_topic(topic)}
+        except ConcurrencyConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        except PermissionDeniedError as exc:
+            raise HTTPException(status_code=403, detail=str(exc))
+        except InvalidTransitionError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+
+    @app.post("/api/research/topics/{topic_id}/primary")
+    def set_primary_topic(topic_id: str, req: SetPrimaryTopicRequest):
+        try:
+            topic_service.set_primary_topic(topic_id, actor=req.actor)
+            return {"status": "ok", "primary_topic_id": topic_id}
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+
+    @app.post("/api/research/topics/{topic_id}/evidence")
+    def link_evidence(topic_id: str, req: LinkEvidenceRequest):
+        try:
+            ev = topic_service.link_evidence(
+                topic_id=topic_id,
+                hypothesis_version_id=req.hypothesis_version_id,
+                stance=req.stance,
+                validation_status=req.validation_status,
+                limitations=req.limitations,
+                reason=req.reason,
+                source_refs=req.source_refs,
+                finding_id=req.finding_id,
+                attempt_id=req.attempt_id,
+                supersedes_id=req.supersedes_id,
+                actor=req.actor,
+            )
+            return {"evidence": asdict(ev)}
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+
+    @app.post("/api/research/topics/{topic_id}/evidence/{evidence_id}/review")
+    def review_evidence(topic_id: str, evidence_id: str, req: ReviewEvidenceRequest):
+        try:
+            ev = topic_service.review_evidence(
+                evidence_id=evidence_id,
+                validation_status=req.validation_status,
+                reason=req.reason,
+                actor=req.actor,
+            )
+            return {"evidence": asdict(ev)}
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
 
     @app.get("/api/papers")
     def list_papers():
