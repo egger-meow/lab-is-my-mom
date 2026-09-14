@@ -216,3 +216,70 @@ textarea { min-height: 110px; resize: vertical; }
   .mobile-nav .mi { display: block; font-size: 1rem; margin-bottom: 2px; }
   .toast { right: 12px; left: 12px; bottom: 82px; max-width: none; }
 }
+
+/* Research Topic Kanban */
+.research-kanban {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(180px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  margin-top: 14px;
+}
+.kanban-col {
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  min-height: 240px;
+}
+.kanban-col-head {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+.kanban-col-cards {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+.topic-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+  transition: border-color .15s, transform .15s;
+}
+.topic-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.topic-card-title {
+  font-weight: 600;
+  color: var(--bright);
+  font-size: 0.86rem;
+  margin-bottom: 4px;
+}
+.topic-card-q {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.topic-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.74rem;
+}

@@ -55,9 +55,253 @@ function openTranscript(meetingId='',scheduledAt='',kind='advisor'){$('#transcri
 async function submitTranscript(){const meetingId=$('#transcript-mid').value.trim();const text=$('#transcript-text').value.trim();if(!meetingId||!text)return toast('Meeting ID 和 transcript 都要填',true);const localTime=$('#transcript-time').value;let scheduledAt=null;if(localTime){const d=new Date(localTime);if(Number.isNaN(d.getTime()))return toast('Meeting 日期時間格式不正確',true);scheduledAt=d.toISOString();}const payload={meeting_id:meetingId,transcript_text:text,kind:$('#transcript-kind').value,scheduled_at:scheduledAt};try{const result=await api('/api/meetings/ingest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});closeModal('transcript-modal');const count=(result.semantic_approval_ids||[]).length;toast(`Meeting 已匯入。${count?`${count} 個高影響候選進 Needs You。`:'沒有需要你確認的高影響候選。'}`);if(state.page==='meetings')await loadMeetings();else if(state.page==='today')await loadToday();}catch(err){toast(`匯入失敗：${err.message}`,true);}}
 async function generatePack(meetingId){try{const result=await api(`/api/meetings/${encodeURIComponent(meetingId)}/pack`,{method:'POST'});showTextModal(`Meeting Pack · ${meetingId}`,result.meeting_pack||'(empty)');toast('Advisor Meeting Pack 已生成並進 Artifact Registry');}catch(err){toast(`Meeting Pack 失敗：${err.message}`,true);}}
 
-async function loadResearch(){const data=await api('/api/research');state.research=data;renderResearch(data);}
+async function loadResearch(){const data=await api('/api/research');state.research=data;renderResearch(data);await fetchTopics();}
 function renderResearch(data){$('#research-topic').value=data.topic||'';$('#research-exp-count').textContent=String(data.experiments?.length||0);$('#research-find-count').textContent=String(data.findings?.length||0);$('#research-decision-count').textContent=String(data.decisions?.length||0);$('#research-artifact-count').textContent=String(data.artifacts?.length||0);$('#research-experiments').innerHTML=data.experiments?.length?data.experiments.map((e)=>`<div class="item"><div class="item-title">${esc(e.title)}</div><div class="item-meta">${badge(e.status,statusTone(e.status))} ${badge(e.validity_status,statusTone(e.validity_status))} · compute ${esc(e.compute_backend)}${e.research_repo?` · ${esc(e.research_repo)}`:''}</div>${e.git_sha?`<div class="artifact-path">git ${esc(e.git_sha)}</div>`:''}</div>`).join(''):empty('還沒有 experiment。');$('#research-findings').innerHTML=data.findings?.length?data.findings.map((f)=>`<div class="item"><div class="item-title">${esc(f.statement)}</div><div class="item-meta">${badge(f.status,statusTone(f.status))} · confidence ${esc(f.confidence)}${f.experiment_id?` · ${esc(f.experiment_id)}`:''}</div></div>`).join(''):empty('還沒有 finding。Agent 產的 candidate 不等於 validated science。');$('#research-decisions').innerHTML=data.decisions?.length?data.decisions.map((d)=>`<div class="item"><div class="item-title">${esc(d.statement)}</div><div class="item-meta">${badge(d.status,statusTone(d.status))} · ${fmtDate(d.decided_at)}</div>${d.rationale?`<div class="item-meta">${esc(d.rationale)}</div>`:''}</div>`).join(''):empty('還沒有正式 research decision。');$('#research-artifacts').innerHTML=data.artifacts?.length?data.artifacts.map((a)=>`<div class="item"><div class="item-title">${esc(a.artifact_type)}</div><div class="artifact-path">${esc(a.path)}</div><div class="item-meta">${fmtDate(a.created_at)}${a.git_sha?` · git ${esc(a.git_sha)}`:''}</div></div>`).join(''):empty('還沒有 canonical artifact。');}
 async function saveResearchTopic(event){event.preventDefault();const topic=$('#research-topic').value.trim();if(!topic)return toast('研究主軸不能空白',true);try{await api('/api/research/context',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic})});toast('研究主軸已以 User explicit assertion 儲存');await loadResearch();}catch(err){toast(`儲存失敗：${err.message}`,true);}}
+
+async function fetchTopics(){try{const res=await api('/api/research/topics');state.topics=res.topics||[];renderTopicsKanban(state.topics);}catch(err){toast(`讀取研究題目失敗：${err.message}`,true);}}
+
+function renderTopicsKanban(topics){
+  const stages=['seed','exploring','viable','candidate','selected','killed'];
+  const grouped={seed:[],exploring:[],viable:[],candidate:[],selected:[],killed:[]};
+  topics.forEach(t=>{if(grouped[t.status])grouped[t.status].push(t);});
+  stages.forEach(stage=>{
+    const countEl=$(`#stage-count-${stage}`);
+    if(countEl)countEl.textContent=String(grouped[stage].length);
+    const container=$(`#cards-${stage}`);
+    if(!container)return;
+    if(!grouped[stage].length){container.innerHTML='<div class="item-meta" style="padding:12px 4px; text-align:center">無</div>';return;}
+    container.innerHTML=grouped[stage].map(t=>{
+      const pBadge=t.is_primary?'<span class="badge green" style="font-size:0.7rem">Primary</span>':'';
+      const evCounts=t.evidence_counts||{};
+      const evBadge=`<span class="item-meta" style="font-size:0.72rem">+${evCounts.supports||0} / -${evCounts.contradicts||0} / ?${evCounts.inconclusive||0}</span>`;
+      return `<div class="topic-card" onclick="openTopicDetail('${esc(t.id)}')">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
+          <span class="badge" style="font-size:0.7rem">rev ${t.revision}</span>
+          ${pBadge}
+        </div>
+        <div class="topic-card-title">${esc(t.title)}</div>
+        <div class="topic-card-q">${esc(t.research_question)}</div>
+        <div class="topic-card-footer">
+          ${evBadge}
+          <span class="item-meta" style="font-size:0.72rem">${esc(t.next_action||'')}</span>
+        </div>
+      </div>`;
+    }).join('');
+  });
+}
+
+async function createTopicSeed(title,question){
+  if(!title.trim()||!question.trim()){toast('標題與研究問題不能為空',true);return;}
+  try{
+    await api('/api/research/topics',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title:title.trim(),research_question:question.trim(),actor:'user'})
+    });
+    toast('研究題目 Seed 已建立');
+    closeModal('create-topic-modal');
+    await fetchTopics();
+  }catch(err){toast(`建立失敗：${err.message}`,true);}
+}
+
+async function openTopicDetail(topicId){
+  try{
+    const data=await api(`/api/research/topics/${encodeURIComponent(topicId)}`);
+    const topic=data.topic;
+    state.activeTopic=data;
+
+    $('#modal-topic-title').textContent=topic.title;
+    $('#modal-topic-question').textContent=topic.research_question;
+    $('#modal-topic-stage').textContent=topic.status;
+    $('#modal-topic-stage').className=`badge ${statusTone(topic.status)}`;
+    $('#modal-topic-revision').textContent=`rev ${topic.revision}`;
+
+    const pBadge=$('#modal-topic-primary');
+    if(pBadge)pBadge.style.display=topic.is_primary?'inline-block':'none';
+
+    const hypContent=$('#modal-topic-hyp-content');
+    if(topic.current_hypothesis){
+      hypContent.innerHTML=`<div style="color:var(--bright); font-weight:500; margin-bottom:4px">v${topic.current_hypothesis.version}: ${esc(topic.current_hypothesis.statement)}</div><div class="item-meta">Scope: ${esc(topic.current_hypothesis.scope||'未填寫')}</div>`;
+    }else{hypContent.innerHTML='<span class="item-meta">尚未啟用核心假說版本</span>';}
+
+    const polContent=$('#modal-topic-policy-content');
+    if(data.current_policy){
+      const p=data.current_policy;
+      polContent.innerHTML=`<div class="item-meta">最低可行性檢查: ${esc((p.min_viable_checks||[]).join(', ')||'無')}</div><div class="item-meta">否證條件: ${esc((p.falsification_conditions||[]).length?JSON.stringify(p.falsification_conditions):'無')}</div><div class="item-meta">停損條件: ${esc((p.stop_conditions||[]).length?JSON.stringify(p.stop_conditions):'無')}</div>`;
+    }else{polContent.innerHTML='<span class="item-meta">尚未設定探索政策 (進 Exploring 必填)</span>';}
+
+    const evList=$('#modal-topic-evidence-list');
+    if(data.evidence_links&&data.evidence_links.length){
+      evList.innerHTML=data.evidence_links.map(e=>`
+        <div class="item">
+          <div style="display:flex; justify-content:space-between">
+            <div>
+              <span class="badge ${e.stance==='supports'?'green':(e.stance==='contradicts'?'red':'')}">${esc(e.stance)}</span>
+              <span class="badge ${e.validation_status==='validated'?'green':'yellow'}">${esc(e.validation_status)}</span>
+              <span style="font-size:0.84rem; margin-left:6px">${esc(e.reason||e.limitations||'無備註')}</span>
+            </div>
+            ${e.validation_status!=='validated'?`<button class="btn small ghost" onclick="reviewEvidence('${esc(topic.id)}','${esc(e.id)}','validated')">通過審查</button>`:''}
+          </div>
+        </div>
+      `).join('');
+    }else{evList.innerHTML='<span class="item-meta">尚無關聯證據</span>';}
+
+    renderTransitionActions(topic,data);
+
+    const setPrimaryBtn=$('#modal-set-primary-btn');
+    if(setPrimaryBtn){
+      setPrimaryBtn.onclick=async()=>{
+        try{
+          await api(`/api/research/topics/${encodeURIComponent(topic.id)}/primary`,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({actor:'user'})
+          });
+          toast(`已將 ${topic.title} 設為 Primary 題目`);
+          await fetchTopics();
+          await openTopicDetail(topic.id);
+        }catch(err){toast(err.message,true);}
+      };
+    }
+
+    const addHypBtn=$('#modal-add-hyp-btn');
+    if(addHypBtn){
+      addHypBtn.onclick=async()=>{
+        const stmt=prompt('請輸入核心假說陳述 (Hypothesis Statement)：');
+        if(!stmt||!stmt.trim())return;
+        const scp=prompt('請輸入適用範圍 (Scope，選填)：')||null;
+        try{
+          await api(`/api/research/topics/${encodeURIComponent(topic.id)}/hypotheses`,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({statement:stmt.trim(),scope:scp?scp.trim():null,actor:'user',activate_immediately:true})
+          });
+          toast('核心假說版本已新增並啟用');
+          await fetchTopics();
+          await openTopicDetail(topic.id);
+        }catch(err){toast(err.message,true);}
+      };
+    }
+
+    const editPolBtn=$('#modal-edit-policy-btn');
+    if(editPolBtn){
+      editPolBtn.onclick=async()=>{
+        const checks=prompt('請輸入最低可行性檢查 (逗號分隔，例如: memory_fits_16gb, loss_decreases)：');
+        if(checks===null)return;
+        const checksList=checks.split(',').map(s=>s.trim()).filter(Boolean);
+        try{
+          await api(`/api/research/topics/${encodeURIComponent(topic.id)}/policy`,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({min_viable_checks:checksList,actor:'user'})
+          });
+          toast('探索政策已更新');
+          await fetchTopics();
+          await openTopicDetail(topic.id);
+        }catch(err){toast(err.message,true);}
+      };
+    }
+
+    const addEvBtn=$('#modal-add-evidence-btn');
+    if(addEvBtn){
+      addEvBtn.onclick=async()=>{
+        const summary=prompt('請輸入證據摘要 (Summary)：');
+        if(!summary||!summary.trim())return;
+        const stance=prompt('立場：supports / contradicts / inconclusive (預設 supports)：')||'supports';
+        try{
+          await api(`/api/research/topics/${encodeURIComponent(topic.id)}/evidence`,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+              stance:stance.trim().toLowerCase(),
+              evidence_type:'experiment_result',
+              source_ref:'manual',
+              summary:summary.trim(),
+              actor:'user'
+            })
+          });
+          toast('證據已新增');
+          await fetchTopics();
+          await openTopicDetail(topic.id);
+        }catch(err){toast(err.message,true);}
+      };
+    }
+
+    openModal('topic-detail-modal');
+  }catch(err){toast(`讀取題目詳情失敗：${err.message}`,true);}
+}
+
+function renderTransitionActions(topic,detail){
+  const container=$('#modal-topic-transition-actions');
+  const checksContainer=$('#modal-topic-transition-checks');
+  if(!container||!checksContainer)return;
+
+  const status=topic.status;
+  const rev=topic.revision;
+  let html='';
+  let checks='';
+
+  if(status==='seed'){
+    const hasHyp=!!topic.current_hypothesis_version_id;
+    const hasPol=!!detail.current_policy&&detail.current_policy.min_viable_checks.length>0;
+    checks=`<div>${hasHyp?'✓':'✗'} 具備核心假說版本</div><div>${hasPol?'✓':'✗'} 具備探索政策與最低可行性檢查</div>`;
+    const canExplore=hasHyp&&hasPol;
+    html+=`<button class="btn primary" ${canExplore?'':'disabled'} onclick="transitionTopic('${esc(topic.id)}','exploring',${rev})">進入 Exploring</button>`;
+  }else if(status==='exploring'){
+    const hasValEvidence=(detail.evidence_links||[]).some(e=>e.stance==='supports'&&e.validation_status==='validated');
+    checks=`<div>${hasValEvidence?'✓':'✗'} 具備至少一項經驗證的支持性證據 (Validated Supporting Evidence)</div>`;
+    html+=`<button class="btn primary" ${hasValEvidence?'':'disabled'} onclick="transitionTopic('${esc(topic.id)}','viable',${rev})">推進至 Viable</button>`;
+  }else if(status==='viable'){
+    checks='<div>✓ Viable 條件有效；推進至 Candidate 準備選題評估</div>';
+    html+=`<button class="btn primary" onclick="transitionTopic('${esc(topic.id)}','candidate',${rev})">推進至 Candidate</button>`;
+  }else if(status==='candidate'){
+    checks='<div>人決策門檻：需要明確的選題理由與範圍</div>';
+    html+=`<button class="btn green" onclick="promptAndTransition('${esc(topic.id)}','selected',${rev},'請輸入選題決策理由：')">正式選題 (Selected)</button>`;
+  }
+
+  if(status!=='killed'){
+    html+=`<button class="btn ghost red" onclick="promptAndTransition('${esc(topic.id)}','killed',${rev},'請輸入停損 / Kill 理由：')">停損淘汰 (Killed)</button>`;
+  }else{
+    html+=`<button class="btn yellow" onclick="promptAndTransition('${esc(topic.id)}','exploring',${rev},'請輸入重啟理由 / 新證據：')">重啟探索 (Restart)</button>`;
+  }
+
+  checksContainer.innerHTML=checks;
+  container.innerHTML=html;
+}
+
+async function promptAndTransition(topicId,targetStatus,expectedRevision,promptMsg){
+  const rationale=prompt(promptMsg);
+  if(!rationale||!rationale.trim())return;
+  await transitionTopic(topicId,targetStatus,expectedRevision,rationale.trim());
+}
+
+async function transitionTopic(topicId,targetStatus,expectedRevision,rationale=''){
+  try{
+    await api(`/api/research/topics/${encodeURIComponent(topicId)}/transition`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({target_status:targetStatus,expected_revision:expectedRevision,actor:'user',rationale:rationale})
+    });
+    toast(`狀態已更新為 ${targetStatus}`);
+    await fetchTopics();
+    await openTopicDetail(topicId);
+  }catch(err){toast(`轉移失敗：${err.message}`,true);}
+}
+
+async function reviewEvidence(topicId,evidenceId,status){
+  try{
+    await api(`/api/research/topics/${encodeURIComponent(topicId)}/evidence/${encodeURIComponent(evidenceId)}/review`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({validation_status:status,reason:'人手動審查通過',actor:'user'})
+    });
+    toast(`證據審查已更新為 ${status}`);
+    await fetchTopics();
+    await openTopicDetail(topicId);
+  }catch(err){toast(`審查失敗：${err.message}`,true);}
+}
+
 
 async function loadPapers(){const data=await api('/api/papers');state.papers=data;renderPapers(data);}
 function renderPapers(data){$('#paper-stats').innerHTML=[['Corpus',data.count||0],['Full text',data.fulltext_count||0],['Processed',data.processed_count||0],['Status',data.available?'ready':'missing']].map(([label,value])=>`<div class="stat"><strong>${esc(value)}</strong><span>${esc(label)}</span></div>`).join('');filterPapers();}
@@ -171,6 +415,8 @@ async function savePlanningPreferences(event){event.preventDefault();try{await a
 
 function bindEvents(){document.addEventListener('click',(event)=>{const nav=event.target.closest('[data-nav]');if(nav){navigate(nav.dataset.nav);return;}const close=event.target.closest('[data-close]');if(close){closeModal(close.dataset.close);return;}const onboard=event.target.closest('[data-onboard]');if(onboard){if(onboard.dataset.onboard==='transcript')openTranscript();else navigate(onboard.dataset.onboard);return;}const dispatch=event.target.closest('[data-dispatch]');if(dispatch){dispatchTask(dispatch.dataset.dispatch);return;}const approval=event.target.closest('[data-approval]');if(approval){decideApproval(approval.dataset.approval,approval.dataset.decision);return;}const docPrompt=event.target.closest('[data-doc-prompt]');if(docPrompt){showDocumentPrompt(docPrompt.dataset.docPrompt);return;}const docIngest=event.target.closest('[data-doc-ingest]');if(docIngest){ingestDocument(docIngest.dataset.docIngest);return;}const ingest=event.target.closest('[data-meeting-ingest]');if(ingest){openTranscript(ingest.dataset.meetingIngest,ingest.dataset.meetingTime,ingest.dataset.meetingKind);return;}const pack=event.target.closest('[data-meeting-pack]');if(pack){generatePack(pack.dataset.meetingPack);return;}const recovery=event.target.closest('[data-recovery]');if(recovery){recoverRun(recovery.dataset.run,recovery.dataset.recovery);return;}if(event.target.classList.contains('modal-backdrop'))closeModal(event.target.id);});document.addEventListener('change',(event)=>{if(event.target.matches('[data-task-status]'))changeTaskStatus(event.target.dataset.taskStatus,event.target.value);});
   $('#progress-form')?.addEventListener('submit',submitProgress);$('#plan-now')?.addEventListener('click',runDailyPlan);$('#planning-preferences-form')?.addEventListener('submit',savePlanningPreferences);
+  $('#create-topic-seed-btn')?.addEventListener('click',()=>{const title=$('#topic-seed-title');const q=$('#topic-seed-question');if(title)title.value='';if(q)q.value='';openModal('create-topic-modal');});
+  $('#submit-topic-seed-btn')?.addEventListener('click',()=>{const title=$('#topic-seed-title')?.value||'';const q=$('#topic-seed-question')?.value||'';createTopicSeed(title,q);});
   $('#refresh-btn')?.addEventListener('click',()=>refreshPage());$('#quick-ingest')?.addEventListener('click',()=>openTranscript());$('#hero-ingest')?.addEventListener('click',()=>openTranscript());$('#meeting-ingest-top')?.addEventListener('click',()=>openTranscript());$('#dispatch-focus')?.addEventListener('click',()=>state.currentFocusTaskId&&dispatchTask(state.currentFocusTaskId));$('#submit-transcript')?.addEventListener('click',submitTranscript);$('#advisor-routine-form')?.addEventListener('submit',saveAdvisorRoutine);$('#adhoc-meeting-form')?.addEventListener('submit',saveAdhocMeeting);$('#research-topic-form')?.addEventListener('submit',saveResearchTopic);$('#paper-search')?.addEventListener('input',filterPapers);$('#document-upload-form')?.addEventListener('submit',uploadDocument);$('#copy-modal-text-btn')?.addEventListener('click',()=>{const text=$('#text-modal-body')?.textContent;if(!text)return toast('內容為空',true);navigator.clipboard.writeText(text).then(()=>{toast('Prompt 已成功複製到剪貼簿！可直接貼給 Agent。');}).catch(()=>{toast('請手動選取文字複製。',true);});});$('#modal-ingest-btn')?.addEventListener('click',()=>{if(state.activeDocFilename)ingestDocument(state.activeDocFilename);});const docDateInput=$('#doc-date');if(docDateInput&&!docDateInput.value)docDateInput.value=new Date().toISOString().slice(0,10);window.addEventListener('hashchange',()=>navigate(location.hash.slice(1)||'today',false));document.addEventListener('keydown',(event)=>{if(event.key==='Escape')$$('.modal-backdrop.open').forEach((el)=>closeModal(el.id));});}
 
 bindEvents();navigate(location.hash.slice(1)||'today',false);setInterval(()=>{if(document.hidden)return;if(state.page==='today'||state.page==='agents')refreshPage(state.page);},12000);

@@ -145,8 +145,42 @@
         </section>
 
         <section class="page" data-page="research">
-          <div class="page-head"><div><h2>Research</h2><p>從研究題目一路追到 Experiment、Finding、Decision 與 Artifact。</p></div></div>
-          <div class="card">
+          <div class="page-head">
+            <div>
+              <h2>Research Topics & Hypothesis Elimination</h2>
+              <p>以假說消除法推進題目：Seed → Exploring → Viable → Candidate → Selected（或 Killed 停損）。</p>
+            </div>
+            <button class="btn primary" id="create-topic-seed-btn">＋ 新增研究題目 (Seed)</button>
+          </div>
+
+          <div class="research-kanban" id="research-kanban">
+            <div class="kanban-col" data-stage="seed">
+              <div class="kanban-col-head"><span>Seed</span><span class="badge" id="stage-count-seed">0</span></div>
+              <div class="kanban-col-cards stage-seed" id="cards-seed"></div>
+            </div>
+            <div class="kanban-col" data-stage="exploring">
+              <div class="kanban-col-head"><span>Exploring</span><span class="badge blue" id="stage-count-exploring">0</span></div>
+              <div class="kanban-col-cards stage-exploring" id="cards-exploring"></div>
+            </div>
+            <div class="kanban-col" data-stage="viable">
+              <div class="kanban-col-head"><span>Viable</span><span class="badge yellow" id="stage-count-viable">0</span></div>
+              <div class="kanban-col-cards stage-viable" id="cards-viable"></div>
+            </div>
+            <div class="kanban-col" data-stage="candidate">
+              <div class="kanban-col-head"><span>Candidate</span><span class="badge purple" id="stage-count-candidate">0</span></div>
+              <div class="kanban-col-cards stage-candidate" id="cards-candidate"></div>
+            </div>
+            <div class="kanban-col" data-stage="selected">
+              <div class="kanban-col-head"><span>Selected</span><span class="badge green" id="stage-count-selected">0</span></div>
+              <div class="kanban-col-cards stage-selected" id="cards-selected"></div>
+            </div>
+            <div class="kanban-col" data-stage="killed">
+              <div class="kanban-col-head"><span>Killed</span><span class="badge red" id="stage-count-killed">0</span></div>
+              <div class="kanban-col-cards stage-killed" id="cards-killed"></div>
+            </div>
+          </div>
+
+          <div class="card mt">
             <div class="card-title"><span>目前研究主軸 / Hypothesis</span><span class="badge purple">User truth</span></div>
             <form id="research-topic-form"><div class="field"><label for="research-topic">這是你目前真正想研究的問題，不是 agent 猜的</label><textarea id="research-topic" placeholder="例如：Uncertainty-Aware Selective Routing under Non-Stationary, Heterogeneous Costs"></textarea></div><div class="form-actions"><button class="btn primary" type="submit">儲存研究主軸</button></div></form>
           </div>
@@ -290,6 +324,58 @@
         <button class="btn accent" id="modal-ingest-btn" style="display:none">🚀 立即派遣 Agent 更新本地 DB</button>
         <button class="btn primary" id="copy-modal-text-btn">📋 複製全部 Prompt</button>
         <button class="btn" data-close="text-modal">關閉</button>
+      </div>
+    </div>
+  <div id="create-topic-modal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h3>新增研究題目 (Seed)</h3>
+      <p>只需要題目名稱與核心研究問題。其他探索規則與假說版本可於 Exploring 階段逐步補充。</p>
+      <div class="field"><label for="topic-seed-title">題目名稱 (Title)</label><input id="topic-seed-title" placeholder="例如：Contrastive Reranking for Low-Resource Retrieval"></div>
+      <div class="field mt"><label for="topic-seed-question">核心研究問題 (Research Question)</label><textarea id="topic-seed-question" rows="3" placeholder="例如：Does contrastive fine-tuning improve cross-encoder zero-shot ranking on unseen domains?"></textarea></div>
+      <div class="modal-actions">
+        <button class="btn ghost" data-close="create-topic-modal">取消</button>
+        <button class="btn primary" id="submit-topic-seed-btn">建立 Seed</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="topic-detail-modal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal" style="max-width: 720px; max-height: 85vh; overflow-y: auto;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <span id="modal-topic-stage" class="badge blue">seed</span>
+          <span id="modal-topic-revision" class="badge">rev 1</span>
+          <span id="modal-topic-primary" class="badge green" style="display:none">Primary</span>
+          <h3 id="modal-topic-title" style="margin-top:6px; margin-bottom:4px;"></h3>
+          <p id="modal-topic-question" class="item-meta"></p>
+        </div>
+        <button class="btn ghost" data-close="topic-detail-modal">✕</button>
+      </div>
+
+      <div class="mt card" style="background:var(--panel-2)">
+        <div class="card-title"><span>核心假說 (Current Hypothesis)</span><button class="btn ghost" id="modal-add-hyp-btn" style="padding:2px 8px; font-size:0.78rem">＋ 新增改版</button></div>
+        <div id="modal-topic-hyp-content" class="item-meta">尚無核心假說</div>
+      </div>
+
+      <div class="mt card" style="background:var(--panel-2)">
+        <div class="card-title"><span>探索與停損規則 (Exploration Policy)</span><button class="btn ghost" id="modal-edit-policy-btn" style="padding:2px 8px; font-size:0.78rem">設定規則</button></div>
+        <div id="modal-topic-policy-content" class="item-meta">尚無設定</div>
+      </div>
+
+      <div class="mt card" style="background:var(--panel-2)">
+        <div class="card-title"><span>關聯證據 (Evidence Links)</span><button class="btn ghost" id="modal-add-evidence-btn" style="padding:2px 8px; font-size:0.78rem">＋ 連結證據</button></div>
+        <div id="modal-topic-evidence-list" class="list">尚無證據</div>
+      </div>
+
+      <div class="mt card" style="background:var(--panel-2)">
+        <div class="card-title"><span>階段轉移 (Transition Gate)</span></div>
+        <div id="modal-topic-transition-checks" class="item-meta" style="margin-bottom:10px"></div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;" id="modal-topic-transition-actions"></div>
+      </div>
+
+      <div class="modal-actions mt">
+        <button class="btn ghost" id="modal-set-primary-btn">設為 Primary 研究題目</button>
+        <button class="btn" data-close="topic-detail-modal">關閉</button>
       </div>
     </div>
   </div>
