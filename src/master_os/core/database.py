@@ -261,6 +261,88 @@ CREATE TABLE IF NOT EXISTS system_health (
     message TEXT,
     details_json TEXT NOT NULL DEFAULT '{}'
 );
+
+CREATE TABLE IF NOT EXISTS topics (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    research_question TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'seed',
+    revision INTEGER NOT NULL DEFAULT 1,
+    current_hypothesis_version_id TEXT,
+    is_primary INTEGER NOT NULL DEFAULT 0,
+    next_action TEXT NOT NULL DEFAULT '',
+    blockers_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_topics_status ON topics(status);
+
+CREATE TABLE IF NOT EXISTS hypothesis_versions (
+    id TEXT PRIMARY KEY,
+    topic_id TEXT NOT NULL REFERENCES topics(id),
+    version INTEGER NOT NULL,
+    statement TEXT NOT NULL,
+    scope TEXT NOT NULL DEFAULT '',
+    assumptions_json TEXT NOT NULL DEFAULT '[]',
+    supersedes_id TEXT REFERENCES hypothesis_versions(id),
+    source_refs_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_hypothesis_topic ON hypothesis_versions(topic_id, version);
+
+CREATE TABLE IF NOT EXISTS exploration_policies (
+    id TEXT PRIMARY KEY,
+    topic_id TEXT NOT NULL REFERENCES topics(id),
+    hypothesis_version_id TEXT NOT NULL REFERENCES hypothesis_versions(id),
+    version INTEGER NOT NULL DEFAULT 1,
+    min_viable_checks_json TEXT NOT NULL DEFAULT '[]',
+    falsification_conditions_json TEXT NOT NULL DEFAULT '[]',
+    stop_conditions_json TEXT NOT NULL DEFAULT '[]',
+    budget_caps_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS evidence_links (
+    id TEXT PRIMARY KEY,
+    topic_id TEXT NOT NULL REFERENCES topics(id),
+    hypothesis_version_id TEXT NOT NULL REFERENCES hypothesis_versions(id),
+    source_refs_json TEXT NOT NULL DEFAULT '[]',
+    finding_id TEXT REFERENCES findings(id) ON DELETE SET NULL,
+    attempt_id TEXT,
+    stance TEXT NOT NULL DEFAULT 'inconclusive',
+    validation_status TEXT NOT NULL DEFAULT 'under_review',
+    limitations TEXT NOT NULL DEFAULT '',
+    reason TEXT NOT NULL DEFAULT '',
+    supersedes_id TEXT REFERENCES evidence_links(id),
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_evidence_links_topic ON evidence_links(topic_id, hypothesis_version_id);
+
+CREATE TABLE IF NOT EXISTS advisor_signals (
+    id TEXT PRIMARY KEY,
+    source_ref TEXT NOT NULL DEFAULT '',
+    source_location TEXT NOT NULL DEFAULT '',
+    quote TEXT NOT NULL DEFAULT '',
+    interpretation TEXT NOT NULL DEFAULT '',
+    confirmation_status TEXT NOT NULL DEFAULT 'unconfirmed',
+    meeting_id TEXT REFERENCES meetings(id) ON DELETE SET NULL,
+    topic_id TEXT REFERENCES topics(id) ON DELETE SET NULL,
+    hypothesis_version_id TEXT REFERENCES hypothesis_versions(id) ON DELETE SET NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS experiment_attempts (
+    id TEXT PRIMARY KEY,
+    experiment_id TEXT NOT NULL REFERENCES experiments(id),
+    packet_hash TEXT NOT NULL,
+    execution_status TEXT NOT NULL DEFAULT 'prepared',
+    validity_status TEXT NOT NULL DEFAULT 'under_review',
+    result_artifact_id TEXT REFERENCES artifacts(id) ON DELETE SET NULL,
+    retry_of TEXT REFERENCES experiment_attempts(id) ON DELETE SET NULL,
+    started_at TEXT,
+    finished_at TEXT,
+    created_at TEXT NOT NULL
+);
 """
 
 
@@ -327,7 +409,9 @@ class MasterDatabase:
             for table in [
                 "assertions", "meetings", "obligations", "tasks", "agent_runs",
                 "experiments", "artifacts", "findings", "failures", "decisions",
-                "approvals", "schedules", "relations", "lab_resources"
+                "approvals", "schedules", "relations", "lab_resources",
+                "topics", "hypothesis_versions", "exploration_policies",
+                "evidence_links", "advisor_signals", "experiment_attempts"
             ]:
                 cursor.execute(f"DELETE FROM {table}")
             self.conn.commit()

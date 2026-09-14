@@ -277,3 +277,88 @@ class LabResource:
     active_containers_json: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
     updated_at: str = field(default_factory=utc_now)
+
+
+@dataclass
+class Topic:
+    id: str
+    title: str
+    research_question: str
+    status: str = "seed"  # seed, exploring, viable, candidate, selected, killed
+    revision: int = 1
+    current_hypothesis_version_id: Optional[str] = None
+    is_primary: bool = False
+    next_action: str = ""
+    blockers: list[str] = field(default_factory=list)
+    created_at: str = field(default_factory=utc_now)
+    updated_at: str = field(default_factory=utc_now)
+
+
+@dataclass
+class HypothesisVersion:
+    id: str
+    topic_id: str
+    version: int
+    statement: str
+    scope: str = ""
+    assumptions: list[str] = field(default_factory=list)
+    supersedes_id: Optional[str] = None
+    source_refs: list[str] = field(default_factory=list)
+    created_at: str = field(default_factory=utc_now)
+
+
+@dataclass
+class ExplorationPolicy:
+    id: str
+    topic_id: str
+    hypothesis_version_id: str
+    version: int = 1
+    min_viable_checks: list[str] = field(default_factory=list)
+    falsification_conditions: list[dict[str, Any]] = field(default_factory=list)
+    stop_conditions: list[dict[str, Any]] = field(default_factory=list)
+    budget_caps: dict[str, Any] = field(default_factory=dict)
+    created_at: str = field(default_factory=utc_now)
+
+
+@dataclass
+class EvidenceLink:
+    id: str
+    topic_id: str
+    hypothesis_version_id: str
+    source_refs: list[str] = field(default_factory=list)
+    finding_id: Optional[str] = None
+    attempt_id: Optional[str] = None
+    stance: str = "inconclusive"  # supports, contradicts, inconclusive
+    validation_status: str = "under_review"  # under_review, validated, rejected, superseded
+    limitations: str = ""
+    reason: str = ""
+    supersedes_id: Optional[str] = None
+    created_at: str = field(default_factory=utc_now)
+
+
+@dataclass
+class AdvisorSignal:
+    id: str
+    source_ref: str = ""
+    source_location: str = ""
+    quote: str = ""
+    interpretation: str = ""
+    confirmation_status: str = "unconfirmed"  # unconfirmed, confirmed, rejected
+    meeting_id: Optional[str] = None
+    topic_id: Optional[str] = None
+    hypothesis_version_id: Optional[str] = None
+    created_at: str = field(default_factory=utc_now)
+
+
+@dataclass
+class ExperimentAttempt:
+    id: str
+    experiment_id: str
+    packet_hash: str
+    execution_status: str = "prepared"  # prepared, running, completed, failed, interrupted, cancelled
+    validity_status: str = "under_review"  # under_review, valid, partially_valid, invalid
+    result_artifact_id: Optional[str] = None
+    retry_of: Optional[str] = None
+    started_at: Optional[str] = None
+    finished_at: Optional[str] = None
+    created_at: str = field(default_factory=utc_now)
