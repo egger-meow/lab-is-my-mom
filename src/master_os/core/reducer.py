@@ -334,6 +334,102 @@ def apply_event(db: MasterDatabase, event: Event, *, commit: bool = True) -> Non
              containers_json, meta_json, now),
         )
 
+    elif etype == "topic.created":
+        blockers_json = json.dumps(p.get("blockers", []), ensure_ascii=False)
+        db.execute(
+            """INSERT INTO topics (id, title, research_question, status, revision,
+                                  current_hypothesis_version_id, is_primary, next_action,
+                                  blockers_json, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(id) DO UPDATE SET
+               title=excluded.title, research_question=excluded.research_question,
+               status=excluded.status, revision=excluded.revision,
+               current_hypothesis_version_id=excluded.current_hypothesis_version_id,
+               is_primary=excluded.is_primary, next_action=excluded.next_action,
+               blockers_json=excluded.blockers_json, updated_at=excluded.updated_at""",
+            (p["id"], p["title"], p["research_question"], p.get("status", "seed"),
+             p.get("revision", 1), p.get("current_hypothesis_version_id"),
+             int(p.get("is_primary", False)), p.get("next_action", ""),
+             blockers_json, p.get("created_at", now), p.get("updated_at", now)),
+        )
+
+    elif etype == "hypothesis.version_created":
+        assump_json = json.dumps(p.get("assumptions", []), ensure_ascii=False)
+        refs_json = json.dumps(p.get("source_refs", []), ensure_ascii=False)
+        db.execute(
+            """INSERT INTO hypothesis_versions (id, topic_id, version, statement, scope,
+                                              assumptions_json, supersedes_id, source_refs_json, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(id) DO UPDATE SET
+               statement=excluded.statement, scope=excluded.scope,
+               assumptions_json=excluded.assumptions_json, supersedes_id=excluded.supersedes_id,
+               source_refs_json=excluded.source_refs_json""",
+            (p["id"], p["topic_id"], p["version"], p["statement"], p.get("scope", ""),
+             assump_json, p.get("supersedes_id"), refs_json, p.get("created_at", now)),
+        )
+
+    elif etype == "hypothesis.activated":
+        db.execute(
+            """UPDATE topics SET current_hypothesis_version_id = ?, revision = ?, updated_at = ?
+               WHERE id = ?""",
+            (p["hypothesis_version_id"], p["revision"], now, p["topic_id"]),
+        )
+
+    elif etype == "topic.policy_revised":
+        min_v_json = json.dumps(p.get("min_viable_checks", []), ensure_ascii=False)
+        fals_json = json.dumps(p.get("falsification_conditions", []), ensure_ascii=False)
+        stop_json = json.dumps(p.get("stop_conditions", []), ensure_ascii=False)
+        budget_json = json.dumps(p.get("budget_caps", {}), ensure_ascii=False)
+        db.execute(
+            """INSERT INTO exploration_policies (id, topic_id, hypothesis_version_id, version,
+                                                min_viable_checks_json, falsification_conditions_json,
+                                                stop_conditions_json, budget_caps_json, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(id) DO UPDATE SET
+               min_viable_checks_json=excluded.min_viable_checks_json,
+               falsification_conditions_json=excluded.falsification_conditions_json,
+               stop_conditions_json=excluded.stop_conditions_json,
+               budget_caps_json=excluded.budget_caps_json""",
+            (p["id"], p["topic_id"], p["hypothesis_version_id"], p.get("version", 1),
+             min_v_json, fals_json, stop_json, budget_json, p.get("created_at", now)),
+        )
+
+    elif etype == "evidence.linked":
+        refs_json = json.dumps(p.get("source_refs", []), ensure_ascii=False)
+        db.execute(
+            """INSERT INTO evidence_links (id, topic_id, hypothesis_version_id, source_refs_json,
+                                         finding_id, attempt_id, stance, validation_status,
+                                         limitations, reason, supersedes_id, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(id) DO UPDATE SET
+               stance=excluded.stance, validation_status=excluded.validation_status,
+               limitations=excluded.limitations, reason=excluded.reason,
+               supersedes_id=excluded.supersedes_id""",
+            (p["id"], p["topic_id"], p["hypothesis_version_id"], refs_json,
+             p.get("finding_id"), p.get("attempt_id"), p.get("stance", "inconclusive"),
+             p.get("validation_status", "under_review"), p.get("limitations", ""),
+             p.get("reason", ""), p.get("supersedes_id"), p.get("created_at", now)),
+        )
+
+    elif etype == "evidence.reviewed":
+        db.execute(
+            """UPDATE evidence_links SET validation_status = ?, reason = ?
+               WHERE id = ?""",
+            (p["validation_status"], p.get("reason", ""), p["evidence_id"]),
+        )
+
+    elif etype == "topic.transitioned":
+        db.execute(
+            """UPDATE topics SET status = ?, revision = ?, updated_at = ?
+               WHERE id = ?""",
+            (p["to_status"], p["revision"], now, p["topic_id"]),
+        )
+
+    elif etype == "topic.primary_changed":
+        db.execute("UPDATE topics SET is_primary = 0")
+        if p.get("topic_id"):
+            db.execute("UPDATE topics SET is_primary = 1 WHERE id = ?", (p["topic_id"],))
+
     if commit:
         db.commit()
 
